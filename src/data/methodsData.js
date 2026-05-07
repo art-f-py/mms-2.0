@@ -12,13 +12,13 @@ export const methodsData = [
 ];
 
 /*
-28.00 - Cut & Fill
-26.00 - Square Set
-16.00 - Top Slicing
--18.00 - Longwall
--22.00 - Open Pit
--26.00 - Block Caving
--28.00 - Sublevel Caving
--29.00 - Shrinkage Stoping
--39.00 - Sublevel Stoping
--73.00 - Room & Pillar*/
+Cut & Fill
+Square Set
+Top Slicing
+Longwall
+Open Pit
+Block Caving
+Sublevel Caving
+Shrinkage Stoping
+Sublevel Stoping
+Room & Pillar*/
