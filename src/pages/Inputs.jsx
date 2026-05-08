@@ -131,7 +131,7 @@ function UBCForm() {
 
             {/* DENSIDADE */}
             <div style={card}>
-                <h4>2. Densidade (kg/m³)</h4>
+                <h4>2. Densidade média do overburden (kg/m³)</h4>
                 <div style={grid3}>
                     {["ore", "hangingWall", "footwall"].map((z) => (
                         <div key={z}>
@@ -144,7 +144,7 @@ function UBCForm() {
 
             {/* UCS */}
             <div style={card}>
-                <h4>3. UCS (MPa)</h4>
+                <h4>3. Uniaxial Compressive Strength (MPa)</h4>
                 <div style={grid3}>
                     {["ore", "hangingWall", "footwall"].map((z) => (
                         <div key={z}>
