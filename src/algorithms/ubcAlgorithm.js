@@ -8,9 +8,9 @@ import {
 
 /**
  * Calcula o ranking UBC (1995).
- * Valores -49 são tratados como penalidade numérica — nenhum método é eliminado.
+ * Valores -49 são tratados como penalidade — nenhum método é eliminado.
  *
- * @param {Object} formData  - estado do UBCForm
+ * @param {Object} formData
  *   formData.geometry  = { shape, dip, thickness, grade, depth }
  *   formData.rss       = { ore, hangingWall, footwall }
  *   formData.rmr       = { ore, hangingWall, footwall }
@@ -41,13 +41,13 @@ export function calculateUBC(formData) {
     const scores = table[key]?.options?.[selectedValue];
     if (!scores) continue;
 
-    breakdown[`${key}_${selectedValue}`] = {};
+    breakdown[`${key}__${selectedValue}`] = {};
 
     METHODS.forEach((method, i) => {
       const s = scores[i];
-      if (s === null) return;  // não se aplica (ex: footwall de LW/R&P)
-      breakdown[`${key}_${selectedValue}`][method] = s;
-      totals[method] += s;     // -49 soma normalmente como penalidade
+      if (s === null) return;
+      breakdown[`${key}__${selectedValue}`][method] = s;
+      totals[method] += s;
     });
   }
 
@@ -57,14 +57,13 @@ export function calculateUBC(formData) {
 }
 
 /**
- * Normaliza scores para 0-100 (útil para o gráfico radar).
+ * Normaliza scores para 0-100 (gráfico radar).
  */
 export function normalizeScores(scores) {
   const values = METHODS.map((m) => scores[m]);
   const min    = Math.min(...values);
   const max    = Math.max(...values);
   const range  = max - min || 1;
-
   return Object.fromEntries(
     METHODS.map((m) => [m, Math.round(((scores[m] - min) / range) * 100)])
   );

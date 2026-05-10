@@ -1,7 +1,3 @@
-// UBC Mining Method Selection — Miller-Tait, Pakalnis & Poulin (1995)
-// Ordem dos métodos (índice fixo):
-// 0:OP  1:BC  2:SLS  3:SLC  4:LW  5:R&P  6:SKS  7:C&F  8:TS  9:SQS
-
 export const METHODS = ["OP", "BC", "SLS", "SLC", "LW", "R&P", "SKS", "C&F", "TS", "SQS"];
 
 export const METHOD_LABELS = {
@@ -50,9 +46,9 @@ export const UBC_GEOMETRY = {
   },
   depth: {
     options: {
-      "Raso":          [  4, 2, 3, 3, 2, 3, 3, 2, 2, 1],
-      "Intermediário": [  0, 3, 4, 2, 2, 3, 3, 3, 1, 1],
-      "Profundo":      [-49, 3, 2, 2, 3, 2, 2, 4, 1, 2],
+      "Rasa":          [  4, 2, 3, 3, 2, 3, 3, 2, 2, 1],
+      "Intermediária": [  0, 3, 4, 2, 2, 3, 3, 3, 1, 1],
+      "Profunda":      [-49, 3, 2, 2, 3, 2, 2, 4, 1, 2],
     },
   },
 };
