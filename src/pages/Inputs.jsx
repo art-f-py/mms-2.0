@@ -5,6 +5,9 @@ import {
   calculateUBC, calculateNicholas81, calculateNicholas92, calculateSHB,
   classifyRSS, classifyRSSNicholas,
 } from "../algorithms/algorithms";
+import DepositSketch  from "./DepositSketch";
+import RockTooltip   from "../components/RockTooltip";
+import RMRCalculator from "../components/RMRCalculator";
 
 // ---------------------------------------------------------------------------
 // TOKENS DE DESIGN
@@ -75,8 +78,16 @@ function Num({ value, onChange, placeholder }) {
   );
 }
 
+// Título de seção com fonte maior
 function SecTitle({ children }) {
-  return <p style={{ fontSize: "11px", fontWeight: "700", color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 16px" }}>{children}</p>;
+  return (
+    <p style={{
+      fontSize: "13px", fontWeight: "800", color: C.primary,
+      textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 16px",
+    }}>
+      {children}
+    </p>
+  );
 }
 
 function RSSBadge({ value }) {
@@ -110,14 +121,14 @@ const STEPS = [
   { id: 5, label: "Revisar" },
 ];
 
-function StepperHeader({ current }) {
+function StepperHeader({ current, steps }) {
   return (
     <div style={{ display: "flex", alignItems: "center", marginBottom: "8px" }}>
-      {STEPS.map((step, i) => {
+      {steps.map((step, i) => {
         const done   = step.id < current;
         const active = step.id === current;
         return (
-          <div key={step.id} style={{ display: "flex", alignItems: "center", flex: i < STEPS.length - 1 ? 1 : "none" }}>
+          <div key={step.id} style={{ display: "flex", alignItems: "center", flex: i < steps.length - 1 ? 1 : "none" }}>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px" }}>
               <div style={{ width: "32px", height: "32px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", fontWeight: "700", backgroundColor: done ? C.success : active ? C.primary : C.border, color: done || active ? C.white : C.muted, flexShrink: 0 }}>
                 {done ? "✓" : step.id}
@@ -126,7 +137,7 @@ function StepperHeader({ current }) {
                 {step.label}
               </span>
             </div>
-            {i < STEPS.length - 1 && (
+            {i < steps.length - 1 && (
               <div style={{ flex: 1, height: "2px", backgroundColor: done ? C.success : C.border, margin: "0 8px", marginBottom: "20px" }} />
             )}
           </div>
@@ -153,13 +164,23 @@ function Inputs() {
   const showNich = showN81 || showN92;
   const anyMethod = Object.values(sm).some(Boolean);
 
+  // Etapa 4 só existe se houver campos complementares
+  const step4Relevant = showSHB || showN92;
+  const visibleSteps  = step4Relevant ? STEPS : STEPS.filter((s) => s.id !== 4).map((s, i) => ({ ...s, id: i + 1 }));
+  // Mapeamento de step visual → step real
+  const realStep = (visualStep) => {
+    if (!step4Relevant && visualStep >= 4) return visualStep + 1;
+    return visualStep;
+  };
+  const totalSteps = visibleSteps.length;
+
   const set = (section, field, value) =>
     dispatch({ type: "SET_FORM_FIELD", section, field, value });
 
   const toggleMethod = (key) =>
     dispatch({ type: "SET_FORM_FIELD", section: "selectedMethods", field: key, value: !fd.selectedMethods[key] });
 
-  // RSS calculado em tempo real — fórmula: UCS×1e6 / (densidade × profundidade × 9.81)
+  // RSS em tempo real
   const rssLive = {
     ore:         classifyRSS(fd.ucs?.ore,         fd.density?.ore,         fd.depth?.ore),
     hangingWall: classifyRSS(fd.ucs?.hangingWall, fd.density?.hangingWall, fd.depth?.hangingWall),
@@ -183,7 +204,7 @@ function Inputs() {
     navigate("/statistics");
   };
 
-  const next = () => setStep((s) => Math.min(s + 1, 5));
+  const next = () => setStep((s) => Math.min(s + 1, totalSteps));
   const prev = () => setStep((s) => Math.max(s - 1, 1));
 
   // ---------------------------------------------------------------------------
@@ -244,6 +265,22 @@ function Inputs() {
           <Sel value={fd.geometry.grade} onChange={(v) => set("geometry", "grade", v)}
             options={["Uniforme", "Gradacional", "Errático"]} />
         </Field>
+        {(showUBC || showSHB) && (
+          <Field label="Profundidade do corpo de minério (m)" hint="UBC: Rasa ≤100m | Interm. 100–600m | Profunda >600m">
+            <Num value={fd.depth.ore} onChange={(v) => set("depth", "ore", v)} placeholder="ex: 400" />
+          </Field>
+        )}
+      </div>
+
+      <div style={{ marginTop: "24px", borderTop: `1px solid ${C.border}`, paddingTop: "20px" }}>
+        <SecTitle>Seção transversal</SecTitle>
+        <DepositSketch
+          shape={fd.geometry.shape}
+          thickness={fd.geometry.thickness}
+          dip={fd.dip}
+          depth={fd.depth.ore}
+          grade={fd.geometry.grade}
+        />
       </div>
     </div>
   );
@@ -254,7 +291,6 @@ function Inputs() {
   const Step3 = (
     <div style={S.card}>
 
-      {/* RSS calculado — UBC e/ou SH&B */}
       {(showUBC || showSHB) && (
         <>
           <SecTitle>Rock Substance Strength (RSS)</SecTitle>
@@ -269,11 +305,17 @@ function Inputs() {
                 </span>
                 <div>
                   <label style={S.label}>UCS (MPa)</label>
-                  <Num value={fd.ucs[z]} onChange={(v) => set("ucs", z, v)} placeholder="ex: 185" />
+                  <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                    <Num value={fd.ucs[z]} onChange={(v) => set("ucs", z, v)} placeholder="ex: 185" />
+                    <RockTooltip type="ucs" onSelect={(v) => set("ucs", z, String(v))} />
+                  </div>
                 </div>
                 <div>
                   <label style={S.label}>Densidade (kg/m³)</label>
-                  <Num value={fd.density[z]} onChange={(v) => set("density", z, v)} placeholder="ex: 2600" />
+                  <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                    <Num value={fd.density[z]} onChange={(v) => set("density", z, v)} placeholder="ex: 2600" />
+                    <RockTooltip type="density" onSelect={(v) => set("density", z, String(v))} />
+                  </div>
                 </div>
                 <div>
                   <label style={S.label}>Profundidade (m)</label>
@@ -293,7 +335,6 @@ function Inputs() {
         </>
       )}
 
-      {/* RSS manual — Nicholas sem UBC/SHB */}
       {showNich && !showUBC && !showSHB && (
         <>
           <SecTitle>Rock Substance Strength (RSS)</SecTitle>
@@ -309,22 +350,23 @@ function Inputs() {
         </>
       )}
 
-      {/* RMR */}
       {(showUBC || showSHB) && (
         <>
           <SecTitle>Rock Mass Rating (RMR)</SecTitle>
+          <p style={{ ...S.hint, marginBottom: "16px" }}>
+            Selecione diretamente, ou calcule via Bieniawski 1989, GSI ou Q-System.
+          </p>
           <div style={S.grid3}>
             {["ore", "hangingWall", "footwall"].map((z) => (
-              <Field key={z} label={zones[z]}>
-                <Sel value={fd.rmr[z]} onChange={(v) => set("rmr", z, v)}
-                  options={["Muito fraca", "Fraca", "Média", "Forte", "Muito forte"]} />
-              </Field>
+              <div key={z} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <label style={S.label}>{zones[z]}</label>
+                <RMRCalculator zone={z} value={fd.rmr[z]} onChange={(v) => set("rmr", z, v)} />
+              </div>
             ))}
           </div>
         </>
       )}
 
-      {/* Fraturas — Nicholas */}
       {showNich && (
         <>
           <div style={S.div} />
@@ -353,11 +395,9 @@ function Inputs() {
   );
 
   // ---------------------------------------------------------------------------
-  // ETAPA 4 — COMPLEMENTAR
+  // ETAPA 4 — COMPLEMENTAR (só aparece se necessário)
   // ---------------------------------------------------------------------------
-  const step4Relevant = showSHB || showN92;
-
-  const Step4 = (
+  const Step4 = step4Relevant ? (
     <div style={S.card}>
       {showSHB && (
         <>
@@ -391,22 +431,18 @@ function Inputs() {
           </button>
         </>
       )}
-
-      {!step4Relevant && (
-        <p style={{ color: C.muted, fontSize: "14px" }}>Nenhum campo complementar necessário para os métodos selecionados.</p>
-      )}
     </div>
-  );
+  ) : null;
 
   // ---------------------------------------------------------------------------
-  // ETAPA 5 — REVISAR
+  // ETAPA 5 (ou 4 se sem complementar) — REVISAR
   // ---------------------------------------------------------------------------
   const selectedLabels = [
     sm.ubc && "UBC 1995", sm.nicholas81 && "Nicholas 1981",
     sm.nicholas92 && "Nicholas 1992", sm.shb && "SH&B 2007",
   ].filter(Boolean).join(", ");
 
-  const Step5 = (
+  const StepReview = (
     <div style={S.card}>
       <SecTitle>Resumo dos parâmetros</SecTitle>
 
@@ -430,10 +466,10 @@ function Inputs() {
         <ReviewRow key={`dep-${z}`} label={`Profundidade — ${zones[z]}`} value={fd.depth[z] ? `${fd.depth[z]} m` : ""} />
       ))}
       {["ore","hangingWall","footwall"].map((z) => (
-        <ReviewRow key={`rss-${z}`} label={`RSS — ${zones[z]}`} value={rssLive[z] || fd.rss[z]} />
+        <ReviewRow key={`rss-${z}`} label={`RSS — ${zones[z]}`}       value={rssLive[z] || fd.rss[z]} />
       ))}
       {["ore","hangingWall","footwall"].map((z) => (
-        <ReviewRow key={`rmr-${z}`} label={`RMR — ${zones[z]}`} value={fd.rmr[z]} />
+        <ReviewRow key={`rmr-${z}`} label={`RMR — ${zones[z]}`}       value={fd.rmr[z]} />
       ))}
       {["ore","hangingWall","footwall"].map((z) => (
         <ReviewRow key={`js-${z}`}  label={`Espaç. fraturas — ${zones[z]}`} value={fd.jointSpacing[z]} />
@@ -442,7 +478,7 @@ function Inputs() {
         <ReviewRow key={`jc-${z}`}  label={`Interfraturas — ${zones[z]}`}   value={fd.jointCondition[z]} />
       ))}
 
-      {(showSHB || showN92) && (
+      {step4Relevant && (
         <>
           <p style={{ fontSize: "13px", fontWeight: "700", color: C.text, margin: "20px 0 8px" }}>Complementar</p>
           <ReviewRow label="Valor do minério" value={fd.oreValue} />
@@ -460,8 +496,14 @@ function Inputs() {
     </div>
   );
 
-  const STEP_CONTENT = [Step1, Step2, Step3, Step4, Step5];
+  // Monta array de conteúdo de etapas, excluindo etapa 4 se não relevante
+  const stepContents = step4Relevant
+    ? [Step1, Step2, Step3, Step4, StepReview]
+    : [Step1, Step2, Step3, StepReview];
 
+  // ---------------------------------------------------------------------------
+  // RENDER
+  // ---------------------------------------------------------------------------
   return (
     <div style={S.page}>
       <div style={S.wrap}>
@@ -470,12 +512,12 @@ function Inputs() {
           <p style={{ margin: 0, color: C.muted, fontSize: "14px" }}>MMS 2.0 — Mining Method Selection</p>
         </div>
 
-        <StepperHeader current={step} />
-        {STEP_CONTENT[step - 1]}
+        <StepperHeader current={step} steps={visibleSteps} />
+        {stepContents[step - 1]}
 
         <div style={{ display: "flex", justifyContent: "space-between", marginTop: "20px" }}>
           <button style={S.btnSecondary} onClick={prev} disabled={step === 1}>← Anterior</button>
-          {step < 5 && (
+          {step < totalSteps && (
             <button style={{ ...S.btnPrimary, opacity: step === 1 && !anyMethod ? 0.5 : 1 }}
               onClick={next} disabled={step === 1 && !anyMethod}>
               Próximo →

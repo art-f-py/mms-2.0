@@ -187,7 +187,7 @@ function Statistics() {
       <div style={{ marginTop: "32px", textAlign: "center" }}>
         <button
           onClick={() => navigate("/inputs")}
-          style={{ background: "#1e3a5f",padding: "10px 28px", backgroundColor: "#f1f5f9", border: `1px solid ${colors.border}`, borderRadius: "6px", cursor: "pointer", fontSize: "14px" }}
+          style={{ color: "#1e3a5f",padding: "10px 28px", backgroundColor: "#f1f5f9", border: `1px solid ${colors.border}`, borderRadius: "6px", cursor: "pointer", fontSize: "14px" }}
         >
           ← Voltar para Inputs
         </button>
