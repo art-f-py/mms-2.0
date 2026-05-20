@@ -1,5 +1,16 @@
 import { useState } from "react";
-import { RMR_PARAMS, rmrToClass, gsiToRmr, qToRmr } from "../data/rmrData";
+import { RMR_PARAMS, rmrToClass, gsiToRmr, qToRmr, ORIENTATION_STRIKE, ORIENTATION_DIP } from "../data/rmrData";
+import imgAfavor      from "../assets/rmr_perpendicular_afavor.svg";
+import imgContra      from "../assets/rmr_perpendicular_contra.svg";
+import imgParalelo    from "../assets/rmr_paralelo.svg";
+import imgIrrelevante from "../assets/rmr_irrelevante.svg";
+
+const ORIENTATION_IMAGES = {
+  rmr_perpendicular_afavor: imgAfavor,
+  rmr_perpendicular_contra: imgContra,
+  rmr_paralelo:             imgParalelo,
+  rmr_irrelevante:          imgIrrelevante,
+};
 
 const C = {
   primary: "#1e3a5f",
@@ -26,30 +37,59 @@ const inp = {
 
 const zones = { ore: "Corpo de minério", hangingWall: "Hanging wall", footwall: "Foot wall" };
 
-/**
- * Seletor RMR/GSI/Q com calculadora embutida.
- * 
- * O componente expõe três abas:
- *  - RMR direto (select)
- *  - GSI → converte e preenche RMR
- *  - Q   → converte e preenche RMR
- *  - Calculadora Bieniawski (abre popup separado)
- * 
- * Props:
- *   zone:     "ore" | "hangingWall" | "footwall"
- *   value:    classe RMR atual
- *   onChange: (classe: string) => void
- */
-export default function RMRCalculator({ zone, value, onChange }) {
-  const [inputMode, setInputMode] = useState("rmr"); // "rmr" | "gsi" | "q"
-  const [calcOpen, setCalcOpen]   = useState(false);
-  const [gsi, setGsi]             = useState("");
-  const [q, setQ]                 = useState("");
-  const [selections, setSel]      = useState({});
+// ---------------------------------------------------------------------------
+// Imagem com hover para zoom
+// ---------------------------------------------------------------------------
+function OrientationImage({ src, alt }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <div style={{ position: "relative", flexShrink: 0 }}>
+      <img
+        src={src}
+        alt={alt}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        style={{
+          height: "60px", width: "60px", objectFit: "contain",
+          borderRadius: "4px", border: `1px solid ${C.border}`,
+          padding: "4px", backgroundColor: C.white,
+          cursor: "zoom-in",
+          transition: "transform 0.2s ease, box-shadow 0.2s ease",
+          transform: hovered ? "scale(2.8)" : "scale(1)",
+          transformOrigin: "right center",
+          boxShadow: hovered ? "0 4px 16px rgba(0,0,0,0.2)" : "none",
+          zIndex: hovered ? 10 : 1,
+          position: "relative",
+        }}
+      />
+    </div>
+  );
+}
 
-  const rmrScore = Object.values(selections).reduce((a, b) => a + b, 0);
+// ---------------------------------------------------------------------------
+// Componente principal
+// ---------------------------------------------------------------------------
+export default function RMRCalculator({ zone, value, onChange }) {
+  const [inputMode, setInputMode]   = useState("rmr");
+  const [calcOpen, setCalcOpen]     = useState(false);
+  const [gsi, setGsi]               = useState("");
+  const [q, setQ]                   = useState("");
+  const [selections, setSel]        = useState({});
+
+  // Estado para os dois selects de orientação separados
+  const [strikeId, setStrikeId]     = useState("");  // id do grupo de strike
+  const [dipWeight, setDipWeight]   = useState("");  // peso do dip selecionado
+
+  // Score: soma dos parâmetros normais + peso de orientação (se ambos preenchidos)
+  const normalScore = Object.values(selections).reduce((a, b) => a + b, 0);
+  const orientWeight = strikeId && dipWeight !== "" ? parseInt(dipWeight) : 0;
+  const rmrScore = normalScore + orientWeight;
   const rmrClass = rmrToClass(rmrScore);
-  const allFilled = Object.keys(selections).length === RMR_PARAMS.length;
+
+  // allFilled: todos os 9 parâmetros normais + strike + dip
+  const allFilled = Object.keys(selections).length === RMR_PARAMS.length
+    && strikeId !== ""
+    && dipWeight !== "";
 
   const col = value ? (CLASS_COLORS[value] || {}) : {};
 
@@ -63,22 +103,22 @@ export default function RMRCalculator({ zone, value, onChange }) {
     if (!isNaN(v) && v > 0) onChange(rmrToClass(qToRmr(v)));
   };
 
+  const selectedStrike = ORIENTATION_STRIKE.find((s) => s.id === strikeId);
+  const dipOptions     = strikeId ? ORIENTATION_DIP[strikeId] : [];
+  const orientImg      = selectedStrike ? ORIENTATION_IMAGES[selectedStrike.image] : null;
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
 
-      {/* Seletor de modo — RMR / GSI / Q */}
-      <div style={{ display: "flex", gap: "0", borderRadius: "6px", overflow: "hidden", border: `1px solid ${C.border}` }}>
+      {/* Seletor de modo */}
+      <div style={{ display: "flex", borderRadius: "6px", overflow: "hidden", border: `1px solid ${C.border}` }}>
         {[["rmr","RMR"],["gsi","GSI"],["q","Q"]].map(([m, lbl]) => (
-          <button
-            key={m}
-            onClick={() => setInputMode(m)}
-            style={{
-              flex: 1, padding: "6px 4px", fontSize: "12px", fontWeight: inputMode === m ? "700" : "400",
-              backgroundColor: inputMode === m ? C.primary : C.white,
-              color: inputMode === m ? C.white : C.muted,
-              border: "none", cursor: "pointer",
-            }}
-          >
+          <button key={m} onClick={() => setInputMode(m)} style={{
+            flex: 1, padding: "6px 4px", fontSize: "12px", fontWeight: inputMode === m ? "700" : "400",
+            backgroundColor: inputMode === m ? C.primary : C.white,
+            color: inputMode === m ? C.white : C.muted,
+            border: "none", cursor: "pointer",
+          }}>
             {lbl}
           </button>
         ))}
@@ -95,11 +135,7 @@ export default function RMRCalculator({ zone, value, onChange }) {
             <option>Boa</option>
             <option>Muito boa</option>
           </select>
-          {/* Botão para abrir calculadora Bieniawski */}
-          <button
-            onClick={() => setCalcOpen(true)}
-            style={{ fontSize: "12px", color: C.primary, background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: 0, textDecoration: "underline" }}
-          >
+          <button onClick={() => setCalcOpen(true)} style={{ fontSize: "12px", color: C.primary, background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: 0, textDecoration: "underline" }}>
             Calcular via Bieniawski 1989 →
           </button>
         </div>
@@ -110,11 +146,8 @@ export default function RMRCalculator({ zone, value, onChange }) {
         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
           <p style={{ fontSize: "11px", color: C.muted, margin: 0 }}>RMR = (GSI + 11,63) / 1,13</p>
           <div style={{ display: "flex", gap: "6px" }}>
-            <input type="number" min="0" max="100" style={{ ...inp, flex: 1 }}
-              placeholder="ex: 55" value={gsi} onChange={(e) => setGsi(e.target.value)} />
-            <button onClick={applyGsi} style={{ padding: "8px 12px", backgroundColor: C.primary, color: C.white, border: "none", borderRadius: "6px", fontSize: "12px", fontWeight: "600", cursor: "pointer" }}>
-              Aplicar
-            </button>
+            <input type="number" min="0" max="100" style={{ ...inp, flex: 1 }} placeholder="ex: 55" value={gsi} onChange={(e) => setGsi(e.target.value)} />
+            <button onClick={applyGsi} style={{ padding: "8px 12px", backgroundColor: C.primary, color: C.white, border: "none", borderRadius: "6px", fontSize: "12px", fontWeight: "600", cursor: "pointer" }}>Aplicar</button>
           </div>
           {gsi && !isNaN(parseFloat(gsi)) && (
             <p style={{ fontSize: "11px", color: C.primary, margin: 0, fontWeight: "600" }}>
@@ -129,11 +162,8 @@ export default function RMRCalculator({ zone, value, onChange }) {
         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
           <p style={{ fontSize: "11px", color: C.muted, margin: 0 }}>RMR = 9 × ln(Q) + 44</p>
           <div style={{ display: "flex", gap: "6px" }}>
-            <input type="number" min="0.001" style={{ ...inp, flex: 1 }}
-              placeholder="ex: 5.0" value={q} onChange={(e) => setQ(e.target.value)} />
-            <button onClick={applyQ} style={{ padding: "8px 12px", backgroundColor: C.primary, color: C.white, border: "none", borderRadius: "6px", fontSize: "12px", fontWeight: "600", cursor: "pointer" }}>
-              Aplicar
-            </button>
+            <input type="number" min="0.001" style={{ ...inp, flex: 1 }} placeholder="ex: 5.0" value={q} onChange={(e) => setQ(e.target.value)} />
+            <button onClick={applyQ} style={{ padding: "8px 12px", backgroundColor: C.primary, color: C.white, border: "none", borderRadius: "6px", fontSize: "12px", fontWeight: "600", cursor: "pointer" }}>Aplicar</button>
           </div>
           {q && !isNaN(parseFloat(q)) && parseFloat(q) > 0 && (
             <p style={{ fontSize: "11px", color: C.primary, margin: 0, fontWeight: "600" }}>
@@ -143,7 +173,7 @@ export default function RMRCalculator({ zone, value, onChange }) {
         </div>
       )}
 
-      {/* Badge do valor atual */}
+      {/* Badge valor atual */}
       {value && (
         <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: "12px", fontSize: "11px", fontWeight: "700", backgroundColor: col.bg, color: col.text, alignSelf: "flex-start" }}>
           {value}
@@ -160,8 +190,9 @@ export default function RMRCalculator({ zone, value, onChange }) {
             position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
             zIndex: 201, backgroundColor: C.white, border: `1px solid ${C.border}`,
             borderRadius: "10px", boxShadow: "0 12px 40px rgba(0,0,0,0.18)",
-            width: "480px", maxHeight: "80vh", display: "flex", flexDirection: "column",
+            width: "500px", maxHeight: "82vh", display: "flex", flexDirection: "column",
           }}>
+
             {/* Header */}
             <div style={{ backgroundColor: C.primary, padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", borderRadius: "10px 10px 0 0", flexShrink: 0 }}>
               <span style={{ color: C.white, fontWeight: "700", fontSize: "14px" }}>
@@ -170,8 +201,10 @@ export default function RMRCalculator({ zone, value, onChange }) {
               <button onClick={() => setCalcOpen(false)} style={{ background: "none", border: "none", color: C.white, cursor: "pointer", fontSize: "20px", lineHeight: 1 }}>×</button>
             </div>
 
-            {/* Parâmetros — com selects */}
+            {/* Parâmetros */}
             <div style={{ overflowY: "auto", flex: 1, padding: "16px" }}>
+
+              {/* Parâmetros normais (9 critérios) */}
               {RMR_PARAMS.map((param) => (
                 <div key={param.id} style={{ marginBottom: "14px" }}>
                   <label style={{ fontSize: "13px", fontWeight: "600", color: C.text, marginBottom: "4px", display: "block" }}>
@@ -195,6 +228,57 @@ export default function RMRCalculator({ zone, value, onChange }) {
                   </select>
                 </div>
               ))}
+
+              {/* Orientação — dois selects separados */}
+              <div style={{ marginBottom: "14px", borderTop: `1px solid ${C.border}`, paddingTop: "14px" }}>
+                <label style={{ fontSize: "13px", fontWeight: "600", color: C.text, marginBottom: "4px", display: "block" }}>
+                  Orientação do Strike e Dip das Descontinuidades
+                  <span style={{ fontSize: "11px", color: C.muted, fontWeight: "400", marginLeft: "6px" }}>Bieniawski 1989, Table 4.1B</span>
+                </label>
+
+                {/* Strike */}
+                <div style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "8px" }}>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontSize: "11px", color: C.muted, margin: "0 0 4px", fontWeight: "600" }}>Strike</p>
+                    <select
+                      style={inp}
+                      value={strikeId}
+                      onChange={(e) => { setStrikeId(e.target.value); setDipWeight(""); }}
+                    >
+                      <option value="">Selecione</option>
+                      {ORIENTATION_STRIKE.map((s) => (
+                        <option key={s.id} value={s.id}>{s.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  {/* Imagem com hover zoom */}
+                  {orientImg
+                    ? <OrientationImage src={orientImg} alt={selectedStrike?.label || "Orientação"} />
+                    : <div style={{ width: "60px", height: "60px", border: `1px dashed ${C.border}`, borderRadius: "4px", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <span style={{ fontSize: "10px", color: C.muted, textAlign: "center", padding: "4px" }}>diagrama</span>
+                      </div>
+                  }
+                </div>
+
+                {/* Mergulho — só aparece após selecionar strike */}
+                {strikeId && (
+                  <div>
+                    <p style={{ fontSize: "11px", color: C.muted, margin: "0 0 4px", fontWeight: "600" }}>Ângulo de mergulho</p>
+                    <select
+                      style={inp}
+                      value={dipWeight}
+                      onChange={(e) => setDipWeight(e.target.value)}
+                    >
+                      <option value="">Selecione</option>
+                      {dipOptions.map((d) => (
+                        <option key={d.label} value={String(d.weight)}>
+                          {d.label} — {d.weight} pts
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Footer com score */}

@@ -114,7 +114,33 @@ export const RMR_PARAMS = [
   },
 ];
 
-// Converte score RMR numérico para classe UBC/SH&B
+// Dados de orientação separados (strike + dip)
+// image: chave para ORIENTATION_IMAGES no RMRCalculator
+export const ORIENTATION_STRIKE = [
+  { label: "Perpendicular ao eixo, no sentido do dip", id: "afavor",      image: "rmr_perpendicular_afavor" },
+  { label: "Perpendicular ao eixo, contra o dip",      id: "contra",      image: "rmr_perpendicular_contra" },
+  { label: "Paralelo ao eixo do túnel",                id: "paralelo",    image: "rmr_paralelo"             },
+  { label: "Qualquer strike / irrelevante",            id: "irrelevante", image: "rmr_irrelevante"          },
+];
+
+// Dip por grupo de strike — "irrelevante" não tem opções de dip (peso fixo)
+export const ORIENTATION_DIP = {
+  afavor:      [
+    { label: "45–90°", weight:  0 },
+    { label: "20–45°", weight: -2 },
+  ],
+  contra:      [
+    { label: "45–90°", weight: -5 },
+    { label: "20–45°", weight: -2 },
+  ],
+  paralelo:    [
+    { label: "45–90°", weight: -5 },
+    { label: "20–45°", weight: -2 },
+  ],
+  irrelevante: [
+    { label: "0–20° (horizontal)", weight: -5 },
+  ],
+};
 export function rmrToClass(score) {
   if (score <= 20) return "Muito pobre";
   if (score <= 40) return "Pobre";
