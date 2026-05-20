@@ -73,7 +73,10 @@ export default function DepositSketch({ shape, thickness, dip, depth, grade }) {
   const dipRad  = (dipDeg * Math.PI) / 180;
   const depthPx = H - SURFACE_Y - 20;
   const mPerPx  = DEPTH_RANGE[1] / depthPx;
-  const centerY = SURFACE_Y + depthM / mPerPx;
+  // centerY mínimo: garante que o corpo de minério nunca fique acima da superfície
+  // considera a espessura máxima + margem de segurança
+  const centerYRaw = SURFACE_Y + depthM / mPerPx;
+  const centerY    = Math.max(centerYRaw, SURFACE_Y + hw * 2 + 20);
 
   const dx = Math.cos(dipRad), dy = Math.sin(dipRad);
   const nx = -dy,             ny =  dx;
@@ -129,6 +132,11 @@ export default function DepositSketch({ shape, thickness, dip, depth, grade }) {
       <desc>Visualização geométrica do depósito mineral gerada a partir dos inputs do formulário.</desc>
 
       <defs>
+        {/* Recorta tudo abaixo da linha da superfície */}
+        <clipPath id="below-surface">
+          <rect x="0" y={SURFACE_Y} width={W} height={H - SURFACE_Y} />
+        </clipPath>
+
         <marker id="sk-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
           <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
         </marker>
@@ -175,36 +183,41 @@ export default function DepositSketch({ shape, thickness, dip, depth, grade }) {
         );
       })}
 
-      {/* HW e FW (só tabular) */}
-      {isTabular && (
-        <>
-          <polygon points={hwPoly} fill="url(#sk-hw)" stroke="#cbd5e1" strokeWidth="0.8" strokeDasharray="4 3"/>
-          <text x={(h1x+h2x)/2 - 8} y={(h1y+h2y)/2 - 12} textAnchor="middle" dominantBaseline="central" fontSize="11" fill="#64748b">HW</text>
-          <polygon points={fwPoly} fill="url(#sk-fw)" stroke="#cbd5e1" strokeWidth="0.8" strokeDasharray="4 3"/>
-          <text x={(f3x+f4x)/2 + 8} y={(f3y+f4y)/2 + 12} textAnchor="middle" dominantBaseline="central" fontSize="11" fill="#64748b">FW</text>
-        </>
-      )}
+      {/* HW, FW e ore — recortados pela superfície */}
+      <g clipPath="url(#below-surface)">
 
-      {/* Corpo de minério — base */}
-      <polygon points={poly} fill="#1e3a5f" opacity="0.80" stroke="#1d6fa4" strokeWidth="1.5"/>
+        {/* HW e FW (só tabular) */}
+        {isTabular && (
+          <>
+            <polygon points={hwPoly} fill="url(#sk-hw)" stroke="#cbd5e1" strokeWidth="0.8" strokeDasharray="4 3"/>
+            <text x={(h1x+h2x)/2 - 8} y={(h1y+h2y)/2 - 12} textAnchor="middle" dominantBaseline="central" fontSize="11" fill="#64748b">HW</text>
+            <polygon points={fwPoly} fill="url(#sk-fw)" stroke="#cbd5e1" strokeWidth="0.8" strokeDasharray="4 3"/>
+            <text x={(f3x+f4x)/2 + 8} y={(f3y+f4y)/2 + 12} textAnchor="middle" dominantBaseline="central" fontSize="11" fill="#64748b">FW</text>
+          </>
+        )}
 
-      {/* Overlay de distribuição de teores */}
-      {grade === "Uniforme" && (
-        <polygon points={poly} fill="url(#ore-uniforme)"/>
-      )}
-      {grade === "Gradacional" && (
-        <>
-          <polygon points={poly} fill={`url(#${gradId})`} opacity="0.9"/>
-          <text
-            x={CX - halfLen * dx - hw * nx - 6}
-            y={centerY - halfLen * dy - hw * ny - 14}
-            textAnchor="middle" dominantBaseline="central" fontSize="11" fill="#5bc0de"
-          >teor ↑</text>
-        </>
-      )}
-      {grade === "Errático" && erraticBlobs.map((b, i) => (
-        <circle key={i} cx={b.cx} cy={b.cy} r={b.r} fill="#5bc0de" opacity={b.op}/>
-      ))}
+        {/* Corpo de minério — base */}
+        <polygon points={poly} fill="#1e3a5f" opacity="0.80" stroke="#1d6fa4" strokeWidth="1.5"/>
+
+        {/* Overlay de distribuição de teores */}
+        {grade === "Uniforme" && (
+          <polygon points={poly} fill="url(#ore-uniforme)"/>
+        )}
+        {grade === "Gradacional" && (
+          <>
+            <polygon points={poly} fill={`url(#${gradId})`} opacity="0.9"/>
+            <text
+              x={CX - halfLen * dx - hw * nx - 6}
+              y={centerY - halfLen * dy - hw * ny - 14}
+              textAnchor="middle" dominantBaseline="central" fontSize="11" fill="#5bc0de"
+            >teor ↑</text>
+          </>
+        )}
+        {grade === "Errático" && erraticBlobs.map((b, i) => (
+          <circle key={i} cx={b.cx} cy={b.cy} r={b.r} fill="#5bc0de" opacity={b.op}/>
+        ))}
+
+      </g>
 
       {/* Seta de profundidade */}
       {dc && (
