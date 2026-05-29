@@ -5,9 +5,9 @@ import {
   calculateUBC, calculateNicholas, calculateSHB,
   classifyRSS, classifyRSSNicholas,
 } from "../algorithms/algorithms";
-import DepositSketch  from "./DepositSketch";
-import RockTooltip   from "../components/RockTooltip";
-import RMRCalculator from "../components/RMRCalculator";
+import DepositSketch from "./DepositSketch";
+import RockTooltip  from "../components/RockTooltip";
+import { rmrToClass, gsiToRmr, qToRmr } from "../data/rmrData";
 
 // ---------------------------------------------------------------------------
 // TOKENS DE DESIGN
@@ -87,6 +87,89 @@ function SecTitle({ children }) {
     }}>
       {children}
     </p>
+  );
+}
+
+const RMR_CLASS_COLORS = {
+  "Muito pobre": { bg: "#fee2e2", text: "#991b1b" },
+  "Pobre":       { bg: "#fef3c7", text: "#92400e" },
+  "Razoável":    { bg: "#fef9c3", text: "#713f12" },
+  "Boa":         { bg: "#d1fae5", text: "#065f46" },
+  "Muito boa":   { bg: "#dbeafe", text: "#1e40af" },
+};
+
+const rmrBtn = { padding: "0 14px", height: "100%", backgroundColor: C.primary, color: C.white, border: "none", borderRadius: "6px", fontWeight: "600", fontSize: "14px", cursor: "pointer" };
+
+function RmrField({ value, onChange }) {
+  const [mode, setMode] = useState("rmr");
+  const [gsi, setGsi]   = useState("");
+  const [q, setQ]       = useState("");
+  const col = value ? (RMR_CLASS_COLORS[value] || {}) : {};
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+      {/* Seletor de modo RMR / GSI / Q */}
+      <div style={{ display: "flex", borderRadius: "6px", overflow: "hidden", border: `1px solid ${C.border}` }}>
+        {[["rmr","RMR"],["gsi","GSI"],["q","Q"]].map(([m, lbl]) => (
+          <button key={m} onClick={() => setMode(m)} style={{ flex: 1, padding: "7px 4px", fontSize: "13px", fontWeight: mode === m ? "700" : "400", backgroundColor: mode === m ? C.primary : C.white, color: mode === m ? C.white : C.muted, border: "none", cursor: "pointer" }}>{lbl}</button>
+        ))}
+      </div>
+
+      {mode === "rmr" && (
+        <select style={S.inp} value={value || ""} onChange={(e) => onChange(e.target.value)}>
+          <option value="">Selecione</option>
+          <option>Muito pobre</option>
+          <option>Pobre</option>
+          <option>Razoável</option>
+          <option>Boa</option>
+          <option>Muito boa</option>
+        </select>
+      )}
+
+      {mode === "gsi" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+          <p style={{ ...S.hint, margin: 0 }}>RMR = (GSI + 11,63) / 1,13</p>
+          <div style={{ display: "flex", gap: "6px", height: "44px" }}>
+            <input type="number" min="0" max="100" style={{ ...S.inp }} placeholder="ex: 55"
+              value={gsi} onChange={(e) => setGsi(e.target.value)} />
+            <button style={rmrBtn}
+              onClick={() => { const v = parseFloat(gsi); if (!isNaN(v)) onChange(rmrToClass(gsiToRmr(v))); }}>
+              Aplicar
+            </button>
+          </div>
+          {gsi && !isNaN(parseFloat(gsi)) && (
+            <p style={{ ...S.hint, color: C.primary, fontWeight: "600", margin: 0 }}>
+              → RMR ≈ {gsiToRmr(parseFloat(gsi)).toFixed(1)} ({rmrToClass(gsiToRmr(parseFloat(gsi)))})
+            </p>
+          )}
+        </div>
+      )}
+
+      {mode === "q" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+          <p style={{ ...S.hint, margin: 0 }}>RMR = 9 × ln(Q) + 44</p>
+          <div style={{ display: "flex", gap: "6px", height: "44px" }}>
+            <input type="number" min="0.001" style={{ ...S.inp }} placeholder="ex: 5.0"
+              value={q} onChange={(e) => setQ(e.target.value)} />
+            <button style={rmrBtn}
+              onClick={() => { const v = parseFloat(q); if (!isNaN(v) && v > 0) onChange(rmrToClass(qToRmr(v))); }}>
+              Aplicar
+            </button>
+          </div>
+          {q && !isNaN(parseFloat(q)) && parseFloat(q) > 0 && (
+            <p style={{ ...S.hint, color: C.primary, fontWeight: "600", margin: 0 }}>
+              → RMR ≈ {qToRmr(parseFloat(q)).toFixed(1)} ({rmrToClass(qToRmr(parseFloat(q)))})
+            </p>
+          )}
+        </div>
+      )}
+
+      {value && (
+        <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: "12px", fontSize: "13px", fontWeight: "700", backgroundColor: col.bg, color: col.text, alignSelf: "flex-start" }}>
+          {value}
+        </span>
+      )}
+    </div>
   );
 }
 
@@ -368,13 +451,13 @@ function Inputs() {
         <>
           <SecTitle>Rock Mass Rating (RMR)</SecTitle>
           <p style={{ ...S.hint, marginBottom: "16px" }}>
-            Selecione diretamente, ou calcule via Bieniawski 1989, GSI ou Q-System.
+            Selecione diretamente, ou converta a partir de GSI ou Q-System.
           </p>
           <div style={S.grid3}>
             {["ore", "hangingWall", "footwall"].map((z) => (
               <div key={z} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                 <label style={S.label}>{zones[z]}</label>
-                <RMRCalculator zone={z} value={fd.rmr[z]} onChange={(v) => set("rmr", z, v)} />
+                <RmrField value={fd.rmr[z]} onChange={(v) => set("rmr", z, v)} />
               </div>
             ))}
           </div>

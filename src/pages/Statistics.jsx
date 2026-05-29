@@ -61,7 +61,6 @@ function MethodBlock({ sm, result }) {
   const [selectedMethod, setSelectedMethod] = useState(null);
 
   const barData   = [...METHODS].map((m) => ({ method: m, score: result.scores[m] })).sort((a, b) => b.score - a.score);
-  const bestMethod = barData[0]?.method;
   const normalized = normalizeScores(result.scores);
   const radarData  = METHODS.map((m) => ({ method: METHOD_LABELS[m] || m, value: normalized[m] }));
 
@@ -88,17 +87,13 @@ function MethodBlock({ sm, result }) {
           {selectedMethod === null ? (
             <>
               <h4 style={{ marginTop: 0, fontSize: "13px", color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>Comparação</h4>
-              <ResponsiveContainer width="100%" height={260}>
+              <ResponsiveContainer width="100%" height={340}>
                 <BarChart data={barData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="method" tick={{ fontSize: 11 }} />
                   <YAxis tick={{ fontSize: 11 }} />
                   <Tooltip formatter={(v) => v.toFixed(1)} labelFormatter={(l) => METHOD_LABELS[l] || l} />
-                  <Bar dataKey="score">
-                    {barData.map((entry) => (
-                      <Cell key={entry.method} fill={entry.method === bestMethod ? sm.color : "#cbd5e1"} />
-                    ))}
-                  </Bar>
+                  <Bar dataKey="score" fill={sm.color} />
                 </BarChart>
               </ResponsiveContainer>
             </>
@@ -107,7 +102,7 @@ function MethodBlock({ sm, result }) {
               <h4 style={{ marginTop: 0, fontSize: "13px", color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>
                 Breakdown — {METHOD_LABELS[selectedMethod] || selectedMethod}
               </h4>
-              <ResponsiveContainer width="100%" height={260}>
+              <ResponsiveContainer width="100%" height={380}>
                 <RadarChart data={breakdownRadarData}>
                   <PolarGrid />
                   <PolarAngleAxis dataKey="criteria" tick={{ fontSize: 9 }} />
@@ -123,7 +118,7 @@ function MethodBlock({ sm, result }) {
         {/* RADAR NORMALIZADO */}
         <div style={{ border: `1px solid ${colors.border}`, padding: "16px", borderRadius: "6px" }}>
           <h4 style={{ marginTop: 0, fontSize: "13px", color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>Radar (normalizado)</h4>
-          <ResponsiveContainer width="100%" height={260}>
+          <ResponsiveContainer width="100%" height={340}>
             <RadarChart data={radarData}>
               <PolarGrid />
               <PolarAngleAxis dataKey="method" tick={{ fontSize: 9 }} />
@@ -196,12 +191,8 @@ function Statistics() {
   );
 
   return (
-    <div style={{ width: "100%", padding: "20px 28px", boxSizing: "border-box", backgroundColor: colors.background, color: colors.text }}>
-
-      {/* HEADER */}
-      <div style={{ background: colors.primary, color: "#fff", padding: "12px 20px", borderRadius: "6px", textAlign: "center" }}>
-        <h2 style={{ margin: 0 }}>SELEÇÃO DE MÉTODOS DE LAVRA</h2>
-      </div>
+    <div style={{ backgroundColor: "#ffffff", minHeight: "100vh", padding: "32px 24px" }}>
+      <div style={{ maxWidth: "1400px", margin: "0 auto", width: "100%", color: colors.text }}>
 
       {/* PILLS */}
       <div style={{ marginTop: "20px", display: "flex", gap: "24px", flexWrap: "wrap" }}>
@@ -234,6 +225,7 @@ function Statistics() {
       >
         ← Voltar para Inputs
       </button>
+      </div>
     </div>
   );
 }
