@@ -1,7 +1,6 @@
 import { METHODS } from "./ubcWeights";
 import { UBC_GEOMETRY, UBC_OREBODY, UBC_HANGINGWALL, UBC_FOOTWALL } from "./ubcWeights";
-import { NICHOLAS81_GEOMETRY, NICHOLAS81_OREBODY, NICHOLAS81_HANGINGWALL, NICHOLAS81_FOOTWALL } from "./nicholas81Weights";
-import { NICHOLAS92_GEOMETRY, NICHOLAS92_OREBODY, NICHOLAS92_HANGINGWALL, NICHOLAS92_FOOTWALL, DEFAULT_MULTIPLIERS } from "./nicholas92Weights";
+import { NICHOLAS_GEOMETRY, NICHOLAS_OREBODY, NICHOLAS_HANGINGWALL, NICHOLAS_FOOTWALL } from "./nicholasWeights";
 import { SHB_GEOMETRY, SHB_ECONOMIC, SHB_OREBODY, SHB_HANGINGWALL, SHB_FOOTWALL } from "./shbWeights";
 
 // ---------------------------------------------------------------------------
@@ -74,6 +73,14 @@ export function classifyDipSHB(degrees) {
 }
 
 // ---------------------------------------------------------------------------
+// PESOS PADRÃO POR CRITÉRIO
+// ---------------------------------------------------------------------------
+const DEFAULT_CRITERIA_WEIGHTS = {
+  shape: 1, thickness: 1, dip: 1, grade: 1, depth: 1,
+  rss: 1, rmr: 1, jointSpacing: 1, jointCondition: 1, oreValue: 1,
+};
+
+// ---------------------------------------------------------------------------
 // FUNÇÃO GENÉRICA DE PONTUAÇÃO
 // ---------------------------------------------------------------------------
 function sumCriteria(criteria) {
@@ -103,7 +110,8 @@ function sumCriteria(criteria) {
 // ---------------------------------------------------------------------------
 // ALGORITMOS
 // ---------------------------------------------------------------------------
-export function calculateUBC(fd) {
+export function calculateUBC(fd, criteriaWeights = {}) {
+  const w          = { ...DEFAULT_CRITERIA_WEIGHTS, ...criteriaWeights };
   const depthClass = classifyDepthUBC(fd.depth?.ore);
   const dipClass   = classifyDipUBC(fd.dip);
   const rssOre = classifyRSS(fd.ucs?.ore,         fd.density?.ore,         fd.depth?.ore)         || fd.rss?.ore;
@@ -111,77 +119,52 @@ export function calculateUBC(fd) {
   const rssFW  = classifyRSS(fd.ucs?.footwall,    fd.density?.footwall,    fd.depth?.footwall)    || fd.rss?.footwall;
 
   const criteria = [
-    [UBC_GEOMETRY,    "shape",     fd.geometry?.shape],
-    [UBC_GEOMETRY,    "thickness", fd.geometry?.thickness],
-    [UBC_GEOMETRY,    "dip",       dipClass],
-    [UBC_GEOMETRY,    "grade",     fd.geometry?.grade],
-    [UBC_GEOMETRY,    "depth",     depthClass],
-    [UBC_OREBODY,     "rss",       rssOre],
-    [UBC_OREBODY,     "rmr",       fd.rmr?.ore],
-    [UBC_HANGINGWALL, "rss",       rssHW],
-    [UBC_HANGINGWALL, "rmr",       fd.rmr?.hangingWall],
-    [UBC_FOOTWALL,    "rss",       rssFW],
-    [UBC_FOOTWALL,    "rmr",       fd.rmr?.footwall],
+    [UBC_GEOMETRY,    "shape",     fd.geometry?.shape,        w.shape],
+    [UBC_GEOMETRY,    "thickness", fd.geometry?.thickness,    w.thickness],
+    [UBC_GEOMETRY,    "dip",       dipClass,                  w.dip],
+    [UBC_GEOMETRY,    "grade",     fd.geometry?.grade,        w.grade],
+    [UBC_GEOMETRY,    "depth",     depthClass,                w.depth],
+    [UBC_OREBODY,     "rss",       rssOre,                    w.rss],
+    [UBC_OREBODY,     "rmr",       fd.rmr?.ore,               w.rmr],
+    [UBC_HANGINGWALL, "rss",       rssHW,                     w.rss],
+    [UBC_HANGINGWALL, "rmr",       fd.rmr?.hangingWall,       w.rmr],
+    [UBC_FOOTWALL,    "rss",       rssFW,                     w.rss],
+    [UBC_FOOTWALL,    "rmr",       fd.rmr?.footwall,          w.rmr],
   ];
 
   const { totals, breakdown } = sumCriteria(criteria);
   return { scores: totals, ranking: [...METHODS].sort((a, b) => totals[b] - totals[a]), breakdown };
 }
 
-export function calculateNicholas81(fd) {
+export function calculateNicholas(fd, criteriaWeights = {}) {
+  const w        = { ...DEFAULT_CRITERIA_WEIGHTS, ...criteriaWeights };
   const dipClass = classifyDipUBC(fd.dip);
   const rssOre = classifyRSSNicholas(fd.ucs?.ore,         fd.density?.ore,         fd.depth?.ore)         || fd.rss?.ore;
   const rssHW  = classifyRSSNicholas(fd.ucs?.hangingWall, fd.density?.hangingWall, fd.depth?.hangingWall) || fd.rss?.hangingWall;
   const rssFW  = classifyRSSNicholas(fd.ucs?.footwall,    fd.density?.footwall,    fd.depth?.footwall)    || fd.rss?.footwall;
 
   const criteria = [
-    [NICHOLAS81_GEOMETRY,    "shape",          fd.geometry?.shape],
-    [NICHOLAS81_GEOMETRY,    "thickness",      fd.geometry?.thickness],
-    [NICHOLAS81_GEOMETRY,    "dip",            dipClass],
-    [NICHOLAS81_GEOMETRY,    "grade",          fd.geometry?.grade],
-    [NICHOLAS81_OREBODY,     "rss",            rssOre],
-    [NICHOLAS81_OREBODY,     "jointSpacing",   fd.jointSpacing?.ore],
-    [NICHOLAS81_OREBODY,     "jointCondition", fd.jointCondition?.ore],
-    [NICHOLAS81_HANGINGWALL, "rss",            rssHW],
-    [NICHOLAS81_HANGINGWALL, "jointSpacing",   fd.jointSpacing?.hangingWall],
-    [NICHOLAS81_HANGINGWALL, "jointCondition", fd.jointCondition?.hangingWall],
-    [NICHOLAS81_FOOTWALL,    "rss",            rssFW],
-    [NICHOLAS81_FOOTWALL,    "jointSpacing",   fd.jointSpacing?.footwall],
-    [NICHOLAS81_FOOTWALL,    "jointCondition", fd.jointCondition?.footwall],
+    [NICHOLAS_GEOMETRY,    "shape",          fd.geometry?.shape,             w.shape],
+    [NICHOLAS_GEOMETRY,    "thickness",      fd.geometry?.thickness,         w.thickness],
+    [NICHOLAS_GEOMETRY,    "dip",            dipClass,                       w.dip],
+    [NICHOLAS_GEOMETRY,    "grade",          fd.geometry?.grade,             w.grade],
+    [NICHOLAS_OREBODY,     "rss",            rssOre,                         w.rss],
+    [NICHOLAS_OREBODY,     "jointSpacing",   fd.jointSpacing?.ore,           w.jointSpacing],
+    [NICHOLAS_OREBODY,     "jointCondition", fd.jointCondition?.ore,         w.jointCondition],
+    [NICHOLAS_HANGINGWALL, "rss",            rssHW,                          w.rss],
+    [NICHOLAS_HANGINGWALL, "jointSpacing",   fd.jointSpacing?.hangingWall,   w.jointSpacing],
+    [NICHOLAS_HANGINGWALL, "jointCondition", fd.jointCondition?.hangingWall, w.jointCondition],
+    [NICHOLAS_FOOTWALL,    "rss",            rssFW,                          w.rss],
+    [NICHOLAS_FOOTWALL,    "jointSpacing",   fd.jointSpacing?.footwall,      w.jointSpacing],
+    [NICHOLAS_FOOTWALL,    "jointCondition", fd.jointCondition?.footwall,    w.jointCondition],
   ];
 
   const { totals, breakdown } = sumCriteria(criteria);
   return { scores: totals, ranking: [...METHODS].sort((a, b) => totals[b] - totals[a]), breakdown };
 }
 
-export function calculateNicholas92(fd, multipliers = DEFAULT_MULTIPLIERS) {
-  const dipClass = classifyDipUBC(fd.dip);
-  const { geometry: g, orebody: o, hangingWall: h, footwall: f } = multipliers;
-  const rssOre = classifyRSSNicholas(fd.ucs?.ore,         fd.density?.ore,         fd.depth?.ore)         || fd.rss?.ore;
-  const rssHW  = classifyRSSNicholas(fd.ucs?.hangingWall, fd.density?.hangingWall, fd.depth?.hangingWall) || fd.rss?.hangingWall;
-  const rssFW  = classifyRSSNicholas(fd.ucs?.footwall,    fd.density?.footwall,    fd.depth?.footwall)    || fd.rss?.footwall;
-
-  const criteria = [
-    [NICHOLAS92_GEOMETRY,    "shape",          fd.geometry?.shape,             g],
-    [NICHOLAS92_GEOMETRY,    "thickness",      fd.geometry?.thickness,         g],
-    [NICHOLAS92_GEOMETRY,    "dip",            dipClass,                       g],
-    [NICHOLAS92_GEOMETRY,    "grade",          fd.geometry?.grade,             g],
-    [NICHOLAS92_OREBODY,     "rss",            rssOre,                         o],
-    [NICHOLAS92_OREBODY,     "jointSpacing",   fd.jointSpacing?.ore,           o],
-    [NICHOLAS92_OREBODY,     "jointCondition", fd.jointCondition?.ore,         o],
-    [NICHOLAS92_HANGINGWALL, "rss",            rssHW,                          h],
-    [NICHOLAS92_HANGINGWALL, "jointSpacing",   fd.jointSpacing?.hangingWall,   h],
-    [NICHOLAS92_HANGINGWALL, "jointCondition", fd.jointCondition?.hangingWall, h],
-    [NICHOLAS92_FOOTWALL,    "rss",            rssFW,                          f],
-    [NICHOLAS92_FOOTWALL,    "jointSpacing",   fd.jointSpacing?.footwall,      f],
-    [NICHOLAS92_FOOTWALL,    "jointCondition", fd.jointCondition?.footwall,    f],
-  ];
-
-  const { totals, breakdown } = sumCriteria(criteria);
-  return { scores: totals, ranking: [...METHODS].sort((a, b) => totals[b] - totals[a]), breakdown, multipliers };
-}
-
-export function calculateSHB(fd) {
+export function calculateSHB(fd, criteriaWeights = {}) {
+  const w          = { ...DEFAULT_CRITERIA_WEIGHTS, ...criteriaWeights };
   const dipClass   = classifyDipSHB(fd.dip);
   const depthClass = classifyDepthSHB(fd.depth?.ore);
   const rssOre = classifyRSS(fd.ucs?.ore,         fd.density?.ore,         fd.depth?.ore)         || fd.rss?.ore;
@@ -189,18 +172,18 @@ export function calculateSHB(fd) {
   const rssFW  = classifyRSS(fd.ucs?.footwall,    fd.density?.footwall,    fd.depth?.footwall)    || fd.rss?.footwall;
 
   const criteria = [
-    [SHB_GEOMETRY,    "shape",     fd.geometry?.shape],
-    [SHB_GEOMETRY,    "thickness", fd.geometry?.thickness],
-    [SHB_GEOMETRY,    "dip",       dipClass],
-    [SHB_GEOMETRY,    "grade",     fd.geometry?.grade],
-    [SHB_GEOMETRY,    "depth",     depthClass],
-    [SHB_ECONOMIC,    "oreValue",  fd.oreValue],
-    [SHB_OREBODY,     "rss",       rssOre],
-    [SHB_OREBODY,     "rmr",       fd.rmr?.ore],
-    [SHB_HANGINGWALL, "rss",       rssHW],
-    [SHB_HANGINGWALL, "rmr",       fd.rmr?.hangingWall],
-    [SHB_FOOTWALL,    "rss",       rssFW],
-    [SHB_FOOTWALL,    "rmr",       fd.rmr?.footwall],
+    [SHB_GEOMETRY,    "shape",     fd.geometry?.shape,      w.shape],
+    [SHB_GEOMETRY,    "thickness", fd.geometry?.thickness,  w.thickness],
+    [SHB_GEOMETRY,    "dip",       dipClass,                w.dip],
+    [SHB_GEOMETRY,    "grade",     fd.geometry?.grade,      w.grade],
+    [SHB_GEOMETRY,    "depth",     depthClass,              w.depth],
+    [SHB_ECONOMIC,    "oreValue",  fd.oreValue,             w.oreValue],
+    [SHB_OREBODY,     "rss",       rssOre,                  w.rss],
+    [SHB_OREBODY,     "rmr",       fd.rmr?.ore,             w.rmr],
+    [SHB_HANGINGWALL, "rss",       rssHW,                   w.rss],
+    [SHB_HANGINGWALL, "rmr",       fd.rmr?.hangingWall,     w.rmr],
+    [SHB_FOOTWALL,    "rss",       rssFW,                   w.rss],
+    [SHB_FOOTWALL,    "rmr",       fd.rmr?.footwall,        w.rmr],
   ];
 
   const { totals, breakdown } = sumCriteria(criteria);

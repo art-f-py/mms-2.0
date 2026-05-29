@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMms } from "../context/MmsContext";
 import {
-  calculateUBC, calculateNicholas81, calculateNicholas92, calculateSHB,
+  calculateUBC, calculateNicholas, calculateSHB,
   classifyRSS, classifyRSSNicholas,
 } from "../algorithms/algorithms";
 import DepositSketch  from "./DepositSketch";
@@ -26,17 +26,17 @@ const C = {
 
 const S = {
   page:  { minHeight: "100vh", backgroundColor: C.bg, padding: "32px 24px" },
-  wrap:  { maxWidth: "780px", margin: "0 auto" },
-  card:  { backgroundColor: C.white, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "28px", marginTop: "24px", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" },
-  label: { fontSize: "13px", fontWeight: "600", color: C.text, marginBottom: "6px", display: "block" },
-  hint:  { fontSize: "12px", color: C.muted, marginTop: "4px" },
-  inp:   { width: "100%", padding: "9px 12px", borderRadius: "6px", border: `1px solid ${C.border}`, fontSize: "14px", color: C.text, boxSizing: "border-box", backgroundColor: C.white },
-  grid2: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" },
-  grid3: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "20px" },
-  sec:   { marginBottom: "24px" },
+  wrap:  { maxWidth: "1100px", margin: "0 auto" },
+  card:  { backgroundColor: C.white, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "32px", marginTop: "24px", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" },
+  label: { fontSize: "15px", fontWeight: "600", color: C.text, marginBottom: "6px", display: "block" },
+  hint:  { fontSize: "13px", color: C.muted, marginTop: "4px" },
+  inp:   { width: "100%", padding: "11px 14px", borderRadius: "6px", border: `1px solid ${C.border}`, fontSize: "16px", color: C.text, boxSizing: "border-box", backgroundColor: C.white },
+  grid2: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" },
+  grid3: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "24px" },
+  sec:   { marginBottom: "28px" },
   div:   { borderTop: `1px solid ${C.border}`, margin: "24px 0" },
-  btnPrimary:   { padding: "10px 24px", backgroundColor: C.primary, color: C.white, border: "none", borderRadius: "6px", fontWeight: "600", fontSize: "14px", cursor: "pointer" },
-  btnSecondary: { padding: "10px 24px", backgroundColor: C.white, color: C.text, border: `1px solid ${C.border}`, borderRadius: "6px", fontWeight: "600", fontSize: "14px", cursor: "pointer" },
+  btnPrimary:   { padding: "12px 28px", backgroundColor: C.primary, color: C.white, border: "none", borderRadius: "6px", fontWeight: "600", fontSize: "16px", cursor: "pointer" },
+  btnSecondary: { padding: "12px 28px", backgroundColor: C.white, color: C.text, border: `1px solid ${C.border}`, borderRadius: "6px", fontWeight: "600", fontSize: "16px", cursor: "pointer" },
   btnGhost:     { padding: "6px 14px", backgroundColor: "transparent", color: C.muted, border: `1px solid ${C.border}`, borderRadius: "6px", fontSize: "13px", cursor: "pointer" },
 };
 
@@ -82,11 +82,29 @@ function Num({ value, onChange, placeholder }) {
 function SecTitle({ children }) {
   return (
     <p style={{
-      fontSize: "13px", fontWeight: "800", color: C.primary,
+      fontSize: "15px", fontWeight: "800", color: C.primary,
       textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 16px",
     }}>
       {children}
     </p>
+  );
+}
+
+function InfoTooltip({ text }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <span style={{ position: "relative", display: "inline-block", lineHeight: 1 }}>
+      <span
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
+        style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "17px", height: "17px", borderRadius: "50%", backgroundColor: C.primary, color: "#fff", fontSize: "11px", fontWeight: "700", cursor: "help", flexShrink: 0 }}
+      >i</span>
+      {open && (
+        <div style={{ position: "absolute", bottom: "calc(100% + 6px)", left: "50%", transform: "translateX(-50%)", backgroundColor: "#1e293b", color: "#f1f5f9", fontSize: "12px", lineHeight: "1.55", padding: "8px 12px", borderRadius: "6px", width: "270px", zIndex: 200, boxShadow: "0 4px 12px rgba(0,0,0,0.25)", pointerEvents: "none" }}>
+          {text}
+        </div>
+      )}
+    </span>
   );
 }
 
@@ -103,7 +121,7 @@ function RSSBadge({ value }) {
 function ReviewRow({ label, value }) {
   if (!value || value === "") return null;
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: `1px solid ${C.border}`, fontSize: "13px" }}>
+    <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: `1px solid ${C.border}`, fontSize: "14px" }}>
       <span style={{ color: C.muted }}>{label}</span>
       <span style={{ fontWeight: "600", color: C.text }}>{value}</span>
     </div>
@@ -158,20 +176,13 @@ function Inputs() {
   const fd = state.formData;
   const sm = fd.selectedMethods;
   const showUBC  = sm.ubc;
-  const showN81  = sm.nicholas81;
-  const showN92  = sm.nicholas92;
+  const showNich = sm.nicholas;
   const showSHB  = sm.shb;
-  const showNich = showN81 || showN92;
   const anyMethod = Object.values(sm).some(Boolean);
 
-  // Etapa 4 só existe se houver campos complementares
-  const step4Relevant = showSHB || showN92;
+  // Etapa 4 sempre presente quando algum método está selecionado
+  const step4Relevant = anyMethod;
   const visibleSteps  = step4Relevant ? STEPS : STEPS.filter((s) => s.id !== 4).map((s, i) => ({ ...s, id: i + 1 }));
-  // Mapeamento de step visual → step real
-  const realStep = (visualStep) => {
-    if (!step4Relevant && visualStep >= 4) return visualStep + 1;
-    return visualStep;
-  };
   const totalSteps = visibleSteps.length;
 
   const set = (section, field, value) =>
@@ -193,13 +204,12 @@ function Inputs() {
   };
 
   const handleCalculate = () => {
-    if (showUBC)  dispatch({ type: "SET_RESULT", method: "ubc",        payload: calculateUBC(fd) });
+    const w = fd.criteriaWeights;
+    if (showUBC)  dispatch({ type: "SET_RESULT", method: "ubc",        payload: calculateUBC(fd, w) });
     else          dispatch({ type: "SET_RESULT", method: "ubc",        payload: null });
-    if (showN81)  dispatch({ type: "SET_RESULT", method: "nicholas81", payload: calculateNicholas81(fd) });
-    else          dispatch({ type: "SET_RESULT", method: "nicholas81", payload: null });
-    if (showN92)  dispatch({ type: "SET_RESULT", method: "nicholas92", payload: calculateNicholas92(fd, fd.multipliers) });
-    else          dispatch({ type: "SET_RESULT", method: "nicholas92", payload: null });
-    if (showSHB)  dispatch({ type: "SET_RESULT", method: "shb",        payload: calculateSHB(fd) });
+    if (showNich) dispatch({ type: "SET_RESULT", method: "nicholas", payload: calculateNicholas(fd, w) });
+    else          dispatch({ type: "SET_RESULT", method: "nicholas", payload: null });
+    if (showSHB)  dispatch({ type: "SET_RESULT", method: "shb",        payload: calculateSHB(fd, w) });
     else          dispatch({ type: "SET_RESULT", method: "shb",        payload: null });
     navigate("/statistics");
   };
@@ -213,14 +223,13 @@ function Inputs() {
   const Step1 = (
     <div style={S.card}>
       <SecTitle>Selecione os métodos de seleção</SecTitle>
-      <p style={{ fontSize: "14px", color: C.muted, marginTop: 0, marginBottom: "20px" }}>
+      <p style={{ fontSize: "16px", color: C.muted, marginTop: 0, marginBottom: "20px" }}>
         O formulário se ajustará automaticamente aos campos necessários.
       </p>
       <div style={S.grid2}>
         {[
           { key: "ubc",        label: "UBC 1995",      desc: "Miller-Tait, Pakalnis & Poulin" },
-          { key: "nicholas81", label: "Nicholas 1981",  desc: "Nicholas, D.E. — SME-AIME" },
-          { key: "nicholas92", label: "Nicholas 1992",  desc: "Nicholas, D.E. — SME Handbook" },
+          { key: "nicholas",   label: "Nicholas",           desc: "Nicholas, D.E. — SME (1981/1992)" },
           { key: "shb",        label: "SH&B 2007",      desc: "Shahriar, Bakhtavar et al." },
         ].map(({ key, label, desc }) => {
           const active = fd.selectedMethods[key];
@@ -231,15 +240,15 @@ function Inputs() {
                   {active && <span style={{ color: C.white, fontSize: "11px", fontWeight: "700" }}>✓</span>}
                 </div>
                 <div>
-                  <div style={{ fontWeight: "700", fontSize: "14px", color: C.text }}>{label}</div>
-                  <div style={{ fontSize: "12px", color: C.muted }}>{desc}</div>
+                  <div style={{ fontWeight: "700", fontSize: "16px", color: C.text }}>{label}</div>
+                  <div style={{ fontSize: "14px", color: C.muted }}>{desc}</div>
                 </div>
               </div>
             </div>
           );
         })}
       </div>
-      {!anyMethod && <p style={{ marginTop: "16px", fontSize: "13px", color: C.warning, fontWeight: "600" }}>⚠ Selecione pelo menos um método para continuar.</p>}
+      {!anyMethod && <p style={{ marginTop: "16px", fontSize: "15px", color: C.warning, fontWeight: "600" }}>⚠ Selecione pelo menos um método para continuar.</p>}
     </div>
   );
 
@@ -300,7 +309,7 @@ function Inputs() {
           <div style={S.grid3}>
             {["ore", "hangingWall", "footwall"].map((z) => (
               <div key={z} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                <span style={{ fontWeight: "700", fontSize: "13px", color: C.text, borderBottom: `2px solid ${C.primary}`, paddingBottom: "4px" }}>
+                <span style={{ fontWeight: "700", fontSize: "15px", color: C.text, borderBottom: `2px solid ${C.primary}`, paddingBottom: "4px" }}>
                   {zones[z]}
                 </span>
                 <div>
@@ -311,11 +320,16 @@ function Inputs() {
                   </div>
                 </div>
                 <div>
-                  <label style={S.label}>Densidade (kg/m³)</label>
-                  <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                    <Num value={fd.density[z]} onChange={(v) => set("density", z, v)} placeholder="ex: 2600" />
-                    <RockTooltip type="density" onSelect={(v) => set("density", z, String(v))} />
-                  </div>
+                  <label style={{ ...S.label, display: "flex", alignItems: "center", gap: "6px" }}>
+                    {z === "ore" ? "Densidade (kg/m³)" : "Densidade média do overburden (kg/m³)"}
+                    {z === "hangingWall" && (
+                      <InfoTooltip text="Para o cálculo do RSS, considere a densidade média de todos os materiais desde a superfície até o topo do corpo de minério (overburden completo), não apenas a rocha imediatamente adjacente." />
+                    )}
+                    {z === "footwall" && (
+                      <InfoTooltip text="Para o cálculo do RSS, considere a densidade média de todos os materiais desde a superfície até a base do corpo de minério." />
+                    )}
+                  </label>
+                  <Num value={fd.density[z]} onChange={(v) => set("density", z, v)} placeholder="ex: 2600" />
                 </div>
                 <div>
                   <label style={S.label}>Profundidade (m)</label>
@@ -371,7 +385,7 @@ function Inputs() {
         <>
           <div style={S.div} />
           <SecTitle>Fraturas</SecTitle>
-          <p style={{ fontSize: "13px", fontWeight: "600", color: C.text, marginBottom: "12px" }}>Espaçamento das fraturas</p>
+          <p style={{ fontSize: "15px", fontWeight: "600", color: C.text, marginBottom: "12px" }}>Espaçamento das fraturas</p>
           <div style={S.grid3}>
             {["ore", "hangingWall", "footwall"].map((z) => (
               <Field key={z} label={zones[z]}>
@@ -380,7 +394,7 @@ function Inputs() {
               </Field>
             ))}
           </div>
-          <p style={{ fontSize: "13px", fontWeight: "600", color: C.text, margin: "20px 0 12px" }}>Características das interfraturas</p>
+          <p style={{ fontSize: "15px", fontWeight: "600", color: C.text, margin: "20px 0 12px" }}>Características das interfraturas</p>
           <div style={S.grid3}>
             {["ore", "hangingWall", "footwall"].map((z) => (
               <Field key={z} label={zones[z]}>
@@ -395,9 +409,22 @@ function Inputs() {
   );
 
   // ---------------------------------------------------------------------------
-  // ETAPA 4 — COMPLEMENTAR (só aparece se necessário)
+  // ETAPA 4 — COMPLEMENTAR
   // ---------------------------------------------------------------------------
-  const Step4 = step4Relevant ? (
+  const criteriaWeightOptions = [
+    { key: "shape",          label: "Forma",                   show: anyMethod },
+    { key: "thickness",      label: "Espessura",               show: anyMethod },
+    { key: "dip",            label: "Mergulho",                show: anyMethod },
+    { key: "grade",          label: "Distribuição de teores",  show: anyMethod },
+    { key: "depth",          label: "Profundidade",            show: showUBC || showSHB },
+    { key: "rss",            label: "RSS",                     show: anyMethod },
+    { key: "rmr",            label: "RMR",                     show: showUBC || showSHB },
+    { key: "jointSpacing",   label: "Espaç. das fraturas",     show: showNich },
+    { key: "jointCondition", label: "Cond. das interfraturas", show: showNich },
+    { key: "oreValue",       label: "Valor do minério",        show: showSHB },
+  ].filter(({ show }) => show);
+
+  const Step4 = anyMethod ? (
     <div style={S.card}>
       {showSHB && (
         <>
@@ -406,31 +433,31 @@ function Inputs() {
             <Sel value={fd.oreValue} onChange={(v) => set("oreValue", null, v)}
               options={["Baixo", "Médio", "Alto"]} />
           </div>
+          <div style={S.div} />
         </>
       )}
 
-      {showN92 && (
-        <>
-          {showSHB && <div style={S.div} />}
-          <SecTitle>Multiplicadores — Nicholas 1992</SecTitle>
-          <p style={{ ...S.hint, marginBottom: "20px" }}>Padrão: Geometria=1.00, Orebody=1.33, HW=1.33, FW=1.33.</p>
-          <div style={S.grid2}>
-            {[["geometry","Geometria"],["orebody","Corpo de minério"],["hangingWall","Hanging wall"],["footwall","Foot wall"]].map(([key, label]) => (
-              <div key={key}>
-                <label style={S.label}>{label} — <span style={{ color: C.primary }}>{fd.multipliers[key].toFixed(2)}</span></label>
-                <input type="range" min="0" max="3" step="0.01"
-                  style={{ width: "100%", accentColor: C.primary }}
-                  value={fd.multipliers[key]}
-                  onChange={(e) => dispatch({ type: "SET_MULTIPLIER", key, value: parseFloat(e.target.value) })} />
-              </div>
-            ))}
+      <SecTitle>Pesos por Critério</SecTitle>
+      <p style={{ ...S.hint, marginBottom: "20px" }}>
+        Ajuste a importância de cada critério. Padrão: 1.0. São exibidos apenas os critérios relevantes para os métodos selecionados.
+      </p>
+      <div style={S.grid2}>
+        {criteriaWeightOptions.map(({ key, label }) => (
+          <div key={key}>
+            <label style={S.label}>
+              {label} — <span style={{ color: C.primary }}>{Math.min(1, Math.max(0, fd.criteriaWeights[key] ?? 1.0)).toFixed(2)}</span>
+            </label>
+            <input type="range" min="0" max="1" step="0.01"
+              style={{ width: "100%", accentColor: C.primary }}
+              value={Math.min(1, Math.max(0, fd.criteriaWeights[key] ?? 1.0))}
+              onChange={(e) => dispatch({ type: "SET_CRITERIA_WEIGHT", key, value: parseFloat(e.target.value) })} />
           </div>
-          <button style={{ ...S.btnGhost, marginTop: "12px" }}
-            onClick={() => dispatch({ type: "RESET_MULTIPLIERS" })}>
-            Restaurar padrão
-          </button>
-        </>
-      )}
+        ))}
+      </div>
+      <button style={{ ...S.btnGhost, marginTop: "12px" }}
+        onClick={() => dispatch({ type: "RESET_CRITERIA_WEIGHTS" })}>
+        Restaurar padrão
+      </button>
     </div>
   ) : null;
 
@@ -438,24 +465,23 @@ function Inputs() {
   // ETAPA 5 (ou 4 se sem complementar) — REVISAR
   // ---------------------------------------------------------------------------
   const selectedLabels = [
-    sm.ubc && "UBC 1995", sm.nicholas81 && "Nicholas 1981",
-    sm.nicholas92 && "Nicholas 1992", sm.shb && "SH&B 2007",
+    sm.ubc && "UBC 1995", sm.nicholas && "Nicholas 1981/1992", sm.shb && "SH&B 2007",
   ].filter(Boolean).join(", ");
 
   const StepReview = (
     <div style={S.card}>
       <SecTitle>Resumo dos parâmetros</SecTitle>
 
-      <p style={{ fontSize: "13px", fontWeight: "700", color: C.text, margin: "0 0 8px" }}>Métodos</p>
-      <p style={{ fontSize: "14px", color: C.primary, fontWeight: "600", margin: "0 0 20px" }}>{selectedLabels || "—"}</p>
+      <p style={{ fontSize: "15px", fontWeight: "700", color: C.text, margin: "0 0 8px" }}>Métodos</p>
+      <p style={{ fontSize: "16px", color: C.primary, fontWeight: "600", margin: "0 0 20px" }}>{selectedLabels || "—"}</p>
 
-      <p style={{ fontSize: "13px", fontWeight: "700", color: C.text, margin: "0 0 8px" }}>Geometria</p>
+      <p style={{ fontSize: "15px", fontWeight: "700", color: C.text, margin: "0 0 8px" }}>Geometria</p>
       <ReviewRow label="Forma"        value={fd.geometry.shape} />
       <ReviewRow label="Espessura"    value={fd.geometry.thickness} />
       <ReviewRow label="Mergulho"     value={fd.dip ? `${fd.dip}°` : ""} />
       <ReviewRow label="Distribuição" value={fd.geometry.grade} />
 
-      <p style={{ fontSize: "13px", fontWeight: "700", color: C.text, margin: "20px 0 8px" }}>Geotécnica</p>
+      <p style={{ fontSize: "15px", fontWeight: "700", color: C.text, margin: "20px 0 8px" }}>Geotécnica</p>
       {["ore","hangingWall","footwall"].map((z) => (
         <ReviewRow key={`ucs-${z}`} label={`UCS — ${zones[z]}`}       value={fd.ucs[z] ? `${fd.ucs[z]} MPa` : ""} />
       ))}
@@ -478,19 +504,15 @@ function Inputs() {
         <ReviewRow key={`jc-${z}`}  label={`Interfraturas — ${zones[z]}`}   value={fd.jointCondition[z]} />
       ))}
 
-      {step4Relevant && (
+      {showSHB && (
         <>
-          <p style={{ fontSize: "13px", fontWeight: "700", color: C.text, margin: "20px 0 8px" }}>Complementar</p>
+          <p style={{ fontSize: "15px", fontWeight: "700", color: C.text, margin: "20px 0 8px" }}>Complementar</p>
           <ReviewRow label="Valor do minério" value={fd.oreValue} />
-          {showN92 && (
-            <ReviewRow label="Multiplicadores N92"
-              value={`Geo=${fd.multipliers.geometry.toFixed(2)} | Ore=${fd.multipliers.orebody.toFixed(2)} | HW=${fd.multipliers.hangingWall.toFixed(2)} | FW=${fd.multipliers.footwall.toFixed(2)}`} />
-          )}
         </>
       )}
 
       <button onClick={handleCalculate}
-        style={{ ...S.btnPrimary, width: "100%", padding: "14px", fontSize: "15px", marginTop: "28px" }}>
+        style={{ ...S.btnPrimary, width: "100%", padding: "14px", fontSize: "17px", marginTop: "28px" }}>
         CALCULAR
       </button>
     </div>
@@ -508,8 +530,8 @@ function Inputs() {
     <div style={S.page}>
       <div style={S.wrap}>
         <div style={{ marginBottom: "28px" }}>
-          <h2 style={{ margin: "0 0 4px", color: C.text, fontSize: "22px" }}>Parâmetros do Depósito</h2>
-          <p style={{ margin: 0, color: C.muted, fontSize: "14px" }}>MMS 2.0 — Mining Method Selection</p>
+          <h2 style={{ margin: "0 0 4px", color: C.text, fontSize: "24px" }}>Parâmetros do Depósito</h2>
+          <p style={{ margin: 0, color: C.muted, fontSize: "16px" }}>MMS 2.0 — Mining Method Selection</p>
         </div>
 
         <StepperHeader current={step} steps={visibleSteps} />

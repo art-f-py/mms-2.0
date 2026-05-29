@@ -1,35 +1,9 @@
-// Nicholas (1992) Mining Method Selection
-// Nicholas, D.E. (1992). SME Mining Engineering Handbook, 2nd ed., pp. 2090-2106.
+// Nicholas Mining Method Selection
+// Nicholas, D.E. (1981 / 1992). Tabelas de pesos unificadas.
 // Ordem dos métodos (índice fixo):
 // 0:OP  1:BC  2:SLS  3:SLC  4:LW  5:R&P  6:SKS  7:C&F  8:TS  9:SQS
-//
-// Nicholas 92 é estruturalmente idêntico ao 81, mas introduz multiplicadores
-// por domínio que o usuário pode ajustar via sliders.
 
-// ---------------------------------------------------------------------------
-// MULTIPLICADORES PADRÃO (Nicholas 1992, Tabela de multiplicadores sugeridos)
-// O usuário pode ajustar esses valores via sliders na interface.
-// ---------------------------------------------------------------------------
-export const DEFAULT_MULTIPLIERS = {
-  geometry:    1.00,
-  orebody:     1.33,
-  hangingWall: 1.33,
-  footwall:    1.33,
-};
-
-// Linha alternativa da tabela (segundo conjunto de multiplicadores sugeridos)
-export const ALTERNATIVE_MULTIPLIERS = {
-  geometry:    1.00,
-  orebody:     0.75,
-  hangingWall: 0.60,
-  footwall:    0.38,
-};
-
-// ---------------------------------------------------------------------------
-// TABELAS DE PESOS — idênticas ao Nicholas 81
-// ---------------------------------------------------------------------------
-
-export const NICHOLAS92_GEOMETRY = {
+export const NICHOLAS_GEOMETRY = {
   shape: {
     options: {
       "Massivo":   [3, 4, 2, 3, -49, 0, 2, 0, 3, 0],
@@ -61,7 +35,7 @@ export const NICHOLAS92_GEOMETRY = {
   },
 };
 
-export const NICHOLAS92_OREBODY = {
+export const NICHOLAS_OREBODY = {
   rss: {
     options: {
       "Fraca":      [3, 4, -49, 0, 4, 0, 1, 3, 2, 4],
@@ -88,7 +62,7 @@ export const NICHOLAS92_OREBODY = {
   },
 };
 
-export const NICHOLAS92_HANGINGWALL = {
+export const NICHOLAS_HANGINGWALL = {
   rss: {
     options: {
       "Fraca":      [3, 4, -49, 3, 4, 0, 4, 3, 4, 3],
@@ -115,7 +89,7 @@ export const NICHOLAS92_HANGINGWALL = {
   },
 };
 
-export const NICHOLAS92_FOOTWALL = {
+export const NICHOLAS_FOOTWALL = {
   rss: {
     options: {
       "Fraca":      [3, 2, 0, 0, 2, 0, 2, 4, 2, 4],

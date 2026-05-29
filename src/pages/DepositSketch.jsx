@@ -12,14 +12,20 @@ const THICKNESS_MAP = {
 };
 
 const DEPTH_RANGE = [50, 1200];
-const W = 680, H = 420, CX = 310, SURFACE_Y = 80;
+const W = 680, H = 500, CX = 310, SURFACE_Y = 90;
+
+const GRADE_LABELS = {
+  "Uniforme":    "Teor uniforme",
+  "Gradacional": "Teor gradacional",
+  "Errático":    "Teor errático",
+};
 
 function depthClass(d) {
   const m = parseFloat(d);
   if (isNaN(m)) return null;
-  if (m <= 100) return { label: "Rasa",          color: "#0f766e" };
-  if (m <= 600) return { label: "Intermediária",  color: "#1d6fa4" };
-  return              { label: "Profunda",        color: "#7c3aed" };
+  if (m <= 100) return { label: "Rasa",         color: "#0f766e" };
+  if (m <= 600) return { label: "Intermediária", color: "#1d6fa4" };
+  return              { label: "Profunda",       color: "#7c3aed" };
 }
 
 function dipClassLabel(deg) {
@@ -38,26 +44,35 @@ function seededRand(seed) {
 // ---------------------------------------------------------------------------
 // GEOMETRIA DO CORPO DE MINÉRIO
 // ---------------------------------------------------------------------------
-function orePolygon(shape, halfLen, hw, CX, centerY, dx, dy, nx, ny) {
+function orePolygon(shape, halfLen, hw, cx, centerY, dx, dy, nx, ny) {
   if (shape === "Massivo") {
-    const rx = halfLen * 0.7, ry = hw * 0.9;
+    const rx = halfLen * 1.1, ry = hw * 1.4;
     return Array.from({ length: 25 }, (_, i) => {
       const rad = (i / 24) * Math.PI * 2;
-      return `${CX + rx * Math.cos(rad) * dx - ry * Math.sin(rad) * nx},${centerY + rx * Math.cos(rad) * dy - ry * Math.sin(rad) * ny}`;
+      return `${cx + rx * Math.cos(rad) * dx - ry * Math.sin(rad) * nx},${centerY + rx * Math.cos(rad) * dy - ry * Math.sin(rad) * ny}`;
     }).join(" ");
   }
   if (shape === "Irregular") {
-    const seed = [0.9, 1.2, 0.7, 1.3, 0.8, 1.1, 1.4, 0.6];
-    return Array.from({ length: 8 }, (_, i) => {
-      const a = (i / 8) * Math.PI * 2;
-      return `${CX + halfLen * 0.6 * seed[i] * Math.cos(a) * dx - hw * seed[(i + 3) % 8] * Math.sin(a) * nx},${centerY + halfLen * 0.6 * seed[i] * Math.cos(a) * dy - hw * seed[(i + 3) % 8] * Math.sin(a) * ny}`;
+    // 12 pontos com ângulos não-uniformes e raios extremamente variados.
+    // Pontos com raios 0.2–0.3 criam reentrâncias; 1.7–1.9 criam protuberâncias.
+    // Os offsets grandes causam clusters angulares que quebram a simetria radial.
+    const radios = [0.3, 1.7, 0.5, 1.9, 0.2, 1.4, 1.8, 0.4, 1.6, 0.3, 1.5, 0.8];
+    const offDeg = [20, -18, 25, -10, 22, -20, 15, -25, 18, -15, 20, -12];
+    const N      = 12;
+    const baseL  = halfLen * 0.65;
+    const baseP  = hw * 0.9;
+    return Array.from({ length: N }, (_, i) => {
+      const a  = (i / N) * Math.PI * 2 + offDeg[i] * (Math.PI / 180);
+      const rL = baseL * radios[i];
+      const rP = baseP * radios[i];
+      return `${cx + rL * Math.cos(a) * dx - rP * Math.sin(a) * nx},${centerY + rL * Math.cos(a) * dy - rP * Math.sin(a) * ny}`;
     }).join(" ");
   }
-  // Tabular
-  const p1x = CX - halfLen * dx - hw * nx, p1y = centerY - halfLen * dy - hw * ny;
-  const p2x = CX + halfLen * dx - hw * nx, p2y = centerY + halfLen * dy - hw * ny;
-  const p3x = CX + halfLen * dx + hw * nx, p3y = centerY + halfLen * dy + hw * ny;
-  const p4x = CX - halfLen * dx + hw * nx, p4y = centerY - halfLen * dy + hw * ny;
+  // Tabular — filão fino e alongado
+  const p1x = cx - halfLen * dx - hw * nx, p1y = centerY - halfLen * dy - hw * ny;
+  const p2x = cx + halfLen * dx - hw * nx, p2y = centerY + halfLen * dy - hw * ny;
+  const p3x = cx + halfLen * dx + hw * nx, p3y = centerY + halfLen * dy + hw * ny;
+  const p4x = cx - halfLen * dx + hw * nx, p4y = centerY - halfLen * dy + hw * ny;
   return `${p1x},${p1y} ${p2x},${p2y} ${p3x},${p3y} ${p4x},${p4y}`;
 }
 
@@ -65,35 +80,37 @@ function orePolygon(shape, halfLen, hw, CX, centerY, dx, dy, nx, ny) {
 // COMPONENTE
 // ---------------------------------------------------------------------------
 export default function DepositSketch({ shape, thickness, dip, depth, grade }) {
-  const hw      = THICKNESS_MAP[thickness] || 32;
-  const dipDeg  = parseFloat(dip)   || 0;
-  const depthM  = parseFloat(depth) || 400;
-  const halfLen = 90;
+  const hw        = THICKNESS_MAP[thickness] || 32;
+  const dipDeg    = parseFloat(dip)   || 0;
+  const depthM    = parseFloat(depth) || 400;
+  const isTabular = (shape || "Tabular") === "Tabular";
+  // Tabular: mais comprido e mais fino para parecer um filão
+  const halfLen   = isTabular ? 140 : 90;
+  const oreHw     = isTabular ? hw * 0.6 : hw;
 
   const dipRad  = (dipDeg * Math.PI) / 180;
   const depthPx = H - SURFACE_Y - 20;
   const mPerPx  = DEPTH_RANGE[1] / depthPx;
-  // centerY mínimo: garante que o corpo de minério nunca fique acima da superfície
-  // considera a espessura máxima + margem de segurança
+
   const centerYRaw = SURFACE_Y + depthM / mPerPx;
-  const centerY    = Math.max(centerYRaw, SURFACE_Y + hw * 2 + 20);
+  const centerY    = Math.max(centerYRaw, SURFACE_Y + oreHw * 2 + 20);
 
   const dx = Math.cos(dipRad), dy = Math.sin(dipRad);
-  const nx = -dy,             ny =  dx;
+  const nx = -dy,              ny =  dx;
 
-  const poly    = orePolygon(shape || "Tabular", halfLen, hw, CX, centerY, dx, dy, nx, ny);
-  const dc      = depthClass(depthM);
-  const arrowX  = CX + halfLen + 22;
-  const hwOff   = hw * 1.8;
+  const poly   = orePolygon(shape || "Tabular", halfLen, oreHw, CX, centerY, dx, dy, nx, ny);
+  const dc     = depthClass(depthM);
+  const arrowX = CX + halfLen + 22;
+  const hwOff  = hw * 1.8;
 
-  // HW zone points (tabular only)
+  // HW zone
   const h1x = CX - halfLen*dx - hwOff*nx, h1y = centerY - halfLen*dy - hwOff*ny;
   const h2x = CX + halfLen*dx - hwOff*nx, h2y = centerY + halfLen*dy - hwOff*ny;
   const h3x = CX + halfLen*dx - hw*nx,    h3y = centerY + halfLen*dy - hw*ny;
   const h4x = CX - halfLen*dx - hw*nx,    h4y = centerY - halfLen*dy - hw*ny;
   const hwPoly = `${h1x},${h1y} ${h2x},${h2y} ${h3x},${h3y} ${h4x},${h4y}`;
 
-  // FW zone points (tabular only)
+  // FW zone
   const f1x = CX - halfLen*dx + hw*nx,    f1y = centerY - halfLen*dy + hw*ny;
   const f2x = CX + halfLen*dx + hw*nx,    f2y = centerY + halfLen*dy + hw*ny;
   const f3x = CX + halfLen*dx + hwOff*nx, f3y = centerY + halfLen*dy + hwOff*ny;
@@ -103,23 +120,17 @@ export default function DepositSketch({ shape, thickness, dip, depth, grade }) {
   // Erratic blobs
   const erraticBlobs = useMemo(() => {
     const rand = seededRand(7);
-    return Array.from({ length: 9 }, () => {
-      const t = rand() * 2 - 1;
-      const n = rand() * 1.4 - 0.7;
-      return {
-        cx: CX + t * halfLen * 0.75 * dx + n * hw * nx,
-        cy: centerY + t * halfLen * 0.75 * dy + n * hw * ny,
-        r:  rand() * hw * 0.3 + hw * 0.12,
-        op: rand() * 0.35 + 0.2,
-      };
-    });
-  }, [shape, hw, dipDeg, depthM]);
+    return Array.from({ length: 9 }, () => ({
+      cx: CX + (rand() * 2 - 1) * halfLen * 0.75 * dx + (rand() * 1.4 - 0.7) * oreHw * nx,
+      cy: centerY + (rand() * 2 - 1) * halfLen * 0.75 * dy + (rand() * 1.4 - 0.7) * oreHw * ny,
+      r:  rand() * oreHw * 0.3 + oreHw * 0.12,
+      op: rand() * 0.35 + 0.2,
+    }));
+  }, [shape, hw, dipDeg, depthM, dx, dy, nx, ny, centerY]); // eslint-disable-line
 
-  const gradId  = `ore-grad-${dipDeg}-${depthM}`;
-  const isTabular = (shape || "Tabular") === "Tabular";
-  const lx = W - 168, ly = SURFACE_Y + 16;
-
-  const shapeLabel = { Massivo: "Massivo", Tabular: "Tabular", Irregular: "Irregular" };
+  const gradId     = `ore-grad-${dipDeg}-${depthM}`;
+  const lx         = W - 168, ly = SURFACE_Y + 16;
+  const gradeLabel = GRADE_LABELS[grade] || "Teor";
 
   return (
     <svg
@@ -132,28 +143,31 @@ export default function DepositSketch({ shape, thickness, dip, depth, grade }) {
       <desc>Visualização geométrica do depósito mineral gerada a partir dos inputs do formulário.</desc>
 
       <defs>
-        {/* Recorta tudo abaixo da linha da superfície */}
         <clipPath id="below-surface">
           <rect x="0" y={SURFACE_Y} width={W} height={H - SURFACE_Y} />
         </clipPath>
 
         <marker id="sk-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
-          <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M2 1L8 5L2 9" fill="none" stroke="#1d6fa4" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
         </marker>
 
-        {/* Uniforme — hachura diagonal */}
         <pattern id="ore-uniforme" patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)">
           <line x1="0" y1="0" x2="0" y2="8" stroke="#5bc0de" strokeWidth="1.5" opacity="0.45"/>
         </pattern>
 
-        {/* Gradacional — gradiente linear */}
+        {/* Gradacional: inflexão próxima do extremo rico (30%), queda abrupta para quase transparente */}
         <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%"   stopColor="#1e3a5f" stopOpacity="0.95"/>
-          <stop offset="60%"  stopColor="#1d6fa4" stopOpacity="0.7"/>
-          <stop offset="100%" stopColor="#5bc0de" stopOpacity="0.25"/>
+          <stop offset="0%"   stopColor="#1e3a5f" stopOpacity="1.0"/>
+          <stop offset="30%"  stopColor="#1d6fa4" stopOpacity="0.7"/>
+          <stop offset="100%" stopColor="#5bc0de" stopOpacity="0.05"/>
         </linearGradient>
 
-        {/* HW/FW dot patterns */}
+        {/* Camada branca sobreposta para reforçar o contraste visual no extremo pobre */}
+        <linearGradient id="grad-white-overlay" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%"   stopColor="white" stopOpacity="0.0"/>
+          <stop offset="100%" stopColor="white" stopOpacity="0.75"/>
+        </linearGradient>
+
         <pattern id="sk-hw" patternUnits="userSpaceOnUse" width="6" height="6">
           <circle cx="3" cy="3" r="0.8" fill="#64748b" opacity="0.35"/>
         </pattern>
@@ -172,7 +186,7 @@ export default function DepositSketch({ shape, thickness, dip, depth, grade }) {
 
       {/* Escala de profundidade */}
       <line x1="44" y1={SURFACE_Y} x2="44" y2={H - 20} stroke="#cbd5e1" strokeWidth="0.8"/>
-      {[100, 300, 600, 900, 1200].map(m => {
+      {[100, 300, 600, 900, 1200].map((m) => {
         const py = SURFACE_Y + m / mPerPx;
         if (py > H - 20) return null;
         return (
@@ -186,7 +200,6 @@ export default function DepositSketch({ shape, thickness, dip, depth, grade }) {
       {/* HW, FW e ore — recortados pela superfície */}
       <g clipPath="url(#below-surface)">
 
-        {/* HW e FW (só tabular) */}
         {isTabular && (
           <>
             <polygon points={hwPoly} fill="url(#sk-hw)" stroke="#cbd5e1" strokeWidth="0.8" strokeDasharray="4 3"/>
@@ -196,19 +209,18 @@ export default function DepositSketch({ shape, thickness, dip, depth, grade }) {
           </>
         )}
 
-        {/* Corpo de minério — base */}
         <polygon points={poly} fill="#1e3a5f" opacity="0.80" stroke="#1d6fa4" strokeWidth="1.5"/>
 
-        {/* Overlay de distribuição de teores */}
         {grade === "Uniforme" && (
           <polygon points={poly} fill="url(#ore-uniforme)"/>
         )}
         {grade === "Gradacional" && (
           <>
             <polygon points={poly} fill={`url(#${gradId})`} opacity="0.9"/>
+            <polygon points={poly} fill="url(#grad-white-overlay)"/>
             <text
-              x={CX - halfLen * dx - hw * nx - 6}
-              y={centerY - halfLen * dy - hw * ny - 14}
+              x={CX - halfLen * dx - oreHw * nx - 6}
+              y={centerY - halfLen * dy - oreHw * ny - 14}
               textAnchor="middle" dominantBaseline="central" fontSize="11" fill="#5bc0de"
             >teor ↑</text>
           </>
@@ -234,16 +246,19 @@ export default function DepositSketch({ shape, thickness, dip, depth, grade }) {
       )}
 
       {/* Indicador de mergulho */}
-      {dipDeg > 5 && (() => {
-        const p0x = CX - halfLen * dx, p0y = centerY - halfLen * dy;
-        const p1x = p0x + 32 * dx,    p1y = p0y + 32 * dy;
-        return (
-          <>
-            <path d={`M${p0x} ${p0y} L${p1x} ${p1y}`} stroke="#b45309" strokeWidth="1" fill="none"/>
-            <text x={p0x + 38} y={p0y + (dipDeg > 45 ? 18 : -10)} textAnchor="start" dominantBaseline="central" fontSize="11" fill="#b45309">{dipDeg}°</text>
-          </>
-        );
-      })()}
+      {dipDeg > 5 && (
+        <>
+          <path
+            d={`M${CX - halfLen * dx} ${centerY - halfLen * dy} L${CX - halfLen * dx + 32 * dx} ${centerY - halfLen * dy + 32 * dy}`}
+            stroke="#b45309" strokeWidth="1" fill="none"
+          />
+          <text
+            x={CX - halfLen * dx + 38}
+            y={centerY - halfLen * dy + (dipDeg > 45 ? 18 : -10)}
+            textAnchor="start" dominantBaseline="central" fontSize="11" fill="#b45309"
+          >{dipDeg}°</text>
+        </>
+      )}
 
       {/* Legenda */}
       <rect x={lx - 8} y={ly - 8} width="164" height="88" rx="6" fill="white" fillOpacity="0.85" stroke="#e2e8f0" strokeWidth="0.8"/>
@@ -254,9 +269,7 @@ export default function DepositSketch({ shape, thickness, dip, depth, grade }) {
       <rect x={lx} y={ly + 42} width="14" height="10" fill="url(#sk-fw)" stroke="#cbd5e1" strokeWidth="0.6" rx="2"/>
       <text x={lx + 20} y={ly + 48} textAnchor="start" dominantBaseline="central" fontSize="11" fill="#475569">Foot wall</text>
       <rect x={lx} y={ly + 62} width="14" height="10" fill="#5bc0de" opacity="0.5" rx="2"/>
-      <text x={lx + 20} y={ly + 68} textAnchor="start" dominantBaseline="central" fontSize="11" fill="#475569">
-        {{ Uniforme: "Teor uniforme", Gradacional: "Teor gradacional", Errático: "Teor errático" }[grade] || "Teor"}
-      </text>
+      <text x={lx + 20} y={ly + 68} textAnchor="start" dominantBaseline="central" fontSize="11" fill="#475569">{gradeLabel}</text>
 
       {/* Rodapé */}
       <text x={CX} y={H - 10} textAnchor="middle" dominantBaseline="central" fontSize="11" fill="#94a3b8">
