@@ -12,10 +12,9 @@ import {
 // PALETA — tons de azul coerentes
 // ---------------------------------------------------------------------------
 const SELECTION_METHODS = [
-  { key: "ubc",        label: "UBC 1995",      color: "#1e3a5f" },
-  { key: "nicholas81", label: "Nicholas 1981", color: "#1d6fa4" },
-  { key: "nicholas92", label: "Nicholas 1992", color: "#2596be" },
-  { key: "shb",        label: "SH&B 2007",     color: "#5bc0de" },
+  { key: "ubc",      label: "UBC 1995",           color: "#1e3a5f" },
+  { key: "nicholas", label: "Nicholas 1981/1992",  color: "#1d6fa4" },
+  { key: "shb",      label: "SH&B 2007",           color: "#5bc0de" },
 ];
 
 const colors = {
@@ -23,6 +22,19 @@ const colors = {
   border:     "#d1d5db",
   text:       "#111827",
   background: "#ffffff",
+};
+
+const CRITERIA_LABELS = {
+  shape:          "Forma",
+  thickness:      "Espessura",
+  dip:            "Mergulho",
+  grade:          "Teor",
+  depth:          "Profundidade",
+  rss:            "RSS",
+  rmr:            "RMR",
+  jointSpacing:   "Espaç. Juntas",
+  jointCondition: "Cond. Juntas",
+  oreValue:       "Valor Minério",
 };
 
 // ---------------------------------------------------------------------------
@@ -46,10 +58,21 @@ function Pill({ label, color, active, onClick }) {
 // BLOCO DE RESULTADO (barra + ranking + radar) por método
 // ---------------------------------------------------------------------------
 function MethodBlock({ sm, result }) {
-  const barData    = [...METHODS].map((m) => ({ method: m, score: result.scores[m] })).sort((a, b) => b.score - a.score);
+  const [selectedMethod, setSelectedMethod] = useState(null);
+
+  const barData   = [...METHODS].map((m) => ({ method: m, score: result.scores[m] })).sort((a, b) => b.score - a.score);
   const bestMethod = barData[0]?.method;
   const normalized = normalizeScores(result.scores);
   const radarData  = METHODS.map((m) => ({ method: METHOD_LABELS[m] || m, value: normalized[m] }));
+
+  const breakdownRadarData = selectedMethod
+    ? Object.entries(result.breakdown).map(([key, scores]) => ({
+        criteria: CRITERIA_LABELS[key.split("__")[0]] || key.split("__")[0],
+        value: scores[selectedMethod] ?? 0,
+      }))
+    : [];
+
+  const handleCardClick = (m) => setSelectedMethod((prev) => (prev === m ? null : m));
 
   return (
     <div style={{ marginTop: "28px" }}>
@@ -60,25 +83,44 @@ function MethodBlock({ sm, result }) {
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
 
-        {/* GRÁFICO DE BARRAS */}
+        {/* GRÁFICO DE BARRAS / RADAR DE BREAKDOWN */}
         <div style={{ border: `1px solid ${colors.border}`, padding: "16px", borderRadius: "6px" }}>
-          <h4 style={{ marginTop: 0, fontSize: "13px", color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>Comparação</h4>
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={barData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="method" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip formatter={(v) => v.toFixed(1)} labelFormatter={(l) => METHOD_LABELS[l] || l} />
-              <Bar dataKey="score">
-                {barData.map((entry) => (
-                  <Cell key={entry.method} fill={entry.method === bestMethod ? sm.color : "#cbd5e1"} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          {selectedMethod === null ? (
+            <>
+              <h4 style={{ marginTop: 0, fontSize: "13px", color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>Comparação</h4>
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={barData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="method" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 11 }} />
+                  <Tooltip formatter={(v) => v.toFixed(1)} labelFormatter={(l) => METHOD_LABELS[l] || l} />
+                  <Bar dataKey="score">
+                    {barData.map((entry) => (
+                      <Cell key={entry.method} fill={entry.method === bestMethod ? sm.color : "#cbd5e1"} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </>
+          ) : (
+            <>
+              <h4 style={{ marginTop: 0, fontSize: "13px", color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                Breakdown — {METHOD_LABELS[selectedMethod] || selectedMethod}
+              </h4>
+              <ResponsiveContainer width="100%" height={260}>
+                <RadarChart data={breakdownRadarData}>
+                  <PolarGrid />
+                  <PolarAngleAxis dataKey="criteria" tick={{ fontSize: 9 }} />
+                  <PolarRadiusAxis tick={{ fontSize: 9 }} />
+                  <Radar name={METHOD_LABELS[selectedMethod] || selectedMethod} dataKey="value" stroke={sm.color} fill={sm.color} fillOpacity={0.3} />
+                  <Tooltip formatter={(v) => v.toFixed(1)} />
+                </RadarChart>
+              </ResponsiveContainer>
+            </>
+          )}
         </div>
 
-        {/* RADAR */}
+        {/* RADAR NORMALIZADO */}
         <div style={{ border: `1px solid ${colors.border}`, padding: "16px", borderRadius: "6px" }}>
           <h4 style={{ marginTop: 0, fontSize: "13px", color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>Radar (normalizado)</h4>
           <ResponsiveContainer width="100%" height={260}>
@@ -100,13 +142,15 @@ function MethodBlock({ sm, result }) {
           {result.ranking.map((m, i) => (
             <div
               key={m}
+              onClick={() => handleCardClick(m)}
               style={{
                 padding: "8px 6px",
                 borderRadius: "4px",
-                backgroundColor: m === bestMethod ? sm.color : "#f1f5f9",
-                color: m === bestMethod ? "#fff" : colors.text,
+                backgroundColor: m === selectedMethod ? sm.color : "#f1f5f9",
+                color: m === selectedMethod ? "#fff" : colors.text,
                 textAlign: "center",
                 fontSize: "12px",
+                cursor: "pointer",
               }}
             >
               <div style={{ fontWeight: "700" }}>{i + 1}º</div>
@@ -127,7 +171,7 @@ function Statistics() {
   const { state } = useMms();
   const navigate  = useNavigate();
 
-  const [filters, setFilters] = useState({ ubc: true, nicholas81: true, nicholas92: true, shb: true });
+  const [filters, setFilters] = useState({ ubc: true, nicholas: true, shb: true });
 
   const toggleFilter = (key) => setFilters((prev) => ({ ...prev, [key]: !prev[key] }));
 
@@ -139,7 +183,7 @@ function Statistics() {
         <p>Nenhum resultado calculado ainda.</p>
         <button
           onClick={() => navigate("/inputs")}
-          style={{ color: "#1e3a5f", marginTop: "16px", padding: "10px 24px", cursor: "pointer", backgroundColor: colors.primary, color: "#fff", border: "none", borderRadius: "6px" }}
+          style={{ marginTop: "16px", padding: "10px 24px", cursor: "pointer", backgroundColor: colors.primary, color: "#fff", border: "none", borderRadius: "6px" }}
         >
           Ir para Inputs
         </button>
@@ -152,7 +196,7 @@ function Statistics() {
   );
 
   return (
-    <div style={{ maxWidth: "1400px", width: "95%", margin: "0 auto", padding: "20px", backgroundColor: colors.background, color: colors.text }}>
+    <div style={{ width: "100%", padding: "20px 28px", boxSizing: "border-box", backgroundColor: colors.background, color: colors.text }}>
 
       {/* HEADER */}
       <div style={{ background: colors.primary, color: "#fff", padding: "12px 20px", borderRadius: "6px", textAlign: "center" }}>
@@ -183,15 +227,13 @@ function Statistics() {
         <MethodBlock key={sm.key} sm={sm} result={state.results[sm.key]} />
       ))}
 
-      {/* BOTÃO VOLTAR */}
-      <div style={{ marginTop: "32px", textAlign: "center" }}>
-        <button
-          onClick={() => navigate("/inputs")}
-          style={{ color: "#1e3a5f",padding: "10px 28px", backgroundColor: "#f1f5f9", border: `1px solid ${colors.border}`, borderRadius: "6px", cursor: "pointer", fontSize: "14px" }}
-        >
-          ← Voltar para Inputs
-        </button>
-      </div>
+      {/* BOTÃO VOLTAR — fixo na tela */}
+      <button
+        onClick={() => navigate("/inputs")}
+        style={{ position: "fixed", bottom: "24px", right: "24px", color: "#1e3a5f", padding: "10px 28px", backgroundColor: "#f1f5f9", border: `1px solid ${colors.border}`, borderRadius: "6px", cursor: "pointer", fontSize: "14px", boxShadow: "0 2px 8px rgba(0,0,0,0.15)", zIndex: 100 }}
+      >
+        ← Voltar para Inputs
+      </button>
     </div>
   );
 }
