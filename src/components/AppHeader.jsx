@@ -1,3 +1,4 @@
+import { useLocation } from "react-router-dom";
 import brasao    from "../assets/brasao.png";
 import mineracao from "../assets/mineracao.png";
 
@@ -8,6 +9,9 @@ const C = {
 };
 
 export default function AppHeader() {
+  const { pathname } = useLocation();
+  if (pathname === "/") return null;
+
   return (
     <header style={{
       backgroundColor: C.primary,
