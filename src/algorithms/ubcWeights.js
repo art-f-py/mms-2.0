@@ -16,7 +16,7 @@ export const METHOD_LABELS = {
 export const UBC_GEOMETRY = {
   shape: {
     options: {
-      "Massiva":   [4, 4, 3, 3, -49, 0, 0, 1, 1, 0],
+      "Massivo":   [4, 4, 3, 3, -49, 0, 0, 1, 1, 0],
       "Tabular":   [2, 2, 4, 4,   4, 4, 4, 4, 2, 1],
       "Irregular": [3, 0, 1, 1, -49, 2, 2, 4, 0, 4],
     },
@@ -41,7 +41,7 @@ export const UBC_GEOMETRY = {
     options: {
       "Uniforme":    [3, 3, 4, 3, 4, 4, 3, 2, 2, 0],
       "Gradacional": [3, 2, 4, 2, 1, 2, 2, 3, 1, 1],
-      "Errática":    [2, 2, 3, 2, 0, 0, 2, 4, 1, 3],
+      "Errático":    [2, 2, 3, 2, 0, 0, 2, 4, 1, 3],
     },
   },
   depth: {
@@ -93,23 +93,22 @@ export const UBC_HANGINGWALL = {
   },
 };
 
-// LW e R&P não têm scores para footwall (null = não se aplica)
 export const UBC_FOOTWALL = {
   rss: {
     options: {
-      "Muito fraca": [3, 4, 0, 1, null, null, 0, 1, 2, 3],
-      "Fraca":       [3, 3, 1, 2, null, null, 2, 3, 2, 2],
-      "Moderada":    [4, 2, 3, 2, null, null, 3, 2, 1, 0],
-      "Resistente":  [4, 1, 3, 2, null, null, 3, 2, 1, 0],
+      "Muito fraca": [3, 4, 0, 1, 0, 0, 0, 1, 2, 3],
+      "Fraca":       [3, 3, 1, 2, 0, 0, 2, 3, 2, 2],
+      "Moderada":    [4, 2, 3, 2, 0, 0, 3, 2, 1, 0],
+      "Resistente":  [4, 1, 3, 2, 0, 0, 3, 2, 1, 0],
     },
   },
   rmr: {
     options: {
-      "Muito pobre": [2, 3, 0, 1, null, null, 0, 3, 0, 3],
-      "Pobre":       [3, 3, 0, 2, null, null, 0, 3, 0, 1],
-      "Razoável":    [4, 3, 2, 3, null, null, 2, 2, 1, 0],
-      "Boa":         [4, 2, 3, 3, null, null, 3, 2, 2, 0],
-      "Muito boa":   [4, 2, 3, 3, null, null, 3, 2, 2, 0],
+      "Muito pobre": [2, 3, 0, 1, 0, 0, 0, 3, 0, 3],
+      "Pobre":       [3, 3, 0, 2, 0, 0, 0, 3, 0, 1],
+      "Razoável":    [4, 3, 2, 3, 0, 0, 2, 2, 1, 0],
+      "Boa":         [4, 2, 3, 3, 0, 0, 3, 2, 2, 0],
+      "Muito boa":   [4, 2, 3, 3, 0, 0, 3, 2, 2, 0],
     },
   },
 };

@@ -48,9 +48,9 @@ export function classifyDepthUBC(meters) {
 export function classifyDepthSHB(meters) {
   const m = parseFloat(meters);
   if (isNaN(m)) return "";
-  if (m <= 100) return "Rasa";
-  if (m <= 400) return "Intermediária";
-  if (m <= 600) return "Pouco profunda";
+  if (m <= 200) return "Rasa";
+  if (m <= 500) return "Intermediária";
+  if (m <= 800) return "Pouco profunda";
   return "Profunda";
 }
 
@@ -171,6 +171,14 @@ export function calculateSHB(fd, criteriaWeights = {}) {
   const rssHW  = classifyRSS(fd.ucs?.hangingWall, fd.density?.hangingWall, fd.depth?.hangingWall) || fd.rss?.hangingWall;
   const rssFW  = classifyRSS(fd.ucs?.footwall,    fd.density?.footwall,    fd.depth?.footwall)    || fd.rss?.footwall;
 
+  const mapRmrToSHB = (val) => ({
+    "Muito pobre": "Muito fraca",
+    "Pobre":       "Fraca",
+    "Razoável":    "Média",
+    "Boa":         "Forte",
+    "Muito boa":   "Muito forte",
+  }[val] || val);
+
   const criteria = [
     [SHB_GEOMETRY,    "shape",     fd.geometry?.shape,      w.shape],
     [SHB_GEOMETRY,    "thickness", fd.geometry?.thickness,  w.thickness],
@@ -179,11 +187,11 @@ export function calculateSHB(fd, criteriaWeights = {}) {
     [SHB_GEOMETRY,    "depth",     depthClass,              w.depth],
     [SHB_ECONOMIC,    "oreValue",  fd.oreValue,             w.oreValue],
     [SHB_OREBODY,     "rss",       rssOre,                  w.rss],
-    [SHB_OREBODY,     "rmr",       fd.rmr?.ore,             w.rmr],
+    [SHB_OREBODY,     "rmr",       mapRmrToSHB(fd.rmr?.ore),         w.rmr],
     [SHB_HANGINGWALL, "rss",       rssHW,                   w.rss],
-    [SHB_HANGINGWALL, "rmr",       fd.rmr?.hangingWall,     w.rmr],
+    [SHB_HANGINGWALL, "rmr",       mapRmrToSHB(fd.rmr?.hangingWall), w.rmr],
     [SHB_FOOTWALL,    "rss",       rssFW,                   w.rss],
-    [SHB_FOOTWALL,    "rmr",       fd.rmr?.footwall,        w.rmr],
+    [SHB_FOOTWALL,    "rmr",       mapRmrToSHB(fd.rmr?.footwall),    w.rmr],
   ];
 
   const { totals, breakdown } = sumCriteria(criteria);
