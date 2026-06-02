@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <script>
+      var path = window.location.pathname;
+      var search = window.location.search;
+      var hash = window.location.hash;
+      var redirect = path.slice(1).split('/').slice(1).join('/');
+      sessionStorage.setItem('redirect', redirect + search + hash);
+      window.location.replace('/mms-2.0/');
+    </script>
+  </head>
+  <body></body>
+</html>
