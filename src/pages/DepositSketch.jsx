@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { classifyDepthSHB } from "../algorithms/algorithms";
 
 // ---------------------------------------------------------------------------
 // MAPEAMENTOS
@@ -11,22 +12,22 @@ const THICKNESS_MAP = {
   "Muito espesso":  120,
 };
 
-const DEPTH_RANGE = [50, 1200];
 const W = 680, H = 500, CX = 310, SURFACE_Y = 90;
+
+// Posição vertical do centro do corpo de minério por faixa de profundidade.
+// Posições fixas evitam que o polígono ultrapasse a superfície em ângulos altos.
+const DEPTH_CENTER = {
+  "Rasa":           H * 0.38,
+  "Intermediária":  H * 0.55,
+  "Pouco profunda": H * 0.68,
+  "Profunda":       H * 0.80,
+};
 
 const GRADE_LABELS = {
   "Uniforme":    "Teor uniforme",
   "Gradacional": "Teor gradacional",
   "Errático":    "Teor errático",
 };
-
-function depthClass(d) {
-  const m = parseFloat(d);
-  if (isNaN(m)) return null;
-  if (m <= 100) return { label: "Rasa",         color: "#0f766e" };
-  if (m <= 600) return { label: "Intermediária", color: "#1d6fa4" };
-  return              { label: "Profunda",       color: "#7c3aed" };
-}
 
 function dipClassLabel(deg) {
   const d = parseFloat(deg);
@@ -53,9 +54,6 @@ function orePolygon(shape, halfLen, hw, cx, centerY, dx, dy, nx, ny) {
     }).join(" ");
   }
   if (shape === "Irregular") {
-    // 12 pontos com ângulos não-uniformes e raios extremamente variados.
-    // Pontos com raios 0.2–0.3 criam reentrâncias; 1.7–1.9 criam protuberâncias.
-    // Os offsets grandes causam clusters angulares que quebram a simetria radial.
     const radios = [0.3, 1.7, 0.5, 1.9, 0.2, 1.4, 1.8, 0.4, 1.6, 0.3, 1.5, 0.8];
     const offDeg = [20, -18, 25, -10, 22, -20, 15, -25, 18, -15, 20, -12];
     const N      = 12;
@@ -68,7 +66,7 @@ function orePolygon(shape, halfLen, hw, cx, centerY, dx, dy, nx, ny) {
       return `${cx + rL * Math.cos(a) * dx - rP * Math.sin(a) * nx},${centerY + rL * Math.cos(a) * dy - rP * Math.sin(a) * ny}`;
     }).join(" ");
   }
-  // Tabular — filão fino e alongado
+  // Tabular
   const p1x = cx - halfLen * dx - hw * nx, p1y = centerY - halfLen * dy - hw * ny;
   const p2x = cx + halfLen * dx - hw * nx, p2y = centerY + halfLen * dy - hw * ny;
   const p3x = cx + halfLen * dx + hw * nx, p3y = centerY + halfLen * dy + hw * ny;
@@ -84,23 +82,19 @@ export default function DepositSketch({ shape, thickness, dip, depth, grade }) {
   const dipDeg    = parseFloat(dip)   || 0;
   const depthM    = parseFloat(depth) || 400;
   const isTabular = (shape || "Tabular") === "Tabular";
-  // Tabular: mais comprido e mais fino para parecer um filão
   const halfLen   = isTabular ? 140 : 90;
   const oreHw     = isTabular ? hw * 0.6 : hw;
 
   const dipRad  = (dipDeg * Math.PI) / 180;
-  const depthPx = H - SURFACE_Y - 20;
-  const mPerPx  = DEPTH_RANGE[1] / depthPx;
-
-  const centerYRaw = SURFACE_Y + depthM / mPerPx;
-  const centerY    = Math.max(centerYRaw, SURFACE_Y + oreHw * 2 + 20);
 
   const dx = Math.cos(dipRad), dy = Math.sin(dipRad);
   const nx = -dy,              ny =  dx;
 
+  // Centro do corpo posicionado pela faixa de profundidade (não pelo valor numérico).
+  const faixaDepth = classifyDepthSHB(depth) || "Intermediária";
+  const centerY    = DEPTH_CENTER[faixaDepth];
+
   const poly   = orePolygon(shape || "Tabular", halfLen, oreHw, CX, centerY, dx, dy, nx, ny);
-  const dc     = depthClass(depthM);
-  const arrowX = CX + halfLen + 22;
   const hwOff  = hw * 1.8;
 
   // HW zone
@@ -147,22 +141,16 @@ export default function DepositSketch({ shape, thickness, dip, depth, grade }) {
           <rect x="0" y={SURFACE_Y} width={W} height={H - SURFACE_Y} />
         </clipPath>
 
-        <marker id="sk-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
-          <path d="M2 1L8 5L2 9" fill="none" stroke="#1d6fa4" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-        </marker>
-
         <pattern id="ore-uniforme" patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)">
           <line x1="0" y1="0" x2="0" y2="8" stroke="#5bc0de" strokeWidth="1.5" opacity="0.45"/>
         </pattern>
 
-        {/* Gradacional: inflexão próxima do extremo rico (30%), queda abrupta para quase transparente */}
         <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="0">
           <stop offset="0%"   stopColor="#1e3a5f" stopOpacity="1.0"/>
           <stop offset="30%"  stopColor="#1d6fa4" stopOpacity="0.7"/>
           <stop offset="100%" stopColor="#5bc0de" stopOpacity="0.05"/>
         </linearGradient>
 
-        {/* Camada branca sobreposta para reforçar o contraste visual no extremo pobre */}
         <linearGradient id="grad-white-overlay" x1="0" y1="0" x2="1" y2="0">
           <stop offset="0%"   stopColor="white" stopOpacity="0.0"/>
           <stop offset="100%" stopColor="white" stopOpacity="0.75"/>
@@ -183,19 +171,6 @@ export default function DepositSketch({ shape, thickness, dip, depth, grade }) {
 
       {/* Rocha */}
       <rect x="0" y={SURFACE_Y} width={W} height={H - SURFACE_Y} fill="#e2e8f0" opacity="0.25"/>
-
-      {/* Escala de profundidade */}
-      <line x1="44" y1={SURFACE_Y} x2="44" y2={H - 20} stroke="#cbd5e1" strokeWidth="0.8"/>
-      {[100, 300, 600, 900, 1200].map((m) => {
-        const py = SURFACE_Y + m / mPerPx;
-        if (py > H - 20) return null;
-        return (
-          <g key={m}>
-            <line x1="40" y1={py} x2="48" y2={py} stroke="#94a3b8" strokeWidth="0.8"/>
-            <text x="38" y={py} textAnchor="end" dominantBaseline="central" fontSize="11" fill="#94a3b8">{m}m</text>
-          </g>
-        );
-      })}
 
       {/* HW, FW e ore — recortados pela superfície */}
       <g clipPath="url(#below-surface)">
@@ -231,20 +206,6 @@ export default function DepositSketch({ shape, thickness, dip, depth, grade }) {
 
       </g>
 
-      {/* Seta de profundidade */}
-      {dc && (
-        <>
-          <line
-            x1={arrowX} y1={SURFACE_Y + 4}
-            x2={arrowX} y2={centerY - 4}
-            stroke="#1d6fa4" strokeWidth="1" strokeDasharray="4 3"
-            markerEnd="url(#sk-arr)"
-          />
-          <text x={arrowX + 8} y={(SURFACE_Y + centerY) / 2}      textAnchor="start" dominantBaseline="central" fontSize="12" fill={dc.color}>{depthM}m</text>
-          <text x={arrowX + 8} y={(SURFACE_Y + centerY) / 2 + 16} textAnchor="start" dominantBaseline="central" fontSize="11" fill={dc.color}>{dc.label}</text>
-        </>
-      )}
-
       {/* Indicador de mergulho */}
       {dipDeg > 5 && (
         <>
@@ -273,7 +234,7 @@ export default function DepositSketch({ shape, thickness, dip, depth, grade }) {
 
       {/* Rodapé */}
       <text x={CX} y={H - 10} textAnchor="middle" dominantBaseline="central" fontSize="11" fill="#94a3b8">
-        {`Mergulho: ${dipClassLabel(dipDeg)}  |  Forma: ${shape || "Tabular"}`}
+        {`Mergulho: ${dipClassLabel(dipDeg)}  |  Profundidade: ${faixaDepth}`}
       </text>
     </svg>
   );
