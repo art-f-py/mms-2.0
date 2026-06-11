@@ -17,10 +17,10 @@ const W = 680, H = 500, CX = 310, SURFACE_Y = 90;
 // Posição vertical do centro do corpo de minério por faixa de profundidade.
 // Posições fixas evitam que o polígono ultrapasse a superfície em ângulos altos.
 const DEPTH_CENTER = {
-  "Rasa":           H * 0.38,
-  "Intermediária":  H * 0.55,
-  "Pouco profunda": H * 0.68,
-  "Profunda":       H * 0.80,
+  "Rasa":           H * 0.48,
+  "Intermediária":  H * 0.58,
+  "Pouco profunda": H * 0.70,
+  "Profunda":       H * 0.82,
 };
 
 const GRADE_LABELS = {
@@ -92,7 +92,10 @@ export default function DepositSketch({ shape, thickness, dip, depth, grade }) {
 
   // Centro do corpo posicionado pela faixa de profundidade (não pelo valor numérico).
   const faixaDepth = classifyDepthSHB(depth) || "Intermediária";
-  const centerY    = DEPTH_CENTER[faixaDepth];
+  // Clamp dinâmico: garante que, mesmo com formas massivas e ângulos altos,
+  // o centro nunca fique perto demais da superfície a ponto de o corpo ultrapassá-la.
+  const maxRadius  = Math.max(halfLen * Math.abs(dy), oreHw * Math.abs(ny), oreHw * 1.4);
+  const centerY    = Math.max(DEPTH_CENTER[faixaDepth], SURFACE_Y + maxRadius + 20);
 
   const poly   = orePolygon(shape || "Tabular", halfLen, oreHw, CX, centerY, dx, dy, nx, ny);
   const hwOff  = hw * 1.8;
