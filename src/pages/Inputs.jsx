@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useMms } from "../context/MmsContext";
+import { useMms, DOMAIN_PRESETS } from "../context/MmsContext";
 import {
   calculateUBC, calculateNicholas, calculateSHB,
   classifyRSS, classifyRSSNicholas,
@@ -212,6 +212,82 @@ function ReviewRow({ label, value }) {
 }
 
 // ---------------------------------------------------------------------------
+// PESOS POR CRITÉRIO — config por método
+// ---------------------------------------------------------------------------
+const UBC_CRITERIA = [
+  { key: "shape",     label: "Forma" },
+  { key: "thickness", label: "Espessura" },
+  { key: "dip",       label: "Mergulho" },
+  { key: "grade",     label: "Teores" },
+  { key: "depth",     label: "Profundidade" },
+  { key: "rss",       label: "RSS" },
+  { key: "rmr",       label: "RMR" },
+];
+
+const NICHOLAS_CRITERIA = [
+  { key: "shape",          label: "Forma" },
+  { key: "thickness",      label: "Espessura" },
+  { key: "dip",            label: "Mergulho" },
+  { key: "grade",          label: "Teores" },
+  { key: "rss",            label: "RSS" },
+  { key: "jointSpacing",   label: "Espaçamento de fraturas" },
+  { key: "jointCondition", label: "Cond. interfraturas" },
+];
+
+const SHB_CRITERIA = [
+  { key: "shape",     label: "Forma" },
+  { key: "thickness", label: "Espessura" },
+  { key: "dip",       label: "Mergulho" },
+  { key: "grade",     label: "Teores" },
+  { key: "depth",     label: "Profundidade" },
+  { key: "rss",       label: "RSS" },
+  { key: "rmr",       label: "RMR" },
+  { key: "oreValue",  label: "Valor do minério" },
+];
+
+const DOMAIN_CRITERIA = [
+  { key: "geo", label: "Geometria (geo)" },
+  { key: "ob",  label: "Corpo de minério (ob)" },
+  { key: "hw",  label: "Hanging wall (hw)" },
+  { key: "fw",  label: "Foot wall (fw)" },
+];
+
+const DOMAIN_PRESET_LABELS = {
+  default: "Padrão",
+  preset1: "Preset 1",
+  preset2: "Preset 2",
+  preset3: "Preset 3",
+};
+
+function WeightSlider({ label, value, min, max, onChange }) {
+  const v = value ?? 1;
+  return (
+    <div>
+      <label style={S.label}>
+        {label} — <span style={{ color: C.primary }}>{v.toFixed(2)}</span>
+      </label>
+      <input type="range" min={min} max={max} step="0.01"
+        style={{ width: "100%", accentColor: C.primary }}
+        value={v}
+        onChange={(e) => onChange(parseFloat(e.target.value))} />
+    </div>
+  );
+}
+
+function Collapsible({ title, open, onToggle, children }) {
+  return (
+    <div style={{ border: `1px solid ${C.border}`, borderRadius: "8px", marginBottom: "16px", overflow: "hidden" }}>
+      <button onClick={onToggle}
+        style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 18px", backgroundColor: C.primary50, border: "none", cursor: "pointer", fontSize: "15px", fontWeight: "700", color: C.primary }}>
+        <span>{title}</span>
+        <span style={{ fontSize: "13px" }}>{open ? "▾" : "▸"}</span>
+      </button>
+      {open && <div style={{ padding: "18px" }}>{children}</div>}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // STEPPER
 // ---------------------------------------------------------------------------
 const STEPS = [
@@ -255,6 +331,33 @@ function Inputs() {
   const { state, dispatch } = useMms();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
+  const [openBlocks, setOpenBlocks] = useState({ ubc: true, nicholas: true, shb: true });
+  const toggleBlock = (k) => setOpenBlocks((p) => ({ ...p, [k]: !p[k] }));
+
+  // Nicholas: camadas mutuamente exclusivas — critério OU domínio, nunca ambos
+  const [nicholasMode, setNicholasMode] = useState("criteria");
+
+  // Entra no modo critério: domínio volta a ser neutro (1.00)
+  const enterCriteriaMode = () => {
+    setNicholasMode("criteria");
+    dispatch({ type: "SET_DOMAIN_PRESET", preset: "default" });
+  };
+  // Entra no modo domínio: pesos de critério voltam a ser neutros (1.00)
+  const enterDomainMode = () => {
+    setNicholasMode("domain");
+    dispatch({ type: "RESET_NICHOLAS_CRITERIA" });
+  };
+  // Mexer num slider de critério garante o modo critério (e reseta domínio)
+  const handleNicholasCriteria = (key, value) => {
+    if (nicholasMode !== "criteria") enterCriteriaMode();
+    dispatch({ type: "SET_CRITERIA_WEIGHT", method: "nicholas", key, value });
+  };
+  // Aplicar um preset garante o modo domínio (e reseta os critérios)
+  const handleDomainPreset = (preset) => {
+    if (nicholasMode !== "domain") setNicholasMode("domain");
+    dispatch({ type: "RESET_NICHOLAS_CRITERIA" });
+    dispatch({ type: "SET_DOMAIN_PRESET", preset });
+  };
 
   const fd = state.formData;
   const sm = fd.selectedMethods;
@@ -288,12 +391,12 @@ function Inputs() {
 
   const handleCalculate = () => {
     const w = fd.criteriaWeights;
-    if (showUBC)  dispatch({ type: "SET_RESULT", method: "ubc",        payload: calculateUBC(fd, w) });
-    else          dispatch({ type: "SET_RESULT", method: "ubc",        payload: null });
-    if (showNich) dispatch({ type: "SET_RESULT", method: "nicholas", payload: calculateNicholas(fd, w) });
+    if (showUBC)  dispatch({ type: "SET_RESULT", method: "ubc",      payload: calculateUBC(fd, w.ubc) });
+    else          dispatch({ type: "SET_RESULT", method: "ubc",      payload: null });
+    if (showNich) dispatch({ type: "SET_RESULT", method: "nicholas", payload: calculateNicholas(fd, w.nicholas) });
     else          dispatch({ type: "SET_RESULT", method: "nicholas", payload: null });
-    if (showSHB)  dispatch({ type: "SET_RESULT", method: "shb",        payload: calculateSHB(fd, w) });
-    else          dispatch({ type: "SET_RESULT", method: "shb",        payload: null });
+    if (showSHB)  dispatch({ type: "SET_RESULT", method: "shb",      payload: calculateSHB(fd, w.shb) });
+    else          dispatch({ type: "SET_RESULT", method: "shb",      payload: null });
     navigate("/statistics");
   };
 
@@ -494,18 +597,14 @@ function Inputs() {
   // ---------------------------------------------------------------------------
   // ETAPA 4 — COMPLEMENTAR
   // ---------------------------------------------------------------------------
-  const criteriaWeightOptions = [
-    { key: "shape",          label: "Forma",                   show: anyMethod },
-    { key: "thickness",      label: "Espessura",               show: anyMethod },
-    { key: "dip",            label: "Mergulho",                show: anyMethod },
-    { key: "grade",          label: "Distribuição de teores",  show: anyMethod },
-    { key: "depth",          label: "Profundidade",            show: showUBC || showSHB },
-    { key: "rss",            label: "RSS",                     show: anyMethod },
-    { key: "rmr",            label: "RMR",                     show: showUBC || showSHB },
-    { key: "jointSpacing",   label: "Espaç. das fraturas",     show: showNich },
-    { key: "jointCondition", label: "Cond. das interfraturas", show: showNich },
-    { key: "oreValue",       label: "Valor do minério",        show: showSHB },
-  ].filter(({ show }) => show);
+  const cw = fd.criteriaWeights;
+
+  // Detecta qual preset de domínio está ativo (null se houver ajuste manual)
+  const activeDomainPreset = Object.keys(DOMAIN_PRESETS).find((p) =>
+    DOMAIN_CRITERIA.every(({ key }) =>
+      Math.abs((cw.nicholas.domain[key] ?? 1) - DOMAIN_PRESETS[p][key]) < 1e-9
+    )
+  ) || null;
 
   const Step4 = anyMethod ? (
     <div style={S.card}>
@@ -522,25 +621,106 @@ function Inputs() {
 
       <SecTitle>Pesos por Critério</SecTitle>
       <p style={{ ...S.hint, marginBottom: "20px" }}>
-        Ajuste a importância de cada critério. Padrão: 1.0. São exibidos apenas os critérios relevantes para os métodos selecionados.
+        Ajuste a importância de cada critério por método. Padrão: 1.0. Cada método tem pesos independentes.
       </p>
-      <div style={S.grid2}>
-        {criteriaWeightOptions.map(({ key, label }) => (
-          <div key={key}>
-            <label style={S.label}>
-              {label} — <span style={{ color: C.primary }}>{Math.min(1, Math.max(0, fd.criteriaWeights[key] ?? 1.0)).toFixed(2)}</span>
-            </label>
-            <input type="range" min="0" max="1" step="0.01"
-              style={{ width: "100%", accentColor: C.primary }}
-              value={Math.min(1, Math.max(0, fd.criteriaWeights[key] ?? 1.0))}
-              onChange={(e) => dispatch({ type: "SET_CRITERIA_WEIGHT", key, value: parseFloat(e.target.value) })} />
+
+      {showUBC && (
+        <Collapsible title="UBC 1995" open={openBlocks.ubc} onToggle={() => toggleBlock("ubc")}>
+          <div style={S.grid2}>
+            {UBC_CRITERIA.map(({ key, label }) => (
+              <WeightSlider key={key} label={label} min={0} max={1}
+                value={cw.ubc[key]}
+                onChange={(v) => dispatch({ type: "SET_CRITERIA_WEIGHT", method: "ubc", key, value: v })} />
+            ))}
           </div>
-        ))}
+        </Collapsible>
+      )}
+
+      {showNich && (
+        <Collapsible title="Nicholas" open={openBlocks.nicholas} onToggle={() => toggleBlock("nicholas")}>
+          {/* Seletor de camada — critério OU domínio, nunca ambos */}
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "18px" }}>
+            {[
+              ["criteria", "Pesos por critério"],
+              ["domain",   "Multiplicadores de domínio (Nicholas 92)"],
+            ].map(([m, lbl]) => {
+              const on = nicholasMode === m;
+              return (
+                <button key={m}
+                  onClick={() => (m === "criteria" ? enterCriteriaMode() : enterDomainMode())}
+                  style={{ ...S.btnGhost, backgroundColor: on ? C.primary : "transparent", color: on ? C.white : C.muted, borderColor: on ? C.primary : C.border, fontWeight: on ? "700" : "400" }}>
+                  {lbl}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Camada de critério — desativada quando em modo domínio */}
+          <div style={nicholasMode === "domain" ? { opacity: 0.4, pointerEvents: "none" } : undefined}>
+            <div style={S.grid2}>
+              {NICHOLAS_CRITERIA.map(({ key, label }) => (
+                <WeightSlider key={key} label={label} min={0} max={1}
+                  value={cw.nicholas[key]}
+                  onChange={(v) => handleNicholasCriteria(key, v)} />
+              ))}
+            </div>
+          </div>
+
+          <div style={S.div} />
+
+          {/* Camada de domínio — desativada quando em modo critério */}
+          <div style={nicholasMode === "criteria" ? { opacity: 0.4, pointerEvents: "none" } : undefined}>
+            <p style={{ fontSize: "15px", fontWeight: "700", color: C.text, margin: "0 0 6px" }}>
+              Multiplicadores de domínio (Nicholas 92)
+            </p>
+            <p style={{ ...S.hint, marginTop: 0, marginBottom: "14px" }}>
+              Ponderam cada domínio geotécnico. Aplique um preset ou ajuste manualmente.
+            </p>
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "18px" }}>
+              {Object.entries(DOMAIN_PRESET_LABELS).map(([p, lbl]) => {
+                const on = nicholasMode === "domain" && activeDomainPreset === p;
+                return (
+                  <button key={p}
+                    onClick={() => handleDomainPreset(p)}
+                    style={{ ...S.btnGhost, backgroundColor: on ? C.primary : "transparent", color: on ? C.white : C.muted, borderColor: on ? C.primary : C.border, fontWeight: on ? "700" : "400" }}>
+                    {lbl}
+                  </button>
+                );
+              })}
+            </div>
+            <div style={S.grid2}>
+              {DOMAIN_CRITERIA.map(({ key, label }) => (
+                <WeightSlider key={key} label={label} min={0} max={2}
+                  value={cw.nicholas.domain[key]}
+                  onChange={(v) => dispatch({ type: "SET_DOMAIN_WEIGHT", key, value: v })} />
+              ))}
+            </div>
+          </div>
+        </Collapsible>
+      )}
+
+      {showSHB && (
+        <Collapsible title="SH&B 2007" open={openBlocks.shb} onToggle={() => toggleBlock("shb")}>
+          <div style={S.grid2}>
+            {SHB_CRITERIA.map(({ key, label }) => (
+              <WeightSlider key={key} label={label} min={0} max={1}
+                value={cw.shb[key]}
+                onChange={(v) => dispatch({ type: "SET_CRITERIA_WEIGHT", method: "shb", key, value: v })} />
+            ))}
+          </div>
+        </Collapsible>
+      )}
+
+      <div style={{ display: "flex", gap: "12px", marginTop: "12px", flexWrap: "wrap" }}>
+        <button style={S.btnGhost}
+          onClick={() => dispatch({ type: "COPY_WEIGHTS_TO_ALL", sourceMethod: "ubc" })}>
+          Copiar pesos do UBC para todos os métodos
+        </button>
+        <button style={S.btnGhost}
+          onClick={() => { dispatch({ type: "RESET_CRITERIA_WEIGHTS" }); setNicholasMode("criteria"); }}>
+          Restaurar padrão
+        </button>
       </div>
-      <button style={{ ...S.btnGhost, marginTop: "12px" }}
-        onClick={() => dispatch({ type: "RESET_CRITERIA_WEIGHTS" })}>
-        Restaurar padrão
-      </button>
     </div>
   ) : null;
 
