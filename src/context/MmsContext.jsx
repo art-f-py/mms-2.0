@@ -16,8 +16,10 @@ const makeDefaultCriteriaWeights = () => ({
     rss: 1, rmr: 1,
   },
   nicholas: {
-    shape: 1, thickness: 1, dip: 1, grade: 1,
-    rss: 1, jointSpacing: 1, jointCondition: 1,
+    geo: { shape: 1, thickness: 1, dip: 1, grade: 1 },
+    ob:  { rss: 1, jointSpacing: 1, jointCondition: 1 },
+    hw:  { rss: 1, jointSpacing: 1, jointCondition: 1 },
+    fw:  { rss: 1, jointSpacing: 1, jointCondition: 1 },
     domain: { ...DOMAIN_PRESETS.default },
   },
   shb: {
@@ -40,6 +42,14 @@ const initialFormData = {
   oreValue:        "",
   criteriaWeights: makeDefaultCriteriaWeights(),
 };
+
+// Critérios neutros (1.00) do Nicholas, agrupados por domínio geológico
+const neutralNicholasCriteria = () => ({
+  geo: { shape: 1, thickness: 1, dip: 1, grade: 1 },
+  ob:  { rss: 1, jointSpacing: 1, jointCondition: 1 },
+  hw:  { rss: 1, jointSpacing: 1, jointCondition: 1 },
+  fw:  { rss: 1, jointSpacing: 1, jointCondition: 1 },
+});
 
 const initialState = {
   formData: initialFormData,
@@ -77,6 +87,20 @@ function mmsReducer(state, action) {
         },
       };
     }
+    case "SET_NICHOLAS_CRITERION": {
+      const { domain, key, value } = action;
+      const nich = state.formData.criteriaWeights.nicholas;
+      return {
+        ...state,
+        formData: {
+          ...state.formData,
+          criteriaWeights: {
+            ...state.formData.criteriaWeights,
+            nicholas: { ...nich, [domain]: { ...nich[domain], [key]: value } },
+          },
+        },
+      };
+    }
     case "SET_DOMAIN_WEIGHT": {
       const nich = state.formData.criteriaWeights.nicholas;
       return {
@@ -105,19 +129,29 @@ function mmsReducer(state, action) {
       };
     }
     case "RESET_NICHOLAS_CRITERIA": {
-      const nich  = state.formData.criteriaWeights.nicholas;
-      const reset = {};
-      for (const key of Object.keys(nich)) {
-        if (key === "domain") continue;             // mantém os multiplicadores de domínio
-        reset[key] = 1;
-      }
+      // Todos os 13 critérios por domínio voltam a 1.00; multiplicadores de domínio intactos
+      const nich = state.formData.criteriaWeights.nicholas;
       return {
         ...state,
         formData: {
           ...state.formData,
           criteriaWeights: {
             ...state.formData.criteriaWeights,
-            nicholas: { ...nich, ...reset },
+            nicholas: { ...nich, ...neutralNicholasCriteria() },
+          },
+        },
+      };
+    }
+    case "RESET_NICHOLAS_DOMAIN": {
+      // Multiplicadores de domínio (geo/ob/hw/fw) voltam a 1.00; critérios intactos
+      const nich = state.formData.criteriaWeights.nicholas;
+      return {
+        ...state,
+        formData: {
+          ...state.formData,
+          criteriaWeights: {
+            ...state.formData.criteriaWeights,
+            nicholas: { ...nich, domain: { ...DOMAIN_PRESETS.default } },
           },
         },
       };

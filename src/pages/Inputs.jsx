@@ -224,14 +224,29 @@ const UBC_CRITERIA = [
   { key: "rmr",       label: "RMR" },
 ];
 
-const NICHOLAS_CRITERIA = [
-  { key: "shape",          label: "Forma" },
-  { key: "thickness",      label: "Espessura" },
-  { key: "dip",            label: "Mergulho" },
-  { key: "grade",          label: "Teores" },
-  { key: "rss",            label: "RSS" },
-  { key: "jointSpacing",   label: "Espaçamento de fraturas" },
-  { key: "jointCondition", label: "Cond. interfraturas" },
+// Nicholas — 13 critérios individualizados, agrupados por domínio geológico
+const NICHOLAS_CRITERIA_GROUPS = [
+  { domain: "geo", title: "Geometria", items: [
+    { key: "shape",     label: "Forma" },
+    { key: "thickness", label: "Espessura" },
+    { key: "dip",       label: "Mergulho" },
+    { key: "grade",     label: "Teores" },
+  ] },
+  { domain: "ob", title: "Corpo de minério", items: [
+    { key: "rss",            label: "RSS" },
+    { key: "jointSpacing",   label: "Espaçamento" },
+    { key: "jointCondition", label: "Interfraturas" },
+  ] },
+  { domain: "hw", title: "Hanging wall", items: [
+    { key: "rss",            label: "RSS" },
+    { key: "jointSpacing",   label: "Espaçamento" },
+    { key: "jointCondition", label: "Interfraturas" },
+  ] },
+  { domain: "fw", title: "Foot wall", items: [
+    { key: "rss",            label: "RSS" },
+    { key: "jointSpacing",   label: "Espaçamento" },
+    { key: "jointCondition", label: "Interfraturas" },
+  ] },
 ];
 
 const SHB_CRITERIA = [
@@ -337,20 +352,20 @@ function Inputs() {
   // Nicholas: camadas mutuamente exclusivas — critério OU domínio, nunca ambos
   const [nicholasMode, setNicholasMode] = useState("criteria");
 
-  // Entra no modo critério: domínio volta a ser neutro (1.00)
+  // Entra no modo critério: multiplicadores de domínio voltam a ser neutros (1.00)
   const enterCriteriaMode = () => {
     setNicholasMode("criteria");
-    dispatch({ type: "SET_DOMAIN_PRESET", preset: "default" });
+    dispatch({ type: "RESET_NICHOLAS_DOMAIN" });
   };
-  // Entra no modo domínio: pesos de critério voltam a ser neutros (1.00)
+  // Entra no modo domínio: os 13 pesos por critério voltam a ser neutros (1.00)
   const enterDomainMode = () => {
     setNicholasMode("domain");
     dispatch({ type: "RESET_NICHOLAS_CRITERIA" });
   };
   // Mexer num slider de critério garante o modo critério (e reseta domínio)
-  const handleNicholasCriteria = (key, value) => {
+  const handleNicholasCriteria = (domain, key, value) => {
     if (nicholasMode !== "criteria") enterCriteriaMode();
-    dispatch({ type: "SET_CRITERIA_WEIGHT", method: "nicholas", key, value });
+    dispatch({ type: "SET_NICHOLAS_CRITERION", domain, key, value });
   };
   // Aplicar um preset garante o modo domínio (e reseta os critérios)
   const handleDomainPreset = (preset) => {
@@ -641,8 +656,8 @@ function Inputs() {
           {/* Seletor de camada — critério OU domínio, nunca ambos */}
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "18px" }}>
             {[
-              ["criteria", "Pesos por critério"],
-              ["domain",   "Multiplicadores de domínio (Nicholas 92)"],
+              ["domain",   "Presets de domínio (Nicholas 92)"],
+              ["criteria", "Individualização por critério"],
             ].map(([m, lbl]) => {
               const on = nicholasMode === m;
               return (
@@ -655,15 +670,26 @@ function Inputs() {
             })}
           </div>
 
-          {/* Camada de critério — desativada quando em modo domínio */}
+          {/* Camada de critério — granular, desativada quando em modo domínio */}
           <div style={nicholasMode === "domain" ? { opacity: 0.4, pointerEvents: "none" } : undefined}>
-            <div style={S.grid2}>
-              {NICHOLAS_CRITERIA.map(({ key, label }) => (
-                <WeightSlider key={key} label={label} min={0} max={1}
-                  value={cw.nicholas[key]}
-                  onChange={(v) => handleNicholasCriteria(key, v)} />
-              ))}
-            </div>
+            <p style={{ fontSize: "15px", fontWeight: "700", color: C.text, margin: "0 0 6px" }}>
+              Individualização por critério
+            </p>
+            <p style={{ ...S.hint, marginTop: 0, marginBottom: "16px" }}>
+              Cada critério é ponderado individualmente dentro do seu domínio geológico (0.00–1.00).
+            </p>
+            {NICHOLAS_CRITERIA_GROUPS.map(({ domain, title, items }) => (
+              <div key={domain} style={{ marginBottom: "18px" }}>
+                <p style={{ fontSize: "14px", fontWeight: "700", color: C.primary, margin: "0 0 10px" }}>{title}</p>
+                <div style={S.grid2}>
+                  {items.map(({ key, label }) => (
+                    <WeightSlider key={key} label={label} min={0} max={1}
+                      value={cw.nicholas[domain][key]}
+                      onChange={(v) => handleNicholasCriteria(domain, key, v)} />
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
 
           <div style={S.div} />

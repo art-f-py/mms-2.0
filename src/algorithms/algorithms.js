@@ -140,7 +140,13 @@ export function calculateUBC(fd, criteriaWeights = {}) {
 }
 
 export function calculateNicholas(fd, criteriaWeights = {}) {
-  const w        = { ...DEFAULT_CRITERIA_WEIGHTS, ...criteriaWeights };
+  // Pesos por critério individualizados por domínio geológico (granular)
+  const geo = { shape: 1, thickness: 1, dip: 1, grade: 1,           ...(criteriaWeights.geo || {}) };
+  const ob  = { rss: 1, jointSpacing: 1, jointCondition: 1,         ...(criteriaWeights.ob  || {}) };
+  const hw  = { rss: 1, jointSpacing: 1, jointCondition: 1,         ...(criteriaWeights.hw  || {}) };
+  const fw  = { rss: 1, jointSpacing: 1, jointCondition: 1,         ...(criteriaWeights.fw  || {}) };
+  // Multiplicadores de domínio (modo presets). Exclusivo com o modo critério:
+  // o modo inativo fica em 1.00, então a multiplicação dupla é sempre neutra de um lado.
   const domain   = { ...DEFAULT_DOMAIN, ...(criteriaWeights.domain || {}) };
   const dipClass = classifyDipUBC(fd.dip);
   const rssOre = classifyRSSNicholas(fd.ucs?.ore,         fd.density?.ore,         fd.depth?.ore)         || fd.rss?.ore;
@@ -148,23 +154,23 @@ export function calculateNicholas(fd, criteriaWeights = {}) {
   const rssFW  = classifyRSSNicholas(fd.ucs?.footwall,    fd.density?.footwall,    fd.depth?.footwall)    || fd.rss?.footwall;
 
   const criteria = [
-    // Geometria — multiplicador de domínio geo
-    [NICHOLAS_GEOMETRY,    "shape",          fd.geometry?.shape,             w.shape     * domain.geo],
-    [NICHOLAS_GEOMETRY,    "thickness",      fd.geometry?.thickness,         w.thickness * domain.geo],
-    [NICHOLAS_GEOMETRY,    "dip",            dipClass,                       w.dip       * domain.geo],
-    [NICHOLAS_GEOMETRY,    "grade",          fd.geometry?.grade,             w.grade     * domain.geo],
-    // Corpo de minério — multiplicador de domínio ob
-    [NICHOLAS_OREBODY,     "rss",            rssOre,                         w.rss            * domain.ob],
-    [NICHOLAS_OREBODY,     "jointSpacing",   fd.jointSpacing?.ore,           w.jointSpacing   * domain.ob],
-    [NICHOLAS_OREBODY,     "jointCondition", fd.jointCondition?.ore,         w.jointCondition * domain.ob],
-    // Hanging wall — multiplicador de domínio hw
-    [NICHOLAS_HANGINGWALL, "rss",            rssHW,                          w.rss            * domain.hw],
-    [NICHOLAS_HANGINGWALL, "jointSpacing",   fd.jointSpacing?.hangingWall,   w.jointSpacing   * domain.hw],
-    [NICHOLAS_HANGINGWALL, "jointCondition", fd.jointCondition?.hangingWall, w.jointCondition * domain.hw],
-    // Foot wall — multiplicador de domínio fw
-    [NICHOLAS_FOOTWALL,    "rss",            rssFW,                          w.rss            * domain.fw],
-    [NICHOLAS_FOOTWALL,    "jointSpacing",   fd.jointSpacing?.footwall,      w.jointSpacing   * domain.fw],
-    [NICHOLAS_FOOTWALL,    "jointCondition", fd.jointCondition?.footwall,    w.jointCondition * domain.fw],
+    // Geometria — peso por critério geo[...] × multiplicador de domínio geo
+    [NICHOLAS_GEOMETRY,    "shape",          fd.geometry?.shape,             geo.shape          * domain.geo],
+    [NICHOLAS_GEOMETRY,    "thickness",      fd.geometry?.thickness,         geo.thickness      * domain.geo],
+    [NICHOLAS_GEOMETRY,    "dip",            dipClass,                       geo.dip            * domain.geo],
+    [NICHOLAS_GEOMETRY,    "grade",          fd.geometry?.grade,             geo.grade          * domain.geo],
+    // Corpo de minério — peso por critério ob[...] × multiplicador de domínio ob
+    [NICHOLAS_OREBODY,     "rss",            rssOre,                         ob.rss             * domain.ob],
+    [NICHOLAS_OREBODY,     "jointSpacing",   fd.jointSpacing?.ore,           ob.jointSpacing    * domain.ob],
+    [NICHOLAS_OREBODY,     "jointCondition", fd.jointCondition?.ore,         ob.jointCondition  * domain.ob],
+    // Hanging wall — peso por critério hw[...] × multiplicador de domínio hw
+    [NICHOLAS_HANGINGWALL, "rss",            rssHW,                          hw.rss             * domain.hw],
+    [NICHOLAS_HANGINGWALL, "jointSpacing",   fd.jointSpacing?.hangingWall,   hw.jointSpacing    * domain.hw],
+    [NICHOLAS_HANGINGWALL, "jointCondition", fd.jointCondition?.hangingWall, hw.jointCondition  * domain.hw],
+    // Foot wall — peso por critério fw[...] × multiplicador de domínio fw
+    [NICHOLAS_FOOTWALL,    "rss",            rssFW,                          fw.rss             * domain.fw],
+    [NICHOLAS_FOOTWALL,    "jointSpacing",   fd.jointSpacing?.footwall,      fw.jointSpacing    * domain.fw],
+    [NICHOLAS_FOOTWALL,    "jointCondition", fd.jointCondition?.footwall,    fw.jointCondition  * domain.fw],
   ];
 
   const { totals, breakdown } = sumCriteria(criteria);
