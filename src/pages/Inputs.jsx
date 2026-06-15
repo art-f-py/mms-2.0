@@ -214,14 +214,27 @@ function ReviewRow({ label, value }) {
 // ---------------------------------------------------------------------------
 // PESOS POR CRITÉRIO — config por método
 // ---------------------------------------------------------------------------
-const UBC_CRITERIA = [
-  { key: "shape",     label: "Forma" },
-  { key: "thickness", label: "Espessura" },
-  { key: "dip",       label: "Mergulho" },
-  { key: "grade",     label: "Teores" },
-  { key: "depth",     label: "Profundidade" },
-  { key: "rss",       label: "RSS" },
-  { key: "rmr",       label: "RMR" },
+// UBC — critérios individualizados, agrupados por domínio geológico
+const UBC_CRITERIA_GROUPS = [
+  { domain: "geo", title: "Geometria", items: [
+    { key: "shape",     label: "Forma" },
+    { key: "thickness", label: "Espessura" },
+    { key: "dip",       label: "Mergulho" },
+    { key: "grade",     label: "Teores" },
+    { key: "depth",     label: "Profundidade" },
+  ] },
+  { domain: "ob", title: "Corpo de minério", items: [
+    { key: "rss", label: "RSS" },
+    { key: "rmr", label: "RMR" },
+  ] },
+  { domain: "hw", title: "Hanging wall", items: [
+    { key: "rss", label: "RSS" },
+    { key: "rmr", label: "RMR" },
+  ] },
+  { domain: "fw", title: "Foot wall", items: [
+    { key: "rss", label: "RSS" },
+    { key: "rmr", label: "RMR" },
+  ] },
 ];
 
 // Nicholas — 13 critérios individualizados, agrupados por domínio geológico
@@ -249,15 +262,30 @@ const NICHOLAS_CRITERIA_GROUPS = [
   ] },
 ];
 
-const SHB_CRITERIA = [
-  { key: "shape",     label: "Forma" },
-  { key: "thickness", label: "Espessura" },
-  { key: "dip",       label: "Mergulho" },
-  { key: "grade",     label: "Teores" },
-  { key: "depth",     label: "Profundidade" },
-  { key: "rss",       label: "RSS" },
-  { key: "rmr",       label: "RMR" },
-  { key: "oreValue",  label: "Valor do minério" },
+// SH&B — critérios individualizados, agrupados por domínio geológico/econômico
+const SHB_CRITERIA_GROUPS = [
+  { domain: "geo", title: "Geometria", items: [
+    { key: "shape",     label: "Forma" },
+    { key: "thickness", label: "Espessura" },
+    { key: "dip",       label: "Mergulho" },
+    { key: "grade",     label: "Teores" },
+    { key: "depth",     label: "Profundidade" },
+  ] },
+  { domain: "econ", title: "Econômico", items: [
+    { key: "oreValue", label: "Valor do minério" },
+  ] },
+  { domain: "ob", title: "Corpo de minério", items: [
+    { key: "rss", label: "RSS" },
+    { key: "rmr", label: "RMR" },
+  ] },
+  { domain: "hw", title: "Hanging wall", items: [
+    { key: "rss", label: "RSS" },
+    { key: "rmr", label: "RMR" },
+  ] },
+  { domain: "fw", title: "Foot wall", items: [
+    { key: "rss", label: "RSS" },
+    { key: "rmr", label: "RMR" },
+  ] },
 ];
 
 const DOMAIN_CRITERIA = [
@@ -641,12 +669,25 @@ function Inputs() {
 
       {showUBC && (
         <Collapsible title="UBC 1995" open={openBlocks.ubc} onToggle={() => toggleBlock("ubc")}>
-          <div style={S.grid2}>
-            {UBC_CRITERIA.map(({ key, label }) => (
-              <WeightSlider key={key} label={label} min={0} max={1}
-                value={cw.ubc[key]}
-                onChange={(v) => dispatch({ type: "SET_CRITERIA_WEIGHT", method: "ubc", key, value: v })} />
-            ))}
+          <p style={{ ...S.hint, marginTop: 0, marginBottom: "16px" }}>
+            Cada critério é ponderado individualmente dentro do seu domínio geológico (0.00–2.00).
+          </p>
+          {UBC_CRITERIA_GROUPS.map(({ domain, title, items }) => (
+            <div key={domain} style={{ marginBottom: "18px" }}>
+              <p style={{ fontSize: "14px", fontWeight: "700", color: C.primary, margin: "0 0 10px" }}>{title}</p>
+              <div style={S.grid2}>
+                {items.map(({ key, label }) => (
+                  <WeightSlider key={key} label={label} min={0} max={2}
+                    value={cw.ubc[domain][key]}
+                    onChange={(v) => dispatch({ type: "SET_UBC_CRITERION", domain, key, value: v })} />
+                ))}
+              </div>
+            </div>
+          ))}
+          <div style={{ marginTop: "8px" }}>
+            <button style={S.btnGhost} onClick={() => dispatch({ type: "RESET_UBC_CRITERIA" })}>
+              Restaurar padrão
+            </button>
           </div>
         </Collapsible>
       )}
@@ -676,14 +717,14 @@ function Inputs() {
               Individualização por critério
             </p>
             <p style={{ ...S.hint, marginTop: 0, marginBottom: "16px" }}>
-              Cada critério é ponderado individualmente dentro do seu domínio geológico (0.00–1.00).
+              Cada critério é ponderado individualmente dentro do seu domínio geológico (0.00–2.00).
             </p>
             {NICHOLAS_CRITERIA_GROUPS.map(({ domain, title, items }) => (
               <div key={domain} style={{ marginBottom: "18px" }}>
                 <p style={{ fontSize: "14px", fontWeight: "700", color: C.primary, margin: "0 0 10px" }}>{title}</p>
                 <div style={S.grid2}>
                   {items.map(({ key, label }) => (
-                    <WeightSlider key={key} label={label} min={0} max={1}
+                    <WeightSlider key={key} label={label} min={0} max={2}
                       value={cw.nicholas[domain][key]}
                       onChange={(v) => handleNicholasCriteria(domain, key, v)} />
                   ))}
@@ -722,31 +763,44 @@ function Inputs() {
               ))}
             </div>
           </div>
+
+          <div style={{ marginTop: "16px" }}>
+            <button style={S.btnGhost}
+              onClick={() => {
+                dispatch({ type: "RESET_NICHOLAS_CRITERIA" });
+                dispatch({ type: "RESET_NICHOLAS_DOMAIN" });
+                setNicholasMode("criteria");
+              }}>
+              Restaurar padrão
+            </button>
+          </div>
         </Collapsible>
       )}
 
       {showSHB && (
         <Collapsible title="SH&B 2007" open={openBlocks.shb} onToggle={() => toggleBlock("shb")}>
-          <div style={S.grid2}>
-            {SHB_CRITERIA.map(({ key, label }) => (
-              <WeightSlider key={key} label={label} min={0} max={1}
-                value={cw.shb[key]}
-                onChange={(v) => dispatch({ type: "SET_CRITERIA_WEIGHT", method: "shb", key, value: v })} />
-            ))}
+          <p style={{ ...S.hint, marginTop: 0, marginBottom: "16px" }}>
+            Cada critério é ponderado individualmente dentro do seu domínio geológico/econômico (0.00–2.00).
+          </p>
+          {SHB_CRITERIA_GROUPS.map(({ domain, title, items }) => (
+            <div key={domain} style={{ marginBottom: "18px" }}>
+              <p style={{ fontSize: "14px", fontWeight: "700", color: C.primary, margin: "0 0 10px" }}>{title}</p>
+              <div style={S.grid2}>
+                {items.map(({ key, label }) => (
+                  <WeightSlider key={key} label={label} min={0} max={2}
+                    value={cw.shb[domain][key]}
+                    onChange={(v) => dispatch({ type: "SET_SHB_CRITERION", domain, key, value: v })} />
+                ))}
+              </div>
+            </div>
+          ))}
+          <div style={{ marginTop: "8px" }}>
+            <button style={S.btnGhost} onClick={() => dispatch({ type: "RESET_SHB_CRITERIA" })}>
+              Restaurar padrão
+            </button>
           </div>
         </Collapsible>
       )}
-
-      <div style={{ display: "flex", gap: "12px", marginTop: "12px", flexWrap: "wrap" }}>
-        <button style={S.btnGhost}
-          onClick={() => dispatch({ type: "COPY_WEIGHTS_TO_ALL", sourceMethod: "ubc" })}>
-          Copiar pesos do UBC para todos os métodos
-        </button>
-        <button style={S.btnGhost}
-          onClick={() => { dispatch({ type: "RESET_CRITERIA_WEIGHTS" }); setNicholasMode("criteria"); }}>
-          Restaurar padrão
-        </button>
-      </div>
     </div>
   ) : null;
 

@@ -75,11 +75,6 @@ export function classifyDipSHB(degrees) {
 // ---------------------------------------------------------------------------
 // PESOS PADRÃO POR CRITÉRIO
 // ---------------------------------------------------------------------------
-const DEFAULT_CRITERIA_WEIGHTS = {
-  shape: 1, thickness: 1, dip: 1, grade: 1, depth: 1,
-  rss: 1, rmr: 1, jointSpacing: 1, jointCondition: 1, oreValue: 1,
-};
-
 // Multiplicadores de domínio padrão (Nicholas 92)
 const DEFAULT_DOMAIN = { geo: 1, ob: 1, hw: 1, fw: 1 };
 
@@ -114,7 +109,11 @@ function sumCriteria(criteria) {
 // ALGORITMOS
 // ---------------------------------------------------------------------------
 export function calculateUBC(fd, criteriaWeights = {}) {
-  const w          = { ...DEFAULT_CRITERIA_WEIGHTS, ...criteriaWeights };
+  // Pesos por critério individualizados por domínio geológico (granular)
+  const geo = { shape: 1, thickness: 1, dip: 1, grade: 1, depth: 1, ...(criteriaWeights.geo || {}) };
+  const ob  = { rss: 1, rmr: 1,                                     ...(criteriaWeights.ob  || {}) };
+  const hw  = { rss: 1, rmr: 1,                                     ...(criteriaWeights.hw  || {}) };
+  const fw  = { rss: 1, rmr: 1,                                     ...(criteriaWeights.fw  || {}) };
   const depthClass = classifyDepthUBC(fd.depth?.ore);
   const dipClass   = classifyDipUBC(fd.dip);
   const rssOre = classifyRSS(fd.ucs?.ore,         fd.density?.ore,         fd.depth?.ore)         || fd.rss?.ore;
@@ -122,17 +121,17 @@ export function calculateUBC(fd, criteriaWeights = {}) {
   const rssFW  = classifyRSS(fd.ucs?.footwall,    fd.density?.footwall,    fd.depth?.footwall)    || fd.rss?.footwall;
 
   const criteria = [
-    [UBC_GEOMETRY,    "shape",     fd.geometry?.shape,        w.shape],
-    [UBC_GEOMETRY,    "thickness", fd.geometry?.thickness,    w.thickness],
-    [UBC_GEOMETRY,    "dip",       dipClass,                  w.dip],
-    [UBC_GEOMETRY,    "grade",     fd.geometry?.grade,        w.grade],
-    [UBC_GEOMETRY,    "depth",     depthClass,                w.depth],
-    [UBC_OREBODY,     "rss",       rssOre,                    w.rss],
-    [UBC_OREBODY,     "rmr",       fd.rmr?.ore,               w.rmr],
-    [UBC_HANGINGWALL, "rss",       rssHW,                     w.rss],
-    [UBC_HANGINGWALL, "rmr",       fd.rmr?.hangingWall,       w.rmr],
-    [UBC_FOOTWALL,    "rss",       rssFW,                     w.rss],
-    [UBC_FOOTWALL,    "rmr",       fd.rmr?.footwall,          w.rmr],
+    [UBC_GEOMETRY,    "shape",     fd.geometry?.shape,        geo.shape],
+    [UBC_GEOMETRY,    "thickness", fd.geometry?.thickness,    geo.thickness],
+    [UBC_GEOMETRY,    "dip",       dipClass,                  geo.dip],
+    [UBC_GEOMETRY,    "grade",     fd.geometry?.grade,        geo.grade],
+    [UBC_GEOMETRY,    "depth",     depthClass,                geo.depth],
+    [UBC_OREBODY,     "rss",       rssOre,                    ob.rss],
+    [UBC_OREBODY,     "rmr",       fd.rmr?.ore,               ob.rmr],
+    [UBC_HANGINGWALL, "rss",       rssHW,                     hw.rss],
+    [UBC_HANGINGWALL, "rmr",       fd.rmr?.hangingWall,       hw.rmr],
+    [UBC_FOOTWALL,    "rss",       rssFW,                     fw.rss],
+    [UBC_FOOTWALL,    "rmr",       fd.rmr?.footwall,          fw.rmr],
   ];
 
   const { totals, breakdown } = sumCriteria(criteria);
@@ -178,7 +177,12 @@ export function calculateNicholas(fd, criteriaWeights = {}) {
 }
 
 export function calculateSHB(fd, criteriaWeights = {}) {
-  const w          = { ...DEFAULT_CRITERIA_WEIGHTS, ...criteriaWeights };
+  // Pesos por critério individualizados por domínio geológico/econômico (granular)
+  const geo  = { shape: 1, thickness: 1, dip: 1, grade: 1, depth: 1, ...(criteriaWeights.geo  || {}) };
+  const econ = { oreValue: 1,                                        ...(criteriaWeights.econ || {}) };
+  const ob   = { rss: 1, rmr: 1,                                     ...(criteriaWeights.ob   || {}) };
+  const hw   = { rss: 1, rmr: 1,                                     ...(criteriaWeights.hw   || {}) };
+  const fw   = { rss: 1, rmr: 1,                                     ...(criteriaWeights.fw   || {}) };
   const dipClass   = classifyDipSHB(fd.dip);
   const depthClass = classifyDepthSHB(fd.depth?.ore);
   const rssOre = classifyRSS(fd.ucs?.ore,         fd.density?.ore,         fd.depth?.ore)         || fd.rss?.ore;
@@ -194,18 +198,18 @@ export function calculateSHB(fd, criteriaWeights = {}) {
   }[val] || val);
 
   const criteria = [
-    [SHB_GEOMETRY,    "shape",     fd.geometry?.shape,      w.shape],
-    [SHB_GEOMETRY,    "thickness", fd.geometry?.thickness,  w.thickness],
-    [SHB_GEOMETRY,    "dip",       dipClass,                w.dip],
-    [SHB_GEOMETRY,    "grade",     fd.geometry?.grade,      w.grade],
-    [SHB_GEOMETRY,    "depth",     depthClass,              w.depth],
-    [SHB_ECONOMIC,    "oreValue",  fd.oreValue,             w.oreValue],
-    [SHB_OREBODY,     "rss",       rssOre,                  w.rss],
-    [SHB_OREBODY,     "rmr",       mapRmrToSHB(fd.rmr?.ore),         w.rmr],
-    [SHB_HANGINGWALL, "rss",       rssHW,                   w.rss],
-    [SHB_HANGINGWALL, "rmr",       mapRmrToSHB(fd.rmr?.hangingWall), w.rmr],
-    [SHB_FOOTWALL,    "rss",       rssFW,                   w.rss],
-    [SHB_FOOTWALL,    "rmr",       mapRmrToSHB(fd.rmr?.footwall),    w.rmr],
+    [SHB_GEOMETRY,    "shape",     fd.geometry?.shape,      geo.shape],
+    [SHB_GEOMETRY,    "thickness", fd.geometry?.thickness,  geo.thickness],
+    [SHB_GEOMETRY,    "dip",       dipClass,                geo.dip],
+    [SHB_GEOMETRY,    "grade",     fd.geometry?.grade,      geo.grade],
+    [SHB_GEOMETRY,    "depth",     depthClass,              geo.depth],
+    [SHB_ECONOMIC,    "oreValue",  fd.oreValue,             econ.oreValue],
+    [SHB_OREBODY,     "rss",       rssOre,                  ob.rss],
+    [SHB_OREBODY,     "rmr",       mapRmrToSHB(fd.rmr?.ore),         ob.rmr],
+    [SHB_HANGINGWALL, "rss",       rssHW,                   hw.rss],
+    [SHB_HANGINGWALL, "rmr",       mapRmrToSHB(fd.rmr?.hangingWall), hw.rmr],
+    [SHB_FOOTWALL,    "rss",       rssFW,                   fw.rss],
+    [SHB_FOOTWALL,    "rmr",       mapRmrToSHB(fd.rmr?.footwall),    fw.rmr],
   ];
 
   const { totals, breakdown } = sumCriteria(criteria);

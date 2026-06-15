@@ -9,12 +9,26 @@ export const DOMAIN_PRESETS = {
   preset3: { geo: 1.0, ob: 1.0,  hw: 0.8,  fw: 0.5  },
 };
 
+// Critérios neutros (1.00) do UBC, agrupados por domínio geológico
+const neutralUbcCriteria = () => ({
+  geo: { shape: 1, thickness: 1, dip: 1, grade: 1, depth: 1 },
+  ob:  { rss: 1, rmr: 1 },
+  hw:  { rss: 1, rmr: 1 },
+  fw:  { rss: 1, rmr: 1 },
+});
+
+// Critérios neutros (1.00) do SH&B, agrupados por domínio geológico/econômico
+const neutralShbCriteria = () => ({
+  geo:  { shape: 1, thickness: 1, dip: 1, grade: 1, depth: 1 },
+  econ: { oreValue: 1 },
+  ob:   { rss: 1, rmr: 1 },
+  hw:   { rss: 1, rmr: 1 },
+  fw:   { rss: 1, rmr: 1 },
+});
+
 // Pesos individualizados por método de seleção
 const makeDefaultCriteriaWeights = () => ({
-  ubc: {
-    shape: 1, thickness: 1, dip: 1, grade: 1, depth: 1,
-    rss: 1, rmr: 1,
-  },
+  ubc: neutralUbcCriteria(),
   nicholas: {
     geo: { shape: 1, thickness: 1, dip: 1, grade: 1 },
     ob:  { rss: 1, jointSpacing: 1, jointCondition: 1 },
@@ -22,10 +36,7 @@ const makeDefaultCriteriaWeights = () => ({
     fw:  { rss: 1, jointSpacing: 1, jointCondition: 1 },
     domain: { ...DOMAIN_PRESETS.default },
   },
-  shb: {
-    shape: 1, thickness: 1, dip: 1, grade: 1, depth: 1,
-    rss: 1, rmr: 1, oreValue: 1,
-  },
+  shb: neutralShbCriteria(),
 });
 
 const initialFormData = {
@@ -74,19 +85,50 @@ function mmsReducer(state, action) {
         },
       };
     }
-    case "SET_CRITERIA_WEIGHT": {
-      const { method, key, value } = action;
+    case "SET_UBC_CRITERION": {
+      const { domain, key, value } = action;
+      const ubc = state.formData.criteriaWeights.ubc;
       return {
         ...state,
         formData: {
           ...state.formData,
           criteriaWeights: {
             ...state.formData.criteriaWeights,
-            [method]: { ...state.formData.criteriaWeights[method], [key]: value },
+            ubc: { ...ubc, [domain]: { ...ubc[domain], [key]: value } },
           },
         },
       };
     }
+    case "SET_SHB_CRITERION": {
+      const { domain, key, value } = action;
+      const shb = state.formData.criteriaWeights.shb;
+      return {
+        ...state,
+        formData: {
+          ...state.formData,
+          criteriaWeights: {
+            ...state.formData.criteriaWeights,
+            shb: { ...shb, [domain]: { ...shb[domain], [key]: value } },
+          },
+        },
+      };
+    }
+    case "RESET_UBC_CRITERIA":
+      return {
+        ...state,
+        formData: {
+          ...state.formData,
+          criteriaWeights: { ...state.formData.criteriaWeights, ubc: neutralUbcCriteria() },
+        },
+      };
+    case "RESET_SHB_CRITERIA":
+      return {
+        ...state,
+        formData: {
+          ...state.formData,
+          criteriaWeights: { ...state.formData.criteriaWeights, shb: neutralShbCriteria() },
+        },
+      };
     case "SET_NICHOLAS_CRITERION": {
       const { domain, key, value } = action;
       const nich = state.formData.criteriaWeights.nicholas;
@@ -155,20 +197,6 @@ function mmsReducer(state, action) {
           },
         },
       };
-    }
-    case "COPY_WEIGHTS_TO_ALL": {
-      const cw   = state.formData.criteriaWeights;
-      const src  = cw[action.sourceMethod];
-      const next = {};
-      for (const method of Object.keys(cw)) {
-        const target = { ...cw[method] };
-        for (const key of Object.keys(target)) {
-          if (key === "domain") continue;           // não replica multiplicadores de domínio
-          if (src[key] !== undefined) target[key] = src[key];
-        }
-        next[method] = target;
-      }
-      return { ...state, formData: { ...state.formData, criteriaWeights: next } };
     }
     case "RESET_CRITERIA_WEIGHTS":
       return { ...state, formData: { ...state.formData, criteriaWeights: makeDefaultCriteriaWeights() } };
