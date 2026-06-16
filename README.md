@@ -35,7 +35,6 @@ Open Pit · Block Caving · Sublevel Stoping · Sublevel Caving · Longwall · R
 - React + Vite
 - Recharts
 - React Router
-- GitHub Pages (deployment)
 
 ---
 
