@@ -13,14 +13,13 @@ import { rmrToClass, gsiToRmr, qToRmr } from "../data/rmrData";
 // TOKENS DE DESIGN
 // ---------------------------------------------------------------------------
 const C = {
-  primary:   "var(--primary)",
-  primary50: "var(--primary-50)",
-  border:    "var(--border)",
-  text:      "var(--text)",
-  muted:     "var(--muted)",
-  bg:        "var(--bg)",
-  surface:   "var(--bg-card)",  // cartões, inputs e superfícies
-  white:     "#ffffff",         // texto/ícone sobre fundo primário (constante)
+  primary:   "#1e3a5f",
+  primary50: "#e8eef5",
+  border:    "#e2e8f0",
+  text:      "#1a202c",
+  muted:     "#64748b",
+  bg:        "#f8fafc",
+  white:     "#ffffff",
   success:   "#0f766e",
   warning:   "#b45309",
 };
@@ -28,16 +27,16 @@ const C = {
 const S = {
   page:  { minHeight: "100vh", backgroundColor: C.bg, padding: "32px 24px" },
   wrap:  { maxWidth: "1100px", margin: "0 auto" },
-  card:  { backgroundColor: C.surface, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "32px", marginTop: "24px", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" },
+  card:  { backgroundColor: C.white, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "32px", marginTop: "24px", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" },
   label: { fontSize: "15px", fontWeight: "600", color: C.text, marginBottom: "6px", display: "block" },
   hint:  { fontSize: "13px", color: C.muted, marginTop: "4px" },
-  inp:   { width: "100%", padding: "11px 14px", borderRadius: "6px", border: `1px solid ${C.border}`, fontSize: "16px", color: C.text, boxSizing: "border-box", backgroundColor: C.surface },
+  inp:   { width: "100%", padding: "11px 14px", borderRadius: "6px", border: `1px solid ${C.border}`, fontSize: "16px", color: C.text, boxSizing: "border-box", backgroundColor: C.white },
   grid2: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" },
   grid3: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "24px" },
   sec:   { marginBottom: "28px" },
   div:   { borderTop: `1px solid ${C.border}`, margin: "24px 0" },
   btnPrimary:   { padding: "12px 28px", backgroundColor: C.primary, color: C.white, border: "none", borderRadius: "6px", fontWeight: "600", fontSize: "16px", cursor: "pointer" },
-  btnSecondary: { padding: "12px 28px", backgroundColor: C.surface, color: C.text, border: `1px solid ${C.border}`, borderRadius: "6px", fontWeight: "600", fontSize: "16px", cursor: "pointer" },
+  btnSecondary: { padding: "12px 28px", backgroundColor: C.white, color: C.text, border: `1px solid ${C.border}`, borderRadius: "6px", fontWeight: "600", fontSize: "16px", cursor: "pointer" },
   btnGhost:     { padding: "6px 14px", backgroundColor: "transparent", color: C.muted, border: `1px solid ${C.border}`, borderRadius: "6px", fontSize: "13px", cursor: "pointer" },
 };
 
@@ -112,7 +111,7 @@ function RmrField({ value, onChange }) {
       {/* Seletor de modo RMR / GSI / Q */}
       <div style={{ display: "flex", borderRadius: "6px", overflow: "hidden", border: `1px solid ${C.border}` }}>
         {[["rmr","RMR"],["gsi","GSI"],["q","Q"]].map(([m, lbl]) => (
-          <button key={m} onClick={() => setMode(m)} style={{ flex: 1, padding: "7px 4px", fontSize: "13px", fontWeight: mode === m ? "700" : "400", backgroundColor: mode === m ? C.primary : C.surface, color: mode === m ? C.white : C.muted, border: "none", cursor: "pointer" }}>{lbl}</button>
+          <button key={m} onClick={() => setMode(m)} style={{ flex: 1, padding: "7px 4px", fontSize: "13px", fontWeight: mode === m ? "700" : "400", backgroundColor: mode === m ? C.primary : C.white, color: mode === m ? C.white : C.muted, border: "none", cursor: "pointer" }}>{lbl}</button>
         ))}
       </div>
 
@@ -464,9 +463,9 @@ function Inputs() {
         ].map(({ key, label, desc }) => {
           const active = fd.selectedMethods[key];
           return (
-            <div key={key} onClick={() => toggleMethod(key)} style={{ padding: "16px", borderRadius: "8px", cursor: "pointer", border: `2px solid ${active ? C.primary : C.border}`, backgroundColor: active ? C.primary50 : C.surface, transition: "all 0.15s" }}>
+            <div key={key} onClick={() => toggleMethod(key)} style={{ padding: "16px", borderRadius: "8px", cursor: "pointer", border: `2px solid ${active ? C.primary : C.border}`, backgroundColor: active ? C.primary50 : C.white, transition: "all 0.15s" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <div style={{ width: "18px", height: "18px", borderRadius: "4px", flexShrink: 0, border: `2px solid ${active ? C.primary : C.border}`, backgroundColor: active ? C.primary : C.surface, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div style={{ width: "18px", height: "18px", borderRadius: "4px", flexShrink: 0, border: `2px solid ${active ? C.primary : C.border}`, backgroundColor: active ? C.primary : C.white, display: "flex", alignItems: "center", justifyContent: "center" }}>
                   {active && <span style={{ color: C.white, fontSize: "11px", fontWeight: "700" }}>✓</span>}
                 </div>
                 <div>

@@ -1,8 +1,8 @@
 import { useNavigate } from "react-router-dom";
  
 const C = {
-  primary:   "var(--primary)",
-  primaryLt: "var(--primary-lt)",
+  primary:   "#1e3a5f",
+  primaryLt: "#2c5282",
   white:     "#ffffff",
   muted:     "#93c5fd",
 };

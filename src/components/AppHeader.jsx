@@ -1,7 +1,6 @@
 import { useLocation } from "react-router-dom";
 import brasao    from "../assets/brasao.png";
 import mineracao from "../assets/mineracao.png";
-import { useTheme } from "../context/ThemeContext";
 
 const C = {
   primary: "#1e3a5f",
@@ -11,7 +10,6 @@ const C = {
 
 export default function AppHeader() {
   const { pathname } = useLocation();
-  const { theme, toggleTheme } = useTheme();
   if (pathname === "/") return null;
 
   return (
@@ -46,23 +44,8 @@ export default function AppHeader() {
         </div>
       </div>
 
-      {/* Coluna direita — toggle de tema + ícone mineração */}
-      <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "16px" }}>
-        <button
-          onClick={toggleTheme}
-          aria-label={theme === "dark" ? "Ativar modo claro" : "Ativar modo escuro"}
-          title={theme === "dark" ? "Modo claro" : "Modo escuro"}
-          style={{
-            width: "34px", height: "34px", borderRadius: "50%",
-            border: "1px solid rgba(255,255,255,0.3)",
-            backgroundColor: "rgba(255,255,255,0.08)",
-            color: C.white, fontSize: "16px", lineHeight: 1,
-            cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-            padding: 0,
-          }}
-        >
-          {theme === "dark" ? "☀️" : "🌙"}
-        </button>
+      {/* Coluna direita — ícone mineração */}
+      <div style={{ display: "flex", justifyContent: "flex-end" }}>
         <img
           src={mineracao}
           alt="Ícone mineração"
