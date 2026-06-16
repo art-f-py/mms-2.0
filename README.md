@@ -1,28 +1,82 @@
-# MMS 2.0 - Mining Method Selection Tool
+# MMS 2.0 — Mining Method Selection Tool
 
-## Objetivo
-Sistema de suporte à decisão para seleção de métodos de lavra, com base em critérios geotécnicos e geométricos.
+## Overview
+Web-based tool for underground mining method selection, implementing three classical selection algorithms simultaneously. Developed at LAPROM/UFRGS as part of a scientific initiation research project.
 
-## Versão atual
-- Visualização de ranking de métodos
+**Live:** https://art-f-py.github.io/mms-2.0/
 
-## Próximos passos
+---
 
-### Fase 1 – Estatísticas (MVP / SIC)
-- [ ] Criar página de estatísticas
-- [ ] Implementar gráficos (barras e comparação)
-- [ ] Gerar ranking dos métodos
-- [ ] Exibir explicação automática do resultado
+## Selection Methods
+| Method | Reference |
+|--------|-----------|
+| UBC 1995 | Miller, Pakalnis & Poulin |
+| Nicholas 1981/1992 | Nicholas, D.E. |
+| SH&B 2007 | Shahriar, Bakhtavar et al. |
 
-### Fase 2 – Inputs e integração dos métodos
-- [ ] Unificar métodos Nicolas, UBC e SH&B em uma única interface
-- [ ] Implementar sistema de inputs
+Each method evaluates 10 candidate mining methods:
+Open Pit · Block Caving · Sublevel Stoping · Sublevel Caving · Longwall · Room & Pillar · Shrinkage Stoping · Cut & Fill · Top Slicing · Square Set Stoping
 
-### Fase 3 – Funcionalidades avançadas
-- [ ] Permitir segmentação da mina por profundidade
-- [ ] Melhorar responsividade
+---
 
-### Fase 4 – Refinamento e produto
-- [ ] Arquitetura escalável
-- [ ] Tooltips
-- [ ] Sistema de tradução
+## Features
+- Unified input form — single parameter set runs all three methods simultaneously
+- Real-time deposit cross-section visualization (SVG)
+- Automatic RSS calculation from UCS, density and depth
+- RMR input via direct class, GSI conversion or Q-System conversion
+- Per-criterion weighting system with domain-level granularity
+- Nicholas 1992 domain presets (geo / orebody / HW / FW multipliers)
+- Interactive results with per-criterion radar breakdown
+- Cross-validated against MMS 1.0 across multiple deposit scenarios
+
+---
+
+## Tech Stack
+- React + Vite
+- Recharts
+- React Router
+- GitHub Pages (deployment)
+
+---
+
+## Project Structure
+src/
+├── algorithms/        # Selection algorithms and weight tables
+├── components/        # Reusable UI components
+├── context/           # Global state (MmsContext)
+├── data/              # Rock data (UCS, density)
+├── pages/             # Home, Inputs, Statistics, DepositSketch
+└── assets/            # Images
+
+---
+
+## Running Locally
+```bash
+npm install
+npm run dev
+```
+
+## Deployment
+```bash
+npm run deploy
+```
+
+---
+
+## References
+- Bieniawski, Z. T. (1989). *Engineering Rock Mass Classifications*. John Wiley & Sons.
+- Miller, T. L., Pakalnis, R., & Poulin, R. (1995). *UBC Mining Method Selection*. University of British Columbia.
+- Nicholas, D. E. (1981). Method Selection — A Numerical Approach. In *Design and Operation of Caving and Sublevel Stoping Mines*. SME-AIME.
+- Nicholas, D. E. (1992). Selection Procedure. In *Mining Engineering Handbook* (2nd ed., Vol. 2, pp. 2090–2106). SME.
+- Shahriar, K. et al. (2007). A New Numerical Method and AHP for Mining Method Selection. *4th Int. Symp. on High Performance Mine Production*.
+
+---
+
+## Development
+**Scientific Initiation — LAPROM/UFRGS**
+
+| Role | Name |
+|------|------|
+| Development | Artur Feijó |
+| Supervision | Higor Campos |
+| Collaboration | Fernando Cardozo · Carlos Petter · Renato Petter |
