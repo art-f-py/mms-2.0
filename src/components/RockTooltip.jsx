@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { DENSITY_DATA, UCS_DATA } from "../data/rockData";
 
 const C = {
@@ -20,6 +20,8 @@ const C = {
 export default function RockTooltip({ type, onSelect }) {
   const [open, setOpen]         = useState(false);
   const [family, setFamily]     = useState("Ígneas");
+  const [align, setAlign]       = useState("left");
+  const btnRef                  = useRef(null);
 
   const data   = type === "density" ? DENSITY_DATA : UCS_DATA;
   const unit   = type === "density" ? "kg/m³" : "MPa";
@@ -32,11 +34,21 @@ export default function RockTooltip({ type, onSelect }) {
     setOpen(false);
   };
 
+  const handleToggle = () => {
+    if (!open && btnRef.current) {
+      const rect       = btnRef.current.getBoundingClientRect();
+      const popupWidth = Math.min(340, window.innerWidth - 32);
+      setAlign(rect.left + popupWidth > window.innerWidth - 16 ? "right" : "left");
+    }
+    setOpen((v) => !v);
+  };
+
   return (
     <div style={{ position: "relative", display: "inline-block" }}>
       {/* Botão calculadora */}
       <button
-        onClick={() => setOpen((v) => !v)}
+        ref={btnRef}
+        onClick={handleToggle}
         title={`Consultar ${title} por tipo de rocha`}
         style={{
           width: "28px", height: "28px", borderRadius: "6px",
@@ -59,10 +71,13 @@ export default function RockTooltip({ type, onSelect }) {
           />
 
           <div style={{
-            position: "absolute", top: "34px", left: 0, zIndex: 201,
+            position: "absolute", top: "34px",
+            left: align === "left" ? 0 : "auto",
+            right: align === "right" ? 0 : "auto",
+            zIndex: 201,
             backgroundColor: C.white, border: `1px solid ${C.border}`,
             borderRadius: "10px", boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
-            width: "340px", overflow: "hidden",
+            width: "min(340px, calc(100vw - 32px))", overflow: "hidden",
           }}>
             {/* Header */}
             <div style={{ backgroundColor: C.primary, padding: "10px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>

@@ -45,33 +45,64 @@ function seededRand(seed) {
 // ---------------------------------------------------------------------------
 // GEOMETRIA DO CORPO DE MINÉRIO
 // ---------------------------------------------------------------------------
+function closedPathD(points) {
+  const [first, ...rest] = points;
+  return `M ${first[0]},${first[1]} ` + rest.map(([x, y]) => `L ${x},${y}`).join(" ") + " Z";
+}
+
+// Suaviza um polígono fechado com curvas de Bézier quadráticas: cada vértice
+// original vira ponto de controle, e a curva passa pelos pontos médios entre
+// vértices consecutivos — elimina pontas agudas mantendo o contorno irregular.
+function smoothedClosedPathD(points) {
+  const n = points.length;
+  const mid = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+  const m0 = mid(points[n - 1], points[0]);
+  let d = `M ${m0[0]},${m0[1]} `;
+  for (let i = 0; i < n; i++) {
+    const cur  = points[i];
+    const next = points[(i + 1) % n];
+    const m    = mid(cur, next);
+    d += `Q ${cur[0]},${cur[1]} ${m[0]},${m[1]} `;
+  }
+  return d + "Z";
+}
+
 function orePolygon(shape, halfLen, hw, cx, centerY, dx, dy, nx, ny) {
   if (shape === "Massivo") {
     const rx = halfLen * 1.1, ry = hw * 1.4;
-    return Array.from({ length: 25 }, (_, i) => {
+    const points = Array.from({ length: 25 }, (_, i) => {
       const rad = (i / 24) * Math.PI * 2;
-      return `${cx + rx * Math.cos(rad) * dx - ry * Math.sin(rad) * nx},${centerY + rx * Math.cos(rad) * dy - ry * Math.sin(rad) * ny}`;
-    }).join(" ");
+      return [
+        cx + rx * Math.cos(rad) * dx - ry * Math.sin(rad) * nx,
+        centerY + rx * Math.cos(rad) * dy - ry * Math.sin(rad) * ny,
+      ];
+    });
+    return closedPathD(points);
   }
   if (shape === "Irregular") {
-    const radios = [0.3, 1.7, 0.5, 1.9, 0.2, 1.4, 1.8, 0.4, 1.6, 0.3, 1.5, 0.8];
+    // Variação de raio moderada para evitar pontas estreladas mesmo antes da suavização
+    const radios = [0.58, 1.42, 0.7, 1.54, 0.52, 1.24, 1.48, 0.64, 1.36, 0.58, 1.3, 0.88];
     const offDeg = [20, -18, 25, -10, 22, -20, 15, -25, 18, -15, 20, -12];
     const N      = 12;
     const baseL  = halfLen * 0.65;
     const baseP  = hw * 0.9;
-    return Array.from({ length: N }, (_, i) => {
+    const points = Array.from({ length: N }, (_, i) => {
       const a  = (i / N) * Math.PI * 2 + offDeg[i] * (Math.PI / 180);
       const rL = baseL * radios[i];
       const rP = baseP * radios[i];
-      return `${cx + rL * Math.cos(a) * dx - rP * Math.sin(a) * nx},${centerY + rL * Math.cos(a) * dy - rP * Math.sin(a) * ny}`;
-    }).join(" ");
+      return [
+        cx + rL * Math.cos(a) * dx - rP * Math.sin(a) * nx,
+        centerY + rL * Math.cos(a) * dy - rP * Math.sin(a) * ny,
+      ];
+    });
+    return smoothedClosedPathD(points);
   }
   // Tabular
-  const p1x = cx - halfLen * dx - hw * nx, p1y = centerY - halfLen * dy - hw * ny;
-  const p2x = cx + halfLen * dx - hw * nx, p2y = centerY + halfLen * dy - hw * ny;
-  const p3x = cx + halfLen * dx + hw * nx, p3y = centerY + halfLen * dy + hw * ny;
-  const p4x = cx - halfLen * dx + hw * nx, p4y = centerY - halfLen * dy + hw * ny;
-  return `${p1x},${p1y} ${p2x},${p2y} ${p3x},${p3y} ${p4x},${p4y}`;
+  const p1 = [cx - halfLen * dx - hw * nx, centerY - halfLen * dy - hw * ny];
+  const p2 = [cx + halfLen * dx - hw * nx, centerY + halfLen * dy - hw * ny];
+  const p3 = [cx + halfLen * dx + hw * nx, centerY + halfLen * dy + hw * ny];
+  const p4 = [cx - halfLen * dx + hw * nx, centerY - halfLen * dy + hw * ny];
+  return closedPathD([p1, p2, p3, p4]);
 }
 
 // ---------------------------------------------------------------------------
@@ -149,9 +180,19 @@ export default function DepositSketch({ shape, thickness, dip, depth, grade }) {
         </pattern>
 
         <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%"   stopColor="#1e3a5f" stopOpacity="1.0"/>
-          <stop offset="30%"  stopColor="#1d6fa4" stopOpacity="0.7"/>
-          <stop offset="100%" stopColor="#5bc0de" stopOpacity="0.05"/>
+          <stop offset="0%"   stopColor="#dc2626"/>
+          <stop offset="25%"  stopColor="#f97316"/>
+          <stop offset="50%"  stopColor="#facc15"/>
+          <stop offset="75%"  stopColor="#22c55e"/>
+          <stop offset="100%" stopColor="#3b82f6"/>
+        </linearGradient>
+
+        <linearGradient id="legend-rainbow" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%"   stopColor="#dc2626"/>
+          <stop offset="25%"  stopColor="#f97316"/>
+          <stop offset="50%"  stopColor="#facc15"/>
+          <stop offset="75%"  stopColor="#22c55e"/>
+          <stop offset="100%" stopColor="#3b82f6"/>
         </linearGradient>
 
         <linearGradient id="grad-white-overlay" x1="0" y1="0" x2="1" y2="0">
@@ -180,26 +221,26 @@ export default function DepositSketch({ shape, thickness, dip, depth, grade }) {
 
         {isTabular && (
           <>
-            <polygon points={hwPoly} fill="url(#sk-hw)" stroke="#cbd5e1" strokeWidth="0.8" strokeDasharray="4 3"/>
+            <polygon points={hwPoly} fill="url(#sk-hw)" stroke="#cbd5e1" strokeWidth="0.8" strokeDasharray="4 3" strokeLinejoin="round"/>
             <text x={(h1x+h2x)/2 - 8} y={(h1y+h2y)/2 - 12} textAnchor="middle" dominantBaseline="central" fontSize="11" fill="#64748b">HW</text>
-            <polygon points={fwPoly} fill="url(#sk-fw)" stroke="#cbd5e1" strokeWidth="0.8" strokeDasharray="4 3"/>
+            <polygon points={fwPoly} fill="url(#sk-fw)" stroke="#cbd5e1" strokeWidth="0.8" strokeDasharray="4 3" strokeLinejoin="round"/>
             <text x={(f3x+f4x)/2 + 8} y={(f3y+f4y)/2 + 12} textAnchor="middle" dominantBaseline="central" fontSize="11" fill="#64748b">FW</text>
           </>
         )}
 
-        <polygon points={poly} fill="#1e3a5f" opacity="0.80" stroke="#1d6fa4" strokeWidth="1.5"/>
+        <path d={poly} fill="#1e3a5f" opacity="0.80" stroke="#1d6fa4" strokeWidth="1.5" strokeLinejoin="round"/>
 
         {grade === "Uniforme" && (
-          <polygon points={poly} fill="url(#ore-uniforme)"/>
+          <path d={poly} fill="url(#ore-uniforme)"/>
         )}
         {grade === "Gradacional" && (
           <>
-            <polygon points={poly} fill={`url(#${gradId})`} opacity="0.9"/>
-            <polygon points={poly} fill="url(#grad-white-overlay)"/>
+            <path d={poly} fill={`url(#${gradId})`} opacity="0.9"/>
+            <path d={poly} fill="url(#grad-white-overlay)"/>
             <text
               x={CX - halfLen * dx - oreHw * nx - 6}
               y={centerY - halfLen * dy - oreHw * ny - 14}
-              textAnchor="middle" dominantBaseline="central" fontSize="11" fill="#5bc0de"
+              textAnchor="middle" dominantBaseline="central" fontSize="11" fill="#dc2626"
             >teor ↑</text>
           </>
         )}
@@ -232,7 +273,9 @@ export default function DepositSketch({ shape, thickness, dip, depth, grade }) {
       <text x={lx + 20} y={ly + 28} textAnchor="start" dominantBaseline="central" fontSize="11" fill="#475569">Hanging wall</text>
       <rect x={lx} y={ly + 42} width="14" height="10" fill="url(#sk-fw)" stroke="#cbd5e1" strokeWidth="0.6" rx="2"/>
       <text x={lx + 20} y={ly + 48} textAnchor="start" dominantBaseline="central" fontSize="11" fill="#475569">Foot wall</text>
-      <rect x={lx} y={ly + 62} width="14" height="10" fill="#5bc0de" opacity="0.5" rx="2"/>
+      <rect x={lx} y={ly + 62} width="14" height="10" rx="2"
+        fill={grade === "Gradacional" ? "url(#legend-rainbow)" : "#5bc0de"}
+        opacity={grade === "Gradacional" ? 1 : 0.5}/>
       <text x={lx + 20} y={ly + 68} textAnchor="start" dominantBaseline="central" fontSize="11" fill="#475569">{gradeLabel}</text>
 
       {/* Rodapé */}

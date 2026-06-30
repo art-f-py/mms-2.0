@@ -32,9 +32,9 @@ const S = {
   hint:  { fontSize: "13px", color: C.muted, marginTop: "4px" },
   inp:   { width: "100%", padding: "11px 14px", borderRadius: "6px", border: `1px solid ${C.border}`, fontSize: "16px", color: C.text, boxSizing: "border-box", backgroundColor: C.white },
   grid2: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" },
-  grid3: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "24px" },
+  grid3: { display: "flex", flexWrap: "wrap", gap: "24px" },
   sec:   { marginBottom: "28px" },
-  div:   { borderTop: `1px solid ${C.border}`, margin: "24px 0" },
+  div:   { borderTop: `1px solid ${C.border}`, margin: "32px 0" },
   btnPrimary:   { padding: "12px 28px", backgroundColor: C.primary, color: C.white, border: "none", borderRadius: "6px", fontWeight: "600", fontSize: "16px", cursor: "pointer" },
   btnSecondary: { padding: "12px 28px", backgroundColor: C.white, color: C.text, border: `1px solid ${C.border}`, borderRadius: "6px", fontWeight: "600", fontSize: "16px", cursor: "pointer" },
   btnGhost:     { padding: "6px 14px", backgroundColor: "transparent", color: C.muted, border: `1px solid ${C.border}`, borderRadius: "6px", fontSize: "13px", cursor: "pointer" },
@@ -52,9 +52,9 @@ const RSS_COLORS = {
 // ---------------------------------------------------------------------------
 // COMPONENTES AUXILIARES
 // ---------------------------------------------------------------------------
-function Field({ label, hint, children }) {
+function Field({ label, hint, children, style }) {
   return (
-    <div style={S.sec}>
+    <div style={{ ...S.sec, ...style }}>
       <label style={S.label}>{label}</label>
       {children}
       {hint && <p style={S.hint}>{hint}</p>}
@@ -333,14 +333,6 @@ function Collapsible({ title, open, onToggle, children }) {
 // ---------------------------------------------------------------------------
 // STEPPER
 // ---------------------------------------------------------------------------
-const STEPS = [
-  { id: 1, label: "Métodos" },
-  { id: 2, label: "Geometria" },
-  { id: 3, label: "Geotécnica" },
-  { id: 4, label: "Complementar" },
-  { id: 5, label: "Revisar" },
-];
-
 function StepperHeader({ current, steps }) {
   return (
     <div style={{ display: "flex", alignItems: "center", marginBottom: "8px" }}>
@@ -408,11 +400,6 @@ function Inputs() {
   const showNich = sm.nicholas;
   const showSHB  = sm.shb;
   const anyMethod = Object.values(sm).some(Boolean);
-
-  // Etapa 4 sempre presente quando algum método está selecionado
-  const step4Relevant = anyMethod;
-  const visibleSteps  = step4Relevant ? STEPS : STEPS.filter((s) => s.id !== 4).map((s, i) => ({ ...s, id: i + 1 }));
-  const totalSteps = visibleSteps.length;
 
   const set = (section, field, value) =>
     dispatch({ type: "SET_FORM_FIELD", section, field, value });
@@ -496,9 +483,13 @@ function Inputs() {
           <Sel value={fd.geometry.thickness} onChange={(v) => set("geometry", "thickness", v)}
             options={["Muito estreito", "Estreito", "Intermediário", "Espesso", "Muito espesso"]} />
         </Field>
-        <Field label="Mergulho (°)" hint="UBC/Nicholas: Plano <20° | Interm. 20–55° | Inclinado >55°. SH&B: faixas de 15°.">
+        <div style={S.sec}>
+          <label style={{ ...S.label, display: "flex", alignItems: "center", gap: "6px" }}>
+            Mergulho (°)
+            <InfoTooltip text="UBC/Nicholas: Plano <20° | Interm. 20–55° | Inclinado >55°. SH&B: faixas de 15°." />
+          </label>
           <Num value={fd.dip} onChange={(v) => set("dip", null, v)} placeholder="ex: 65" />
-        </Field>
+        </div>
         <Field label="Distribuição de teores">
           <Sel value={fd.geometry.grade} onChange={(v) => set("geometry", "grade", v)}
             options={["Uniforme", "Gradacional", "Errático"]} />
@@ -537,7 +528,7 @@ function Inputs() {
           </p>
           <div style={S.grid3}>
             {["ore", "hangingWall", "footwall"].map((z) => (
-              <div key={z} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <div key={z} style={{ display: "flex", flexDirection: "column", gap: "12px", flex: "1 1 280px" }}>
                 <span style={{ fontWeight: "700", fontSize: "15px", color: C.text, borderBottom: `2px solid ${C.primary}`, paddingBottom: "4px" }}>
                   {zones[z]}
                 </span>
@@ -583,7 +574,7 @@ function Inputs() {
           <SecTitle>Rock Substance Strength (RSS)</SecTitle>
           <div style={S.grid3}>
             {["ore", "hangingWall", "footwall"].map((z) => (
-              <Field key={z} label={zones[z]}>
+              <Field key={z} label={zones[z]} style={{ flex: "1 1 280px" }}>
                 <Sel value={fd.rss[z]} onChange={(v) => set("rss", z, v)}
                   options={["Fraca", "Moderada", "Resistente"]} />
               </Field>
@@ -601,7 +592,7 @@ function Inputs() {
           </p>
           <div style={S.grid3}>
             {["ore", "hangingWall", "footwall"].map((z) => (
-              <div key={z} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <div key={z} style={{ display: "flex", flexDirection: "column", gap: "6px", flex: "1 1 280px" }}>
                 <label style={S.label}>{zones[z]}</label>
                 <RmrField value={fd.rmr[z]} onChange={(v) => set("rmr", z, v)} />
               </div>
@@ -617,16 +608,16 @@ function Inputs() {
           <p style={{ fontSize: "15px", fontWeight: "600", color: C.text, marginBottom: "12px" }}>Espaçamento das fraturas</p>
           <div style={S.grid3}>
             {["ore", "hangingWall", "footwall"].map((z) => (
-              <Field key={z} label={zones[z]}>
+              <Field key={z} label={zones[z]} style={{ flex: "1 1 280px" }}>
                 <Sel value={fd.jointSpacing[z]} onChange={(v) => set("jointSpacing", z, v)}
                   options={["Muito Perto", "Perto", "Longe", "Muito Longe"]} />
               </Field>
             ))}
           </div>
-          <p style={{ fontSize: "15px", fontWeight: "600", color: C.text, margin: "20px 0 12px" }}>Características das interfraturas</p>
+          <p style={{ fontSize: "15px", fontWeight: "600", color: C.text, margin: "28px 0 12px" }}>Características das interfraturas</p>
           <div style={S.grid3}>
             {["ore", "hangingWall", "footwall"].map((z) => (
-              <Field key={z} label={zones[z]}>
+              <Field key={z} label={zones[z]} style={{ flex: "1 1 280px" }}>
                 <Sel value={fd.jointCondition[z]} onChange={(v) => set("jointCondition", z, v)}
                   options={["Fraca", "Média", "Forte"]} />
               </Field>
@@ -638,7 +629,25 @@ function Inputs() {
   );
 
   // ---------------------------------------------------------------------------
-  // ETAPA 4 — COMPLEMENTAR
+  // ETAPA — EESG (Economic Environmental Social Governance)
+  // ---------------------------------------------------------------------------
+  const StepEESG = showSHB ? (
+    <div style={S.card}>
+      <SecTitle>EESG — Economic Environmental Social Governance</SecTitle>
+      <p style={{ ...S.hint, marginBottom: "20px" }}>
+        Critérios econômicos, ambientais, sociais e de governança. Usado pelo SH&B 2007.
+      </p>
+      <Field label="Valor do minério">
+        <div style={{ maxWidth: "280px" }}>
+          <Sel value={fd.oreValue} onChange={(v) => set("oreValue", null, v)}
+            options={["Baixo", "Médio", "Alto"]} />
+        </div>
+      </Field>
+    </div>
+  ) : null;
+
+  // ---------------------------------------------------------------------------
+  // ETAPA — COMPLEMENTAR
   // ---------------------------------------------------------------------------
   const cw = fd.criteriaWeights;
 
@@ -651,17 +660,6 @@ function Inputs() {
 
   const Step4 = anyMethod ? (
     <div style={S.card}>
-      {showSHB && (
-        <>
-          <SecTitle>Valor do Minério (SH&B)</SecTitle>
-          <div style={{ maxWidth: "280px" }}>
-            <Sel value={fd.oreValue} onChange={(v) => set("oreValue", null, v)}
-              options={["Baixo", "Médio", "Alto"]} />
-          </div>
-          <div style={S.div} />
-        </>
-      )}
-
       <SecTitle>Pesos por Critério</SecTitle>
       <p style={{ ...S.hint, marginBottom: "20px" }}>
         Ajuste a importância de cada critério por método. Padrão: 1.0. Cada método tem pesos independentes.
@@ -849,7 +847,7 @@ function Inputs() {
 
       {showSHB && (
         <>
-          <p style={{ fontSize: "15px", fontWeight: "700", color: C.text, margin: "20px 0 8px" }}>Complementar</p>
+          <p style={{ fontSize: "15px", fontWeight: "700", color: C.text, margin: "20px 0 8px" }}>EESG</p>
           <ReviewRow label="Valor do minério" value={fd.oreValue} />
         </>
       )}
@@ -861,10 +859,20 @@ function Inputs() {
     </div>
   );
 
-  // Monta array de conteúdo de etapas, excluindo etapa 4 se não relevante
-  const stepContents = step4Relevant
-    ? [Step1, Step2, Step3, Step4, StepReview]
-    : [Step1, Step2, Step3, StepReview];
+  // Monta etapas visíveis dinamicamente: EESG só aparece com SH&B selecionado,
+  // Complementar só aparece com algum método selecionado.
+  const stepDefs = [
+    { label: "Métodos",      show: true,      content: Step1 },
+    { label: "Geometria",    show: true,      content: Step2 },
+    { label: "Geotécnica",   show: true,      content: Step3 },
+    { label: "EESG",         show: showSHB,   content: StepEESG },
+    { label: "Complementar", show: anyMethod, content: Step4 },
+    { label: "Revisar",      show: true,      content: StepReview },
+  ];
+  const visibleStepDefs = stepDefs.filter((s) => s.show).map((s, i) => ({ ...s, id: i + 1 }));
+  const visibleSteps    = visibleStepDefs.map(({ id, label }) => ({ id, label }));
+  const totalSteps      = visibleStepDefs.length;
+  const stepContents    = visibleStepDefs.map((s) => s.content);
 
   // ---------------------------------------------------------------------------
   // RENDER

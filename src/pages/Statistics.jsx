@@ -82,19 +82,45 @@ function MethodBlock({ sm, result }) {
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
 
-        {/* GRÁFICO DE BARRAS / RADAR DE BREAKDOWN */}
+        {/* GRÁFICO DE BARRAS — sempre visível, nunca substituído */}
+        <div style={{ border: `1px solid ${colors.border}`, padding: "16px", borderRadius: "6px" }}>
+          <h4 style={{ marginTop: 0, fontSize: "13px", color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>Comparação</h4>
+          <ResponsiveContainer width="100%" height={340}>
+            <BarChart data={barData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="method" tick={{ fontSize: 11 }} />
+              <YAxis tick={{ fontSize: 11 }} />
+              <Tooltip formatter={(v) => v.toFixed(1)} labelFormatter={(l) => METHOD_LABELS[l] || l} />
+              <Bar dataKey="score">
+                {barData.map((entry) => (
+                  <Cell
+                    key={entry.method}
+                    fill={sm.color}
+                    fillOpacity={selectedMethod === null || entry.method === selectedMethod ? 1 : 0.35}
+                    stroke={entry.method === selectedMethod ? "#0f172a" : "none"}
+                    strokeWidth={entry.method === selectedMethod ? 2 : 0}
+                    cursor="pointer"
+                    onClick={() => handleCardClick(entry.method)}
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* RADAR NORMALIZADO por padrão; vira BREAKDOWN ao selecionar um método */}
         <div style={{ border: `1px solid ${colors.border}`, padding: "16px", borderRadius: "6px" }}>
           {selectedMethod === null ? (
             <>
-              <h4 style={{ marginTop: 0, fontSize: "13px", color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>Comparação</h4>
+              <h4 style={{ marginTop: 0, fontSize: "13px", color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>Radar (normalizado)</h4>
               <ResponsiveContainer width="100%" height={340}>
-                <BarChart data={barData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="method" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} />
-                  <Tooltip formatter={(v) => v.toFixed(1)} labelFormatter={(l) => METHOD_LABELS[l] || l} />
-                  <Bar dataKey="score" fill={sm.color} />
-                </BarChart>
+                <RadarChart data={radarData}>
+                  <PolarGrid />
+                  <PolarAngleAxis dataKey="method" tick={{ fontSize: 9 }} />
+                  <PolarRadiusAxis domain={[0, 100]} tick={{ fontSize: 9 }} />
+                  <Radar name={sm.label} dataKey="value" stroke={sm.color} fill={sm.color} fillOpacity={0.25} />
+                  <Tooltip formatter={(v) => `${v}`} />
+                </RadarChart>
               </ResponsiveContainer>
             </>
           ) : (
@@ -102,7 +128,7 @@ function MethodBlock({ sm, result }) {
               <h4 style={{ marginTop: 0, fontSize: "13px", color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>
                 Breakdown — {METHOD_LABELS[selectedMethod] || selectedMethod}
               </h4>
-              <ResponsiveContainer width="100%" height={380}>
+              <ResponsiveContainer width="100%" height={340}>
                 <RadarChart data={breakdownRadarData}>
                   <PolarGrid />
                   <PolarAngleAxis dataKey="criteria" tick={{ fontSize: 9 }} />
@@ -113,20 +139,6 @@ function MethodBlock({ sm, result }) {
               </ResponsiveContainer>
             </>
           )}
-        </div>
-
-        {/* RADAR NORMALIZADO */}
-        <div style={{ border: `1px solid ${colors.border}`, padding: "16px", borderRadius: "6px" }}>
-          <h4 style={{ marginTop: 0, fontSize: "13px", color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>Radar (normalizado)</h4>
-          <ResponsiveContainer width="100%" height={340}>
-            <RadarChart data={radarData}>
-              <PolarGrid />
-              <PolarAngleAxis dataKey="method" tick={{ fontSize: 9 }} />
-              <PolarRadiusAxis domain={[0, 100]} tick={{ fontSize: 9 }} />
-              <Radar name={sm.label} dataKey="value" stroke={sm.color} fill={sm.color} fillOpacity={0.25} />
-              <Tooltip formatter={(v) => `${v}`} />
-            </RadarChart>
-          </ResponsiveContainer>
         </div>
       </div>
 
