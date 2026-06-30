@@ -523,8 +523,9 @@ function Inputs() {
       {(showUBC || showSHB) && (
         <>
           <SecTitle>Rock Substance Strength (RSS)</SecTitle>
-          <p style={{ ...S.hint, marginBottom: "20px" }}>
-            RSS = UCS × 10⁶ / (Densidade × Profundidade × 9,81). Preencha os três campos por domínio.
+          <p style={{ ...S.hint, marginBottom: "20px", display: "flex", alignItems: "center", gap: "6px" }}>
+            Preencha os três campos por domínio.
+            <InfoTooltip text="RSS = UCS × 10⁶ / (Densidade × Profundidade × 9,81)." />
           </p>
           <div style={S.grid3}>
             {["ore", "hangingWall", "footwall"].map((z) => (
@@ -635,7 +636,7 @@ function Inputs() {
     <div style={S.card}>
       <SecTitle>EESG — Economic Environmental Social Governance</SecTitle>
       <p style={{ ...S.hint, marginBottom: "20px" }}>
-        Critérios econômicos, ambientais, sociais e de governança. Usado pelo SH&B 2007.
+        Critérios econômicos, ambientais, sociais e de governança.
       </p>
       <Field label="Valor do minério">
         <div style={{ maxWidth: "280px" }}>
