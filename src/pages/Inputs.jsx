@@ -191,6 +191,27 @@ function InfoTooltip({ text }) {
   );
 }
 
+const DIP_RANGES = [
+  { key: "ubc",      label: "UBC",      text: "Plano <20° | Intermediário 20–55° | Inclinado >55°" },
+  { key: "nicholas", label: "Nicholas", text: "Plano <20° | Intermediário 20–55° | Inclinado >55°" },
+  { key: "shb",      label: "SH&B",     text: "Plano <15° | Baixo 15–30° | Intermediário 30–45° | Pouco inclinado 45–60° | Inclinado >60°" },
+];
+
+function DipTooltipContent({ showUBC, showNich, showSHB }) {
+  const shown = { ubc: showUBC, nicholas: showNich, shb: showSHB };
+  const selected = DIP_RANGES.filter((m) => shown[m.key]);
+  const list = selected.length ? selected : DIP_RANGES;
+  return (
+    <>
+      {list.map((m, i) => (
+        <div key={m.key} style={{ marginTop: i > 0 ? "6px" : 0, paddingTop: i > 0 ? "6px" : 0, borderTop: i > 0 ? "1px solid rgba(241,245,249,0.2)" : "none" }}>
+          <strong>{m.label}:</strong> {m.text}
+        </div>
+      ))}
+    </>
+  );
+}
+
 function RSSBadge({ value }) {
   if (!value) return <span style={{ fontSize: "12px", color: C.muted, fontStyle: "italic" }}>preencha UCS, densidade e profundidade</span>;
   const col = RSS_COLORS[value] || { bg: "#f3f4f6", text: "#374151" };
@@ -486,7 +507,7 @@ function Inputs() {
         <div style={S.sec}>
           <label style={{ ...S.label, display: "flex", alignItems: "center", gap: "6px" }}>
             Mergulho (°)
-            <InfoTooltip text="UBC/Nicholas: Plano <20° | Interm. 20–55° | Inclinado >55°. SH&B: faixas de 15°." />
+            <InfoTooltip text={<DipTooltipContent showUBC={showUBC} showNich={showNich} showSHB={showSHB} />} />
           </label>
           <Num value={fd.dip} onChange={(v) => set("dip", null, v)} placeholder="ex: 65" />
         </div>
