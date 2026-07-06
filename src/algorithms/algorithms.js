@@ -81,16 +81,19 @@ const DEFAULT_DOMAIN = { geo: 1, ob: 1, hw: 1, fw: 1 };
 // ---------------------------------------------------------------------------
 // FUNÇÃO GENÉRICA DE PONTUAÇÃO
 // ---------------------------------------------------------------------------
+// Cada critério é uma tupla [table, key, selectedValue, multiplier?, breakdownKey?].
+// breakdownKey (opcional) desambigua critérios que compartilham a mesma `key` em
+// domínios distintos (ex.: rss em ob/hw/fw) para não colidirem no breakdown.
 function sumCriteria(criteria) {
   const totals    = Object.fromEntries(METHODS.map((m) => [m, 0]));
   const breakdown = {};
 
-  for (const [table, key, selectedValue, multiplier = 1] of criteria) {
+  for (const [table, key, selectedValue, multiplier = 1, breakdownKey] of criteria) {
     if (!selectedValue || selectedValue === "") continue;
     const scores = table[key]?.options?.[selectedValue];
     if (!scores) continue;
 
-    const bKey = `${key}__${selectedValue}`;
+    const bKey = `${breakdownKey || key}__${selectedValue}`;
     breakdown[bKey] = {};
 
     METHODS.forEach((method, i) => {
@@ -126,12 +129,12 @@ export function calculateUBC(fd, criteriaWeights = {}) {
     [UBC_GEOMETRY,    "dip",       dipClass,                  geo.dip],
     [UBC_GEOMETRY,    "grade",     fd.geometry?.grade,        geo.grade],
     [UBC_GEOMETRY,    "depth",     depthClass,                geo.depth],
-    [UBC_OREBODY,     "rss",       rssOre,                    ob.rss],
-    [UBC_OREBODY,     "rmr",       fd.rmr?.ore,               ob.rmr],
-    [UBC_HANGINGWALL, "rss",       rssHW,                     hw.rss],
-    [UBC_HANGINGWALL, "rmr",       fd.rmr?.hangingWall,       hw.rmr],
-    [UBC_FOOTWALL,    "rss",       rssFW,                     fw.rss],
-    [UBC_FOOTWALL,    "rmr",       fd.rmr?.footwall,          fw.rmr],
+    [UBC_OREBODY,     "rss",       rssOre,                    ob.rss, "rss_ob"],
+    [UBC_OREBODY,     "rmr",       fd.rmr?.ore,               ob.rmr, "rmr_ob"],
+    [UBC_HANGINGWALL, "rss",       rssHW,                     hw.rss, "rss_hw"],
+    [UBC_HANGINGWALL, "rmr",       fd.rmr?.hangingWall,       hw.rmr, "rmr_hw"],
+    [UBC_FOOTWALL,    "rss",       rssFW,                     fw.rss, "rss_fw"],
+    [UBC_FOOTWALL,    "rmr",       fd.rmr?.footwall,          fw.rmr, "rmr_fw"],
   ];
 
   const { totals, breakdown } = sumCriteria(criteria);
@@ -159,17 +162,17 @@ export function calculateNicholas(fd, criteriaWeights = {}) {
     [NICHOLAS_GEOMETRY,    "dip",            dipClass,                       geo.dip            * domain.geo],
     [NICHOLAS_GEOMETRY,    "grade",          fd.geometry?.grade,             geo.grade          * domain.geo],
     // Corpo de minério — peso por critério ob[...] × multiplicador de domínio ob
-    [NICHOLAS_OREBODY,     "rss",            rssOre,                         ob.rss             * domain.ob],
-    [NICHOLAS_OREBODY,     "jointSpacing",   fd.jointSpacing?.ore,           ob.jointSpacing    * domain.ob],
-    [NICHOLAS_OREBODY,     "jointCondition", fd.jointCondition?.ore,         ob.jointCondition  * domain.ob],
+    [NICHOLAS_OREBODY,     "rss",            rssOre,                         ob.rss             * domain.ob, "rss_ob"],
+    [NICHOLAS_OREBODY,     "jointSpacing",   fd.jointSpacing?.ore,           ob.jointSpacing    * domain.ob, "jointSpacing_ob"],
+    [NICHOLAS_OREBODY,     "jointCondition", fd.jointCondition?.ore,         ob.jointCondition  * domain.ob, "jointCondition_ob"],
     // Hanging wall — peso por critério hw[...] × multiplicador de domínio hw
-    [NICHOLAS_HANGINGWALL, "rss",            rssHW,                          hw.rss             * domain.hw],
-    [NICHOLAS_HANGINGWALL, "jointSpacing",   fd.jointSpacing?.hangingWall,   hw.jointSpacing    * domain.hw],
-    [NICHOLAS_HANGINGWALL, "jointCondition", fd.jointCondition?.hangingWall, hw.jointCondition  * domain.hw],
+    [NICHOLAS_HANGINGWALL, "rss",            rssHW,                          hw.rss             * domain.hw, "rss_hw"],
+    [NICHOLAS_HANGINGWALL, "jointSpacing",   fd.jointSpacing?.hangingWall,   hw.jointSpacing    * domain.hw, "jointSpacing_hw"],
+    [NICHOLAS_HANGINGWALL, "jointCondition", fd.jointCondition?.hangingWall, hw.jointCondition  * domain.hw, "jointCondition_hw"],
     // Foot wall — peso por critério fw[...] × multiplicador de domínio fw
-    [NICHOLAS_FOOTWALL,    "rss",            rssFW,                          fw.rss             * domain.fw],
-    [NICHOLAS_FOOTWALL,    "jointSpacing",   fd.jointSpacing?.footwall,      fw.jointSpacing    * domain.fw],
-    [NICHOLAS_FOOTWALL,    "jointCondition", fd.jointCondition?.footwall,    fw.jointCondition  * domain.fw],
+    [NICHOLAS_FOOTWALL,    "rss",            rssFW,                          fw.rss             * domain.fw, "rss_fw"],
+    [NICHOLAS_FOOTWALL,    "jointSpacing",   fd.jointSpacing?.footwall,      fw.jointSpacing    * domain.fw, "jointSpacing_fw"],
+    [NICHOLAS_FOOTWALL,    "jointCondition", fd.jointCondition?.footwall,    fw.jointCondition  * domain.fw, "jointCondition_fw"],
   ];
 
   const { totals, breakdown } = sumCriteria(criteria);
@@ -204,12 +207,12 @@ export function calculateSHB(fd, criteriaWeights = {}) {
     [SHB_GEOMETRY,    "grade",     fd.geometry?.grade,      geo.grade],
     [SHB_GEOMETRY,    "depth",     depthClass,              geo.depth],
     [SHB_ECONOMIC,    "oreValue",  fd.oreValue,             econ.oreValue],
-    [SHB_OREBODY,     "rss",       rssOre,                  ob.rss],
-    [SHB_OREBODY,     "rmr",       mapRmrToSHB(fd.rmr?.ore),         ob.rmr],
-    [SHB_HANGINGWALL, "rss",       rssHW,                   hw.rss],
-    [SHB_HANGINGWALL, "rmr",       mapRmrToSHB(fd.rmr?.hangingWall), hw.rmr],
-    [SHB_FOOTWALL,    "rss",       rssFW,                   fw.rss],
-    [SHB_FOOTWALL,    "rmr",       mapRmrToSHB(fd.rmr?.footwall),    fw.rmr],
+    [SHB_OREBODY,     "rss",       rssOre,                  ob.rss, "rss_ob"],
+    [SHB_OREBODY,     "rmr",       mapRmrToSHB(fd.rmr?.ore),         ob.rmr, "rmr_ob"],
+    [SHB_HANGINGWALL, "rss",       rssHW,                   hw.rss, "rss_hw"],
+    [SHB_HANGINGWALL, "rmr",       mapRmrToSHB(fd.rmr?.hangingWall), hw.rmr, "rmr_hw"],
+    [SHB_FOOTWALL,    "rss",       rssFW,                   fw.rss, "rss_fw"],
+    [SHB_FOOTWALL,    "rmr",       mapRmrToSHB(fd.rmr?.footwall),    fw.rmr, "rmr_fw"],
   ];
 
   const { totals, breakdown } = sumCriteria(criteria);

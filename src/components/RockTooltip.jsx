@@ -1,13 +1,14 @@
 import { useState, useRef } from "react";
 import { DENSITY_DATA, UCS_DATA } from "../data/rockData";
 
+// Tokens semânticos → variáveis CSS centralizadas em index.css
 const C = {
-  primary: "#1e3a5f",
-  border:  "#e2e8f0",
-  text:    "#1a202c",
-  muted:   "#64748b",
-  white:   "#ffffff",
-  bg:      "#f8fafc",
+  primary: "var(--color-primary)",
+  border:  "var(--color-border)",
+  text:    "var(--color-text)",
+  muted:   "var(--color-muted)",
+  white:   "var(--color-white)",
+  bg:      "var(--color-bg)",
 };
 
 /**

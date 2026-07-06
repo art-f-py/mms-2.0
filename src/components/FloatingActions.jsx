@@ -20,8 +20,8 @@ function FloatingButton({ icon, label, onClick }) {
       {hover && (
         <span style={{
           position: "absolute", right: "44px", whiteSpace: "nowrap",
-          backgroundColor: "var(--bg-card)", color: "var(--text)",
-          border: "1px solid var(--border)", borderRadius: "6px",
+          backgroundColor: "var(--color-bg)", color: "var(--color-text)",
+          border: "1px solid var(--color-border)", borderRadius: "6px",
           padding: "5px 10px", fontSize: "12px", fontWeight: 600,
           boxShadow: "0 2px 8px rgba(0,0,0,0.18)", pointerEvents: "none",
         }}>
@@ -33,7 +33,7 @@ function FloatingButton({ icon, label, onClick }) {
         aria-label={label}
         style={{
           width: "36px", height: "36px", borderRadius: "50%",
-          backgroundColor: "var(--bg-card)", border: "1px solid var(--border)",
+          backgroundColor: "var(--color-bg)", border: "1px solid var(--color-border)",
           boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
           cursor: "pointer", fontSize: "16px", lineHeight: 1,
           display: "flex", alignItems: "center", justifyContent: "center",
@@ -74,7 +74,7 @@ export default function FloatingActions() {
       {toast && (
         <div style={{
           position: "fixed", bottom: "20px", left: "50%", transform: "translateX(-50%)",
-          zIndex: 1100, backgroundColor: "#0f766e", color: "#ffffff",
+          zIndex: 1100, backgroundColor: "var(--color-success)", color: "var(--color-white)",
           padding: "12px 22px", borderRadius: "8px", fontSize: "14px", fontWeight: 600,
           boxShadow: "0 6px 20px rgba(0,0,0,0.3)",
         }}>

@@ -1,12 +1,6 @@
-import { useLocation } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
 import brasao    from "../assets/brasao.png";
 import mineracao from "../assets/mineracao.png";
-
-const C = {
-  primary: "#1e3a5f",
-  white:   "#ffffff",
-  muted:   "#93c5fd",
-};
 
 export default function AppHeader() {
   const { pathname } = useLocation();
@@ -14,7 +8,7 @@ export default function AppHeader() {
 
   return (
     <header style={{
-      backgroundColor: C.primary,
+      backgroundColor: "var(--color-primary)",
       padding: "12px 28px",
       display: "grid",
       gridTemplateColumns: "1fr auto 1fr",
@@ -25,24 +19,24 @@ export default function AppHeader() {
       zIndex: 100,
     }}>
 
-      {/* Coluna esquerda — brasão */}
-      <div style={{ display: "flex", alignItems: "center" }}>
+      {/* Coluna esquerda — brasão (link para Home) */}
+      <Link to="/" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
         <img
           src={brasao}
           alt="Brasão UFRGS"
           style={{ height: "52px", width: "auto" }}
         />
-      </div>
+      </Link>
 
-      {/* Coluna central — título */}
-      <div style={{ textAlign: "center" }}>
-        <div style={{ fontSize: "18px", fontWeight: "700", color: C.white, letterSpacing: "0.02em", lineHeight: 1.2 }}>
+      {/* Coluna central — título (link para Home) */}
+      <Link to="/" style={{ display: "block", textAlign: "center", textDecoration: "none" }}>
+        <div style={{ fontSize: "18px", fontWeight: "700", color: "var(--color-white)", letterSpacing: "0.02em", lineHeight: 1.2 }}>
           Mining Method Selection Tool
         </div>
-        <div style={{ fontSize: "11px", color: C.muted, letterSpacing: "0.06em", marginTop: "2px" }}>
+        <div style={{ fontSize: "11px", color: "#93c5fd", letterSpacing: "0.06em", marginTop: "2px" }}>
           UFRGS · LAPROM · MMS 2.0
         </div>
-      </div>
+      </Link>
 
       {/* Coluna direita — ícone mineração */}
       <div style={{ display: "flex", justifyContent: "flex-end" }}>

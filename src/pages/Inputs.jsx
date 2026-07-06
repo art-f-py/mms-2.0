@@ -12,16 +12,17 @@ import { rmrToClass, gsiToRmr, qToRmr } from "../data/rmrData";
 // ---------------------------------------------------------------------------
 // TOKENS DE DESIGN
 // ---------------------------------------------------------------------------
+// Tokens semânticos → variáveis CSS centralizadas em index.css
 const C = {
-  primary:   "#1e3a5f",
-  primary50: "#e8eef5",
-  border:    "#e2e8f0",
-  text:      "#1a202c",
-  muted:     "#64748b",
-  bg:        "#f8fafc",
-  white:     "#ffffff",
-  success:   "#0f766e",
-  warning:   "#b45309",
+  primary:   "var(--color-primary)",
+  primary50: "var(--color-primary-50)",
+  border:    "var(--color-border)",
+  text:      "var(--color-text)",
+  muted:     "var(--color-muted)",
+  bg:        "var(--color-bg)",
+  white:     "var(--color-white)",
+  success:   "var(--color-success)",
+  warning:   "var(--color-warning)",
 };
 
 const S = {
@@ -428,6 +429,14 @@ function Inputs() {
   const toggleMethod = (key) =>
     dispatch({ type: "SET_FORM_FIELD", section: "selectedMethods", field: key, value: !fd.selectedMethods[key] });
 
+  // Reseta todo o formulário e limpa o estado persistido no localStorage
+  const clearForm = () => {
+    if (!window.confirm("Limpar todos os campos do formulário? Esta ação não pode ser desfeita.")) return;
+    localStorage.removeItem("mms2-state");
+    dispatch({ type: "RESET_ALL" });
+    setStep(1);
+  };
+
   // RSS em tempo real
   const rssLive = {
     ore:         classifyRSS(fd.ucs?.ore,         fd.density?.ore,         fd.depth?.ore),
@@ -486,6 +495,9 @@ function Inputs() {
         })}
       </div>
       {!anyMethod && <p style={{ marginTop: "16px", fontSize: "15px", color: C.warning, fontWeight: "600" }}>⚠ Selecione pelo menos um método para continuar.</p>}
+      <div style={{ marginTop: "24px", borderTop: `1px solid ${C.border}`, paddingTop: "16px", display: "flex", justifyContent: "flex-end" }}>
+        <button style={S.btnGhost} onClick={clearForm}>Limpar formulário</button>
+      </div>
     </div>
   );
 

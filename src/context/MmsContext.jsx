@@ -1,4 +1,6 @@
-import { createContext, useContext, useReducer } from "react";
+import { createContext, useContext, useReducer, useEffect } from "react";
+
+const STORAGE_KEY = "mms2-state";
 
 // Presets de multiplicadores de domínio do Nicholas 92
 // eslint-disable-next-line react-refresh/only-export-components
@@ -204,6 +206,12 @@ function mmsReducer(state, action) {
       return { ...state, results: { ...state.results, [action.method]: action.payload } };
     case "CLEAR_RESULTS":
       return { ...state, results: initialState.results };
+    case "RESET_ALL":
+      // Volta ao estado inicial com objetos frescos (formData + resultados limpos)
+      return {
+        formData: { ...initialFormData, criteriaWeights: makeDefaultCriteriaWeights() },
+        results:  { ubc: null, nicholas: null, shb: null },
+      };
     default:
       return state;
   }
@@ -211,8 +219,34 @@ function mmsReducer(state, action) {
 
 const MmsContext = createContext(null);
 
+// Carrega apenas o formData persistido; os resultados NÃO são restaurados —
+// ao reabrir, o usuário revê os inputs mas precisa recalcular.
+function loadInitialState() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) return initialState;
+    const parsed = JSON.parse(saved);
+    return {
+      ...initialState,
+      formData: { ...initialFormData, ...(parsed.formData || {}) },
+    };
+  } catch {
+    return initialState;
+  }
+}
+
 export function MmsProvider({ children }) {
-  const [state, dispatch] = useReducer(mmsReducer, initialState);
+  const [state, dispatch] = useReducer(mmsReducer, undefined, loadInitialState);
+
+  // Persiste só o formData a cada mudança (resultados ficam de fora de propósito)
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ formData: state.formData }));
+    } catch {
+      // localStorage indisponível ou cota excedida — ignora
+    }
+  }, [state.formData]);
+
   return (
     <MmsContext.Provider value={{ state, dispatch }}>
       {children}

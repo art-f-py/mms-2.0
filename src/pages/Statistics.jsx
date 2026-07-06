@@ -17,24 +17,34 @@ const SELECTION_METHODS = [
   { key: "shb",      label: "SH&B 2007",           color: "#5bc0de" },
 ];
 
+// Tokens semânticos → variáveis CSS centralizadas em index.css
 const colors = {
-  primary:    "#1e3a5f",
-  border:     "#d1d5db",
-  text:       "#111827",
-  background: "#ffffff",
+  primary:    "var(--color-primary)",
+  border:     "var(--color-border)",
+  text:       "var(--color-text)",
+  background: "var(--color-bg-card)",
 };
 
 const CRITERIA_LABELS = {
-  shape:          "Forma",
-  thickness:      "Espessura",
-  dip:            "Mergulho",
-  grade:          "Teor",
-  depth:          "Profundidade",
-  rss:            "RSS",
-  rmr:            "RMR",
-  jointSpacing:   "Espaç. Juntas",
-  jointCondition: "Cond. Juntas",
-  oreValue:       "Valor Minério",
+  shape:              "Forma",
+  thickness:          "Espessura",
+  dip:                "Mergulho",
+  grade:              "Teor",
+  depth:              "Profundidade",
+  oreValue:           "Valor Minério",
+  // Chaves compostas por domínio (ver breakdownKey em algorithms.js)
+  rss_ob:             "RSS — Ore",
+  rss_hw:             "RSS — HW",
+  rss_fw:             "RSS — FW",
+  rmr_ob:             "RMR — Ore",
+  rmr_hw:             "RMR — HW",
+  rmr_fw:             "RMR — FW",
+  jointSpacing_ob:    "Espaç. Fraturas — Ore",
+  jointSpacing_hw:    "Espaç. Fraturas — HW",
+  jointSpacing_fw:    "Espaç. Fraturas — FW",
+  jointCondition_ob:  "Cond. Interfraturas — Ore",
+  jointCondition_hw:  "Cond. Interfraturas — HW",
+  jointCondition_fw:  "Cond. Interfraturas — FW",
 };
 
 // ---------------------------------------------------------------------------
@@ -203,8 +213,13 @@ function Statistics() {
   );
 
   return (
-    <div style={{ backgroundColor: "#ffffff", minHeight: "100vh", padding: "32px 24px" }}>
+    <div style={{ backgroundColor: "var(--color-bg)", minHeight: "100vh", padding: "32px 24px" }}>
       <div style={{ maxWidth: "1400px", margin: "0 auto", width: "100%", color: colors.text }}>
+
+      <div style={{ marginBottom: "8px" }}>
+        <h2 style={{ margin: "0 0 4px", color: "var(--color-text)", fontSize: "24px" }}>Resultados</h2>
+        <p style={{ margin: 0, color: "var(--color-muted)", fontSize: "16px" }}>MMS 2.0 — Mining Method Selection</p>
+      </div>
 
       {/* PILLS */}
       <div style={{ marginTop: "20px", display: "flex", gap: "24px", flexWrap: "wrap" }}>
@@ -233,7 +248,7 @@ function Statistics() {
       {/* BOTÃO VOLTAR — fixo na tela */}
       <button
         onClick={() => navigate("/inputs")}
-        style={{ position: "fixed", bottom: "24px", left: "24px", color: "#1e3a5f", padding: "10px 28px", backgroundColor: "#f1f5f9", border: `1px solid ${colors.border}`, borderRadius: "6px", cursor: "pointer", fontSize: "14px", boxShadow: "0 2px 8px rgba(0,0,0,0.15)", zIndex: 100 }}
+        style={{ position: "fixed", bottom: "24px", left: "24px", color: "var(--color-primary)", padding: "10px 28px", backgroundColor: "#f1f5f9", border: `1px solid ${colors.border}`, borderRadius: "6px", cursor: "pointer", fontSize: "14px", boxShadow: "0 2px 8px rgba(0,0,0,0.15)", zIndex: 100 }}
       >
         ← Voltar para Inputs
       </button>

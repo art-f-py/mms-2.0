@@ -1,18 +1,11 @@
 import { useNavigate } from "react-router-dom";
- 
-const C = {
-  primary:   "#1e3a5f",
-  primaryLt: "#2c5282",
-  white:     "#ffffff",
-  muted:     "#93c5fd",
-};
- 
+
 export default function Home() {
   const navigate = useNavigate();
   return (
     <div style={{
       minHeight: "100vh",
-      background: `linear-gradient(160deg, ${C.primary} 0%, ${C.primaryLt} 100%)`,
+      background: "linear-gradient(160deg, var(--color-primary) 0%, var(--color-primary-lt) 100%)",
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
@@ -23,7 +16,7 @@ export default function Home() {
       <h1 style={{
         fontSize: "42px",
         fontWeight: 700,
-        color: C.white,
+        color: "var(--color-white)",
         letterSpacing: "0.02em",
         margin: 0,
         lineHeight: 1.15,
@@ -32,7 +25,7 @@ export default function Home() {
       </h1>
       <p style={{
         fontSize: "15px",
-        color: C.muted,
+        color: "#93c5fd",
         letterSpacing: "0.08em",
         marginTop: "16px",
         marginBottom: "48px",
@@ -43,8 +36,8 @@ export default function Home() {
         onClick={() => navigate("/inputs")}
         style={{
           padding: "14px 48px",
-          backgroundColor: C.white,
-          color: C.primary,
+          backgroundColor: "var(--color-white)",
+          color: "var(--color-primary)",
           border: "none",
           borderRadius: "8px",
           fontWeight: 700,

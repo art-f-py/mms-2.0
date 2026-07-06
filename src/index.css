@@ -2,15 +2,32 @@
   box-sizing: border-box;
 }
 
-/* Tokens claros usados pelos modais e ações flutuantes */
+/* -------------------------------------------------------------------------
+   TOKENS DE DESIGN — fonte única de verdade das cores da aplicação
+   ------------------------------------------------------------------------- */
 :root {
-  --bg:         #ffffff;
-  --bg-card:    #f8fafc;
-  --text:       #1a202c;
-  --muted:      #64748b;
-  --border:     #e2e8f0;
-  --primary:    #1e3a5f;
-  --primary-lt: #2c5282;
+  --color-primary:    #1e3a5f;
+  --color-primary-lt: #2c5282;
+  --color-primary-50: #e8eef5;
+  --color-white:      #ffffff;
+  --color-bg:         #f8fafc;
+  --color-bg-card:    #ffffff;
+  --color-text:       #1a202c;
+  --color-muted:      #64748b;
+  --color-border:     #e2e8f0;
+  --color-success:    #0f766e;
+  --color-warning:    #b45309;
+
+  /* Aliases legados usados por modais e ações flutuantes.
+     Nota: --bg era #ffffff (fundo de input) e --bg-card era #f8fafc (cartão),
+     portanto mapeiam de forma cruzada para preservar a aparência original. */
+  --bg:         var(--color-bg-card);
+  --bg-card:    var(--color-bg);
+  --text:       var(--color-text);
+  --muted:      var(--color-muted);
+  --border:     var(--color-border);
+  --primary:    var(--color-primary);
+  --primary-lt: var(--color-primary-lt);
 }
 
 html, body {
