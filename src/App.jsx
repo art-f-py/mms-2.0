@@ -5,11 +5,13 @@ import Inputs     from "./pages/Inputs";
 import { MmsProvider } from "./context/MmsContext";
 import AppHeader  from "./components/AppHeader";
 import FloatingActions from "./components/FloatingActions";
+import { SEO } from "./components/SEO";
 
 function App() {
   return (
     <MmsProvider>
       <Router basename="/mms-2.0">
+        <SEO />
         <AppHeader />
         <Routes>
           <Route path="/"           element={<Home />} />
