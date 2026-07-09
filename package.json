@@ -1,7 +1,24 @@
 {
   "name": "mms-2.0",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "Web-based decision-support tool for underground mining method selection, implementing the UBC (1995), Nicholas (1981/1992) and SH&B (2007) selection algorithms simultaneously.",
+  "author": "Artur Feijó",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/art-f-py/mms-2.0.git"
+  },
+  "homepage": "https://art-f-py.github.io/mms-2.0/",
+  "keywords": [
+    "mining engineering",
+    "mining method selection",
+    "underground mining",
+    "decision support",
+    "UBC method",
+    "Nicholas method",
+    "SH&B method"
+  ],
   "type": "module",
   "scripts": {
     "dev": "vite",
