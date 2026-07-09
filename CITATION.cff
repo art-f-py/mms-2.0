@@ -1,0 +1,41 @@
+cff-version: 1.2.0
+message: "Se utilizar este software, por favor cite-o conforme os metadados abaixo."
+title: "MMS 2.0 - Mining Method Selection Tool"
+version: 1.0.0
+date-released: 2026-07-09
+license: MIT
+repository-code: "https://github.com/art-f-py/mms-2.0"
+url: "https://art-f-py.github.io/mms-2.0/"
+abstract: >-
+  Ferramenta web de suporte a decisao para selecao de metodos de lavra
+  subterranea, implementando simultaneamente os algoritmos de selecao
+  UBC (1995), Nicholas (1981/1992) e SH&B (2007), com sistema de
+  ponderacao por criterio e visualizacao interativa de resultados.
+authors:
+  - given-names: "Artur"
+    family-names: "Feijó"
+    email: "artur.feijo@ufrgs.br"
+    orcid: "https://orcid.org/0009-0007-4228-1735"
+    affiliation: "Universidade Federal do Rio Grande do Sul (UFRGS)"
+  - given-names: "Higor José Silva"
+    family-names: "Campos"
+    email: "higor.jose@ufrgs.br"
+    orcid: "https://orcid.org/0009-0001-4762-6065"
+    affiliation: "Universidade Federal do Rio Grande do Sul (UFRGS)"
+  - given-names: "Fernando"
+    family-names: "Cardozo"
+    affiliation: "Universidade Federal do Rio Grande do Sul (UFRGS)"
+  - given-names: "Carlos"
+    family-names: "Petter"
+    affiliation: "Universidade Federal do Rio Grande do Sul (UFRGS)"
+  - given-names: "Renato"
+    family-names: "Petter"
+    affiliation: "Universidade Federal do Rio Grande do Sul (UFRGS)"
+keywords:
+  - mining engineering
+  - mining method selection
+  - underground mining
+  - decision support system
+  - UBC method
+  - Nicholas method
+  - SH&B method
