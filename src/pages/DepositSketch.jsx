@@ -154,7 +154,7 @@ export default function DepositSketch({ shape, thickness, dip, depth, grade }) {
       r:  rand() * oreHw * 0.3 + oreHw * 0.12,
       op: rand() * 0.35 + 0.2,
     }));
-  }, [shape, hw, dipDeg, depthM, dx, dy, nx, ny, centerY]); // eslint-disable-line
+  }, [halfLen, oreHw, dx, dy, nx, ny, centerY]);
 
   const gradId     = `ore-grad-${dipDeg}-${depthM}`;
   const lx         = W - 168, ly = SURFACE_Y + 16;

@@ -234,7 +234,8 @@ Se utilizar este software em trabalhos academicos, cite o projeto conforme `CITA
 Referencia curta:
 
 ```text
-Feijo, Artur; Campos, Higor Jose Silva.
+Feijó, Artur; Campos, Higor José Silva; Cardozo, Fernando Alves Cantini;
+Petter, Carlos Otávio; Petter, Renato Aurélio.
 MMS 2.0 - Mining Method Selection Tool. Version 1.0.0. 2026. MIT License.
 ```
 

@@ -3,6 +3,8 @@
         404.html
         favicon.svg
         icons.svg
+        robots.txt
+        sitemap.xml
     scripts/
         repo_map_gen.py
     src/
@@ -38,6 +40,7 @@
         App.jsx
         index.css
         main.jsx
+    CITATION.cff
     eslint.config.js
     index.html
     LICENSE
