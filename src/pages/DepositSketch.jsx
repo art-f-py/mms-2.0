@@ -165,7 +165,7 @@ export default function DepositSketch({ shape, thickness, dip, depth, grade }) {
       width="100%"
       viewBox={`0 0 ${W} ${H}`}
       role="img"
-      style={{ display: "block", borderRadius: "8px" }}
+      style={{ display: "block", borderRadius: "8px", maxWidth: "100%", height: "auto" }}
     >
       <title>Seção transversal do depósito</title>
       <desc>Visualização geométrica do depósito mineral gerada a partir dos inputs do formulário.</desc>

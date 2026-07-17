@@ -14,7 +14,7 @@ export default function Home() {
       padding: "32px 24px",
     }}>
       <h1 style={{
-        fontSize: "42px",
+        fontSize: "clamp(28px, 9vw, 42px)",
         fontWeight: 700,
         color: "var(--color-white)",
         letterSpacing: "0.02em",
@@ -24,7 +24,7 @@ export default function Home() {
         Mining Method Selection Tool
       </h1>
       <p style={{
-        fontSize: "15px",
+        fontSize: "clamp(12px, 3.5vw, 15px)",
         color: "#93c5fd",
         letterSpacing: "0.08em",
         marginTop: "16px",
@@ -35,7 +35,8 @@ export default function Home() {
       <button
         onClick={() => navigate("/inputs")}
         style={{
-          padding: "14px 48px",
+          padding: "14px clamp(28px, 10vw, 48px)",
+          minHeight: "44px",
           backgroundColor: "var(--color-white)",
           color: "var(--color-primary)",
           border: "none",

@@ -52,3 +52,37 @@ select,
 input[type="range"] {
   cursor: pointer;
 }
+
+/* -------------------------------------------------------------------------
+   RESPONSIVIDADE — regras que dependem de mudança estrutural de layout
+   (grid de N colunas -> 1 coluna, ocultar rótulos). Ajustes puramente de
+   tamanho (fontes, imagens, paddings) ficam em clamp() inline nos componentes.
+   ------------------------------------------------------------------------- */
+.mms-grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+@media (max-width: 640px) {
+  .mms-grid2 {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+.mms-stepper-current {
+  display: none;
+}
+@media (max-width: 560px) {
+  .mms-stepper-label {
+    display: none;
+  }
+  .mms-stepper-current {
+    display: block;
+    margin: 0 0 10px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--color-primary);
+    text-align: center;
+  }
+}

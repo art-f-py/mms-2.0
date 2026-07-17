@@ -90,7 +90,7 @@ function MethodBlock({ sm, result }) {
         <h3 style={{ margin: 0, color: sm.color }}>{sm.label}</h3>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "20px" }}>
 
         {/* GRÁFICO DE BARRAS — sempre visível, nunca substituído */}
         <div style={{ border: `1px solid ${colors.border}`, padding: "16px", borderRadius: "6px" }}>
@@ -155,7 +155,7 @@ function MethodBlock({ sm, result }) {
       {/* RANKING */}
       <div style={{ border: `1px solid ${colors.border}`, padding: "16px", marginTop: "12px", borderRadius: "6px" }}>
         <h4 style={{ marginTop: 0, fontSize: "13px", color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>Ranking</h4>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "6px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(90px, 1fr))", gap: "6px" }}>
           {result.ranking.map((m, i) => (
             <div
               key={m}
@@ -168,6 +168,10 @@ function MethodBlock({ sm, result }) {
                 textAlign: "center",
                 fontSize: "12px",
                 cursor: "pointer",
+                minHeight: "44px",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
               }}
             >
               <div style={{ fontWeight: "700" }}>{i + 1}º</div>
@@ -213,7 +217,7 @@ function Statistics() {
   );
 
   return (
-    <div style={{ backgroundColor: "var(--color-bg)", minHeight: "100vh", padding: "32px 24px" }}>
+    <div style={{ backgroundColor: "var(--color-bg)", minHeight: "100vh", padding: "32px clamp(12px, 4vw, 24px) 96px" }}>
       <div style={{ maxWidth: "1400px", margin: "0 auto", width: "100%", color: colors.text }}>
 
       <div style={{ marginBottom: "8px" }}>
@@ -248,7 +252,7 @@ function Statistics() {
       {/* BOTÃO VOLTAR — fixo na tela */}
       <button
         onClick={() => navigate("/inputs")}
-        style={{ position: "fixed", bottom: "24px", left: "24px", color: "var(--color-primary)", padding: "10px 28px", backgroundColor: "#f1f5f9", border: `1px solid ${colors.border}`, borderRadius: "6px", cursor: "pointer", fontSize: "14px", boxShadow: "0 2px 8px rgba(0,0,0,0.15)", zIndex: 100 }}
+        style={{ position: "fixed", bottom: "clamp(12px, 4vw, 24px)", left: "clamp(12px, 4vw, 24px)", color: "var(--color-primary)", padding: "10px clamp(16px, 5vw, 28px)", minHeight: "44px", backgroundColor: "#f1f5f9", border: `1px solid ${colors.border}`, borderRadius: "6px", cursor: "pointer", fontSize: "14px", boxShadow: "0 2px 8px rgba(0,0,0,0.15)", zIndex: 100 }}
       >
         ← Voltar para Inputs
       </button>

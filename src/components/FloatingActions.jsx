@@ -32,12 +32,12 @@ function FloatingButton({ icon, label, onClick }) {
         onClick={onClick}
         aria-label={label}
         style={{
-          width: "36px", height: "36px", borderRadius: "50%",
+          width: "clamp(32px, 9vw, 36px)", height: "clamp(32px, 9vw, 36px)", borderRadius: "50%",
           backgroundColor: "var(--color-bg)", border: "1px solid var(--color-border)",
           boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
           cursor: "pointer", fontSize: "16px", lineHeight: 1,
           display: "flex", alignItems: "center", justifyContent: "center",
-          padding: 0,
+          padding: 0, flexShrink: 0,
         }}
       >
         {icon}
@@ -59,7 +59,7 @@ export default function FloatingActions() {
   return (
     <>
       <div style={{
-        position: "fixed", right: "20px", bottom: "20px", zIndex: 500,
+        position: "fixed", right: "clamp(10px, 4vw, 20px)", bottom: "clamp(10px, 4vw, 20px)", zIndex: 500,
         display: "flex", flexDirection: "column", gap: "10px",
       }}>
         {ACTIONS.map((a) => (

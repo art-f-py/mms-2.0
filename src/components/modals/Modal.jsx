@@ -16,7 +16,7 @@ export default function Modal({ title, onClose, children, maxWidth = "480px" }) 
         position: "fixed", inset: 0, zIndex: 1000,
         backgroundColor: "rgba(0,0,0,0.5)",
         display: "flex", alignItems: "center", justifyContent: "center",
-        padding: "24px",
+        padding: "clamp(12px, 4vw, 24px)",
       }}
     >
       <div
@@ -25,7 +25,7 @@ export default function Modal({ title, onClose, children, maxWidth = "480px" }) 
         aria-modal="true"
         aria-label={title}
         style={{
-          width: "100%", maxWidth,
+          width: `min(${maxWidth}, calc(100vw - 32px))`,
           maxHeight: "85vh", overflowY: "auto",
           backgroundColor: "var(--bg-card)",
           color: "var(--text)",
@@ -36,7 +36,7 @@ export default function Modal({ title, onClose, children, maxWidth = "480px" }) 
       >
         <div style={{
           display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: "18px 24px", borderBottom: "1px solid var(--border)",
+          padding: "18px clamp(16px, 5vw, 24px)", borderBottom: "1px solid var(--border)",
           position: "sticky", top: 0, backgroundColor: "var(--bg-card)", borderTopLeftRadius: "12px", borderTopRightRadius: "12px",
         }}>
           <h3 style={{ fontSize: "17px", fontWeight: 700, color: "var(--text)" }}>{title}</h3>
@@ -51,7 +51,7 @@ export default function Modal({ title, onClose, children, maxWidth = "480px" }) 
             ×
           </button>
         </div>
-        <div style={{ padding: "24px" }}>
+        <div style={{ padding: "clamp(16px, 5vw, 24px)" }}>
           {children}
         </div>
       </div>

@@ -26,18 +26,17 @@ const C = {
 };
 
 const S = {
-  page:  { minHeight: "100vh", backgroundColor: C.bg, padding: "32px 24px" },
+  page:  { minHeight: "100vh", backgroundColor: C.bg, padding: "32px clamp(12px, 4vw, 24px) 110px" },
   wrap:  { maxWidth: "1100px", margin: "0 auto" },
-  card:  { backgroundColor: C.white, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "32px", marginTop: "24px", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" },
+  card:  { backgroundColor: C.white, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "clamp(16px, 5vw, 32px)", marginTop: "24px", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" },
   label: { fontSize: "15px", fontWeight: "600", color: C.text, marginBottom: "6px", display: "block" },
   hint:  { fontSize: "13px", color: C.muted, marginTop: "4px" },
   inp:   { width: "100%", padding: "11px 14px", borderRadius: "6px", border: `1px solid ${C.border}`, fontSize: "16px", color: C.text, boxSizing: "border-box", backgroundColor: C.white },
-  grid2: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" },
   grid3: { display: "flex", flexWrap: "wrap", gap: "24px" },
   sec:   { marginBottom: "28px" },
   div:   { borderTop: `1px solid ${C.border}`, margin: "32px 0" },
-  btnPrimary:   { padding: "12px 28px", backgroundColor: C.primary, color: C.white, border: "none", borderRadius: "6px", fontWeight: "600", fontSize: "16px", cursor: "pointer" },
-  btnSecondary: { padding: "12px 28px", backgroundColor: C.white, color: C.text, border: `1px solid ${C.border}`, borderRadius: "6px", fontWeight: "600", fontSize: "16px", cursor: "pointer" },
+  btnPrimary:   { padding: "12px clamp(16px, 6vw, 28px)", backgroundColor: C.primary, color: C.white, border: "none", borderRadius: "6px", fontWeight: "600", fontSize: "16px", cursor: "pointer" },
+  btnSecondary: { padding: "12px clamp(16px, 6vw, 28px)", backgroundColor: C.white, color: C.text, border: `1px solid ${C.border}`, borderRadius: "6px", fontWeight: "600", fontSize: "16px", cursor: "pointer" },
   btnGhost:     { padding: "6px 14px", backgroundColor: "transparent", color: C.muted, border: `1px solid ${C.border}`, borderRadius: "6px", fontSize: "13px", cursor: "pointer" },
 };
 
@@ -184,7 +183,7 @@ function InfoTooltip({ text }) {
         style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "17px", height: "17px", borderRadius: "50%", backgroundColor: C.primary, color: "#fff", fontSize: "11px", fontWeight: "700", cursor: "help", flexShrink: 0 }}
       >i</span>
       {open && (
-        <div style={{ position: "absolute", bottom: "calc(100% + 6px)", left: "50%", transform: "translateX(-50%)", backgroundColor: "#1e293b", color: "#f1f5f9", fontSize: "12px", lineHeight: "1.55", padding: "8px 12px", borderRadius: "6px", width: "270px", zIndex: 200, boxShadow: "0 4px 12px rgba(0,0,0,0.25)", pointerEvents: "none" }}>
+        <div style={{ position: "absolute", bottom: "calc(100% + 6px)", left: "50%", transform: "translateX(-50%)", backgroundColor: "#1e293b", color: "#f1f5f9", fontSize: "12px", lineHeight: "1.55", padding: "8px 12px", borderRadius: "6px", width: "min(270px, calc(100vw - 32px))", zIndex: 200, boxShadow: "0 4px 12px rgba(0,0,0,0.25)", pointerEvents: "none" }}>
           {text}
         </div>
       )}
@@ -356,28 +355,32 @@ function Collapsible({ title, open, onToggle, children }) {
 // STEPPER
 // ---------------------------------------------------------------------------
 function StepperHeader({ current, steps }) {
+  const currentLabel = steps.find((s) => s.id === current)?.label || "";
   return (
-    <div style={{ display: "flex", alignItems: "center", marginBottom: "8px" }}>
-      {steps.map((step, i) => {
-        const done   = step.id < current;
-        const active = step.id === current;
-        return (
-          <div key={step.id} style={{ display: "flex", alignItems: "center", flex: i < steps.length - 1 ? 1 : "none" }}>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px" }}>
-              <div style={{ width: "32px", height: "32px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", fontWeight: "700", backgroundColor: done ? C.success : active ? C.primary : C.border, color: done || active ? C.white : C.muted, flexShrink: 0 }}>
-                {done ? "✓" : step.id}
+    <>
+      <p className="mms-stepper-current">Etapa {current} de {steps.length} — {currentLabel}</p>
+      <div style={{ display: "flex", alignItems: "center", marginBottom: "8px" }}>
+        {steps.map((step, i) => {
+          const done   = step.id < current;
+          const active = step.id === current;
+          return (
+            <div key={step.id} style={{ display: "flex", alignItems: "center", flex: i < steps.length - 1 ? 1 : "none" }}>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px" }}>
+                <div title={step.label} aria-label={step.label} style={{ width: "32px", height: "32px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", fontWeight: "700", backgroundColor: done ? C.success : active ? C.primary : C.border, color: done || active ? C.white : C.muted, flexShrink: 0 }}>
+                  {done ? "✓" : step.id}
+                </div>
+                <span className="mms-stepper-label" style={{ fontSize: "11px", fontWeight: active ? "700" : "400", color: active ? C.primary : C.muted, whiteSpace: "nowrap" }}>
+                  {step.label}
+                </span>
               </div>
-              <span style={{ fontSize: "11px", fontWeight: active ? "700" : "400", color: active ? C.primary : C.muted, whiteSpace: "nowrap" }}>
-                {step.label}
-              </span>
+              {i < steps.length - 1 && (
+                <div style={{ flex: 1, height: "2px", backgroundColor: done ? C.success : C.border, margin: "0 8px", marginBottom: "20px" }} />
+              )}
             </div>
-            {i < steps.length - 1 && (
-              <div style={{ flex: 1, height: "2px", backgroundColor: done ? C.success : C.border, margin: "0 8px", marginBottom: "20px" }} />
-            )}
-          </div>
-        );
-      })}
-    </div>
+          );
+        })}
+      </div>
+    </>
   );
 }
 
@@ -472,7 +475,7 @@ function Inputs() {
       <p style={{ fontSize: "16px", color: C.muted, marginTop: 0, marginBottom: "20px" }}>
         O formulário se ajustará automaticamente aos campos necessários.
       </p>
-      <div style={S.grid2}>
+      <div className="mms-grid2">
         {[
           { key: "ubc",        label: "UBC 1995",      desc: "Miller-Tait, Pakalnis & Poulin" },
           { key: "nicholas",   label: "Nicholas",           desc: "Nicholas, D.E. — SME (1981/1992)" },
@@ -507,7 +510,7 @@ function Inputs() {
   const Step2 = (
     <div style={S.card}>
       <SecTitle>Geometria do depósito</SecTitle>
-      <div style={S.grid2}>
+      <div className="mms-grid2">
         <Field label="Forma geral">
           <Sel value={fd.geometry.shape} onChange={(v) => set("geometry", "shape", v)}
             options={["Massivo", "Tabular", "Irregular"]} />
@@ -707,7 +710,7 @@ function Inputs() {
           {UBC_CRITERIA_GROUPS.map(({ domain, title, items }) => (
             <div key={domain} style={{ marginBottom: "18px" }}>
               <p style={{ fontSize: "14px", fontWeight: "700", color: C.primary, margin: "0 0 10px" }}>{title}</p>
-              <div style={S.grid2}>
+              <div className="mms-grid2">
                 {items.map(({ key, label }) => (
                   <WeightSlider key={key} label={label} min={0} max={2}
                     value={cw.ubc[domain][key]}
@@ -754,7 +757,7 @@ function Inputs() {
             {NICHOLAS_CRITERIA_GROUPS.map(({ domain, title, items }) => (
               <div key={domain} style={{ marginBottom: "18px" }}>
                 <p style={{ fontSize: "14px", fontWeight: "700", color: C.primary, margin: "0 0 10px" }}>{title}</p>
-                <div style={S.grid2}>
+                <div className="mms-grid2">
                   {items.map(({ key, label }) => (
                     <WeightSlider key={key} label={label} min={0} max={2}
                       value={cw.nicholas[domain][key]}
@@ -787,7 +790,7 @@ function Inputs() {
                 );
               })}
             </div>
-            <div style={S.grid2}>
+            <div className="mms-grid2">
               {DOMAIN_CRITERIA.map(({ key, label }) => (
                 <WeightSlider key={key} label={label} min={0} max={2}
                   value={cw.nicholas.domain[key]}
@@ -817,7 +820,7 @@ function Inputs() {
           {SHB_CRITERIA_GROUPS.map(({ domain, title, items }) => (
             <div key={domain} style={{ marginBottom: "18px" }}>
               <p style={{ fontSize: "14px", fontWeight: "700", color: C.primary, margin: "0 0 10px" }}>{title}</p>
-              <div style={S.grid2}>
+              <div className="mms-grid2">
                 {items.map(({ key, label }) => (
                   <WeightSlider key={key} label={label} min={0} max={2}
                     value={cw.shb[domain][key]}
@@ -922,7 +925,7 @@ function Inputs() {
         <StepperHeader current={step} steps={visibleSteps} />
         {stepContents[step - 1]}
 
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: "20px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", marginTop: "20px" }}>
           <button style={S.btnSecondary} onClick={prev} disabled={step === 1}>← Anterior</button>
           {step < totalSteps && (
             <button style={{ ...S.btnPrimary, opacity: step === 1 && !anyMethod ? 0.5 : 1 }}
