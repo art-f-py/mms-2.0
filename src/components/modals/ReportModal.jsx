@@ -5,7 +5,7 @@ const ENDPOINT = "https://formcarry.com/s/lVe6Ba2CKVq";
 
 const labelStyle = { fontSize: "14px", fontWeight: 600, color: "var(--text)", marginBottom: "6px", display: "block" };
 const inputStyle = {
-  width: "100%", padding: "10px 12px", borderRadius: "6px",
+  width: "100%", minHeight: "44px", padding: "10px 12px", borderRadius: "6px",
   border: "1px solid var(--border)", fontSize: "15px",
   color: "var(--text)", backgroundColor: "var(--bg)",
   boxSizing: "border-box", fontFamily: "inherit",

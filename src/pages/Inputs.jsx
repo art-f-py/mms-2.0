@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMms, DOMAIN_PRESETS } from "../context/MmsContext";
 import {
@@ -26,18 +26,18 @@ const C = {
 };
 
 const S = {
-  page:  { minHeight: "100vh", backgroundColor: C.bg, padding: "32px clamp(12px, 4vw, 24px) 110px" },
+  page:  { minHeight: "100vh", backgroundColor: C.bg, padding: "32px clamp(12px, 4vw, 24px) 180px" },
   wrap:  { maxWidth: "1100px", margin: "0 auto" },
   card:  { backgroundColor: C.white, border: `1px solid ${C.border}`, borderRadius: "10px", padding: "clamp(16px, 5vw, 32px)", marginTop: "24px", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" },
   label: { fontSize: "15px", fontWeight: "600", color: C.text, marginBottom: "6px", display: "block" },
   hint:  { fontSize: "13px", color: C.muted, marginTop: "4px" },
-  inp:   { width: "100%", padding: "11px 14px", borderRadius: "6px", border: `1px solid ${C.border}`, fontSize: "16px", color: C.text, boxSizing: "border-box", backgroundColor: C.white },
+  inp:   { width: "100%", minHeight: "44px", padding: "11px 14px", borderRadius: "6px", border: `1px solid ${C.border}`, fontSize: "16px", color: C.text, boxSizing: "border-box", backgroundColor: C.white },
   grid3: { display: "flex", flexWrap: "wrap", gap: "24px" },
   sec:   { marginBottom: "28px" },
   div:   { borderTop: `1px solid ${C.border}`, margin: "32px 0" },
-  btnPrimary:   { padding: "12px clamp(16px, 6vw, 28px)", backgroundColor: C.primary, color: C.white, border: "none", borderRadius: "6px", fontWeight: "600", fontSize: "16px", cursor: "pointer" },
-  btnSecondary: { padding: "12px clamp(16px, 6vw, 28px)", backgroundColor: C.white, color: C.text, border: `1px solid ${C.border}`, borderRadius: "6px", fontWeight: "600", fontSize: "16px", cursor: "pointer" },
-  btnGhost:     { padding: "6px 14px", backgroundColor: "transparent", color: C.muted, border: `1px solid ${C.border}`, borderRadius: "6px", fontSize: "13px", cursor: "pointer" },
+  btnPrimary:   { padding: "12px clamp(16px, 6vw, 28px)", minHeight: "44px", backgroundColor: C.primary, color: C.white, border: "none", borderRadius: "6px", fontWeight: "600", fontSize: "16px", cursor: "pointer" },
+  btnSecondary: { padding: "12px clamp(16px, 6vw, 28px)", minHeight: "44px", backgroundColor: C.white, color: C.text, border: `1px solid ${C.border}`, borderRadius: "6px", fontWeight: "600", fontSize: "16px", cursor: "pointer" },
+  btnGhost:     { padding: "6px 14px", minHeight: "44px", backgroundColor: "transparent", color: C.muted, border: `1px solid ${C.border}`, borderRadius: "6px", fontSize: "13px", cursor: "pointer" },
 };
 
 const zones = { ore: "Corpo de minério", hangingWall: "Hanging wall", footwall: "Foot wall" };
@@ -111,7 +111,7 @@ function RmrField({ value, onChange }) {
       {/* Seletor de modo RMR / GSI / Q */}
       <div style={{ display: "flex", borderRadius: "6px", overflow: "hidden", border: `1px solid ${C.border}` }}>
         {[["rmr","RMR"],["gsi","GSI"],["q","Q"]].map(([m, lbl]) => (
-          <button key={m} onClick={() => setMode(m)} style={{ flex: 1, padding: "7px 4px", fontSize: "13px", fontWeight: mode === m ? "700" : "400", backgroundColor: mode === m ? C.primary : C.white, color: mode === m ? C.white : C.muted, border: "none", cursor: "pointer" }}>{lbl}</button>
+          <button key={m} onClick={() => setMode(m)} style={{ flex: 1, padding: "7px 4px", minHeight: "44px", fontSize: "13px", fontWeight: mode === m ? "700" : "400", backgroundColor: mode === m ? C.primary : C.white, color: mode === m ? C.white : C.muted, border: "none", cursor: "pointer" }}>{lbl}</button>
         ))}
       </div>
 
@@ -174,16 +174,41 @@ function RmrField({ value, onChange }) {
 }
 
 function InfoTooltip({ text }) {
-  const [open, setOpen] = useState(false);
+  const [hovered, setHovered] = useState(false); // aberto por hover (mouse)
+  const [pinned, setPinned]   = useState(false); // aberto por toque/clique
+  const [shift, setShift]     = useState(0);
+  const anchorRef             = useRef(null);
+
+  // Desloca o popup para que fique inteiro dentro do viewport
+  // (mesma estratégia de medição do RockTooltip).
+  const place = () => {
+    const rect = anchorRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const w = Math.min(270, window.innerWidth - 32);
+    const desired = Math.min(
+      Math.max(rect.left + rect.width / 2 - w / 2, 16),
+      window.innerWidth - 16 - w
+    );
+    setShift(desired - rect.left);
+  };
+
+  const visible = hovered || pinned;
   return (
-    <span style={{ position: "relative", display: "inline-block", lineHeight: 1 }}>
+    <span ref={anchorRef} style={{ position: "relative", display: "inline-block", lineHeight: 1 }}>
+      {pinned && (
+        <span
+          onClick={() => setPinned(false)}
+          style={{ position: "fixed", inset: 0, zIndex: 199 }}
+        />
+      )}
       <span
-        onMouseEnter={() => setOpen(true)}
-        onMouseLeave={() => setOpen(false)}
+        onPointerEnter={(e) => { if (e.pointerType === "mouse") { place(); setHovered(true); } }}
+        onPointerLeave={(e) => { if (e.pointerType === "mouse") setHovered(false); }}
+        onClick={() => { if (!pinned) place(); setPinned((v) => !v); }}
         style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "17px", height: "17px", borderRadius: "50%", backgroundColor: C.primary, color: "#fff", fontSize: "11px", fontWeight: "700", cursor: "help", flexShrink: 0 }}
       >i</span>
-      {open && (
-        <div style={{ position: "absolute", bottom: "calc(100% + 6px)", left: "50%", transform: "translateX(-50%)", backgroundColor: "#1e293b", color: "#f1f5f9", fontSize: "12px", lineHeight: "1.55", padding: "8px 12px", borderRadius: "6px", width: "min(270px, calc(100vw - 32px))", zIndex: 200, boxShadow: "0 4px 12px rgba(0,0,0,0.25)", pointerEvents: "none" }}>
+      {visible && (
+        <div style={{ position: "absolute", bottom: "calc(100% + 6px)", left: `${shift}px`, backgroundColor: "#1e293b", color: "#f1f5f9", fontSize: "12px", lineHeight: "1.55", padding: "8px 12px", borderRadius: "6px", width: "min(270px, calc(100vw - 32px))", zIndex: 200, boxShadow: "0 4px 12px rgba(0,0,0,0.25)", pointerEvents: "none" }}>
           {text}
         </div>
       )}
@@ -225,9 +250,9 @@ function RSSBadge({ value }) {
 function ReviewRow({ label, value }) {
   if (!value || value === "") return null;
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: `1px solid ${C.border}`, fontSize: "14px" }}>
+    <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", padding: "6px 0", borderBottom: `1px solid ${C.border}`, fontSize: "14px" }}>
       <span style={{ color: C.muted }}>{label}</span>
-      <span style={{ fontWeight: "600", color: C.text }}>{value}</span>
+      <span style={{ fontWeight: "600", color: C.text, textAlign: "right" }}>{value}</span>
     </div>
   );
 }

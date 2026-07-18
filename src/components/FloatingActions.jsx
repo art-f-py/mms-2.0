@@ -19,7 +19,7 @@ function FloatingButton({ icon, label, onClick }) {
     >
       {hover && (
         <span style={{
-          position: "absolute", right: "44px", whiteSpace: "nowrap",
+          position: "absolute", right: "52px", whiteSpace: "nowrap",
           backgroundColor: "var(--color-bg)", color: "var(--color-text)",
           border: "1px solid var(--color-border)", borderRadius: "6px",
           padding: "5px 10px", fontSize: "12px", fontWeight: 600,
@@ -32,7 +32,7 @@ function FloatingButton({ icon, label, onClick }) {
         onClick={onClick}
         aria-label={label}
         style={{
-          width: "clamp(32px, 9vw, 36px)", height: "clamp(32px, 9vw, 36px)", borderRadius: "50%",
+          width: "44px", height: "44px", borderRadius: "50%",
           backgroundColor: "var(--color-bg)", border: "1px solid var(--color-border)",
           boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
           cursor: "pointer", fontSize: "16px", lineHeight: 1,

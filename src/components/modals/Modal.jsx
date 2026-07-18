@@ -45,7 +45,10 @@ export default function Modal({ title, onClose, children, maxWidth = "480px" }) 
             aria-label="Fechar"
             style={{
               border: "none", background: "transparent", color: "var(--muted)",
-              fontSize: "22px", lineHeight: 1, cursor: "pointer", padding: "2px 6px",
+              fontSize: "22px", lineHeight: 1, cursor: "pointer", padding: 0,
+              width: "44px", height: "44px", flexShrink: 0,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              margin: "-10px -12px -10px 0",
             }}
           >
             ×

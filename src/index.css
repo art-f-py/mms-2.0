@@ -53,10 +53,17 @@ input[type="range"] {
   cursor: pointer;
 }
 
+/* Área de toque confortável (≥44px) para sliders — o track continua fino,
+   mas a zona clicável/tocável ganha altura. */
+input[type="range"] {
+  min-height: 44px;
+}
+
 /* -------------------------------------------------------------------------
    RESPONSIVIDADE — regras que dependem de mudança estrutural de layout
    (grid de N colunas -> 1 coluna, ocultar rótulos). Ajustes puramente de
    tamanho (fontes, imagens, paddings) ficam em clamp() inline nos componentes.
+   Breakpoint estrutural único: 640px.
    ------------------------------------------------------------------------- */
 .mms-grid2 {
   display: grid;
@@ -73,7 +80,7 @@ input[type="range"] {
 .mms-stepper-current {
   display: none;
 }
-@media (max-width: 560px) {
+@media (max-width: 640px) {
   .mms-stepper-label {
     display: none;
   }

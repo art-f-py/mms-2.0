@@ -52,10 +52,10 @@ export default function RockTooltip({ type, onSelect }) {
         onClick={handleToggle}
         title={`Consultar ${title} por tipo de rocha`}
         style={{
-          width: "28px", height: "28px", borderRadius: "6px",
+          width: "44px", height: "44px", borderRadius: "6px",
           border: `1px solid ${C.border}`, backgroundColor: C.white,
           cursor: "pointer", display: "flex", alignItems: "center",
-          justifyContent: "center", fontSize: "14px",
+          justifyContent: "center", fontSize: "16px",
           color: C.primary, flexShrink: 0,
         }}
       >
@@ -72,7 +72,7 @@ export default function RockTooltip({ type, onSelect }) {
           />
 
           <div style={{
-            position: "absolute", top: "34px",
+            position: "absolute", top: "50px",
             left: align === "left" ? 0 : "auto",
             right: align === "right" ? 0 : "auto",
             zIndex: 201,
@@ -93,7 +93,7 @@ export default function RockTooltip({ type, onSelect }) {
                   key={f}
                   onClick={() => setFamily(f)}
                   style={{
-                    flex: 1, padding: "8px 4px", fontSize: "12px", fontWeight: family === f ? "700" : "400",
+                    flex: 1, padding: "8px 4px", minHeight: "44px", fontSize: "12px", fontWeight: family === f ? "700" : "400",
                     color: family === f ? C.primary : C.muted,
                     borderBottom: family === f ? `2px solid ${C.primary}` : "2px solid transparent",
                     background: "none", border: "none", cursor: "pointer",
@@ -125,7 +125,8 @@ export default function RockTooltip({ type, onSelect }) {
                         <button
                           onClick={() => handleSelect(row.min, row.max)}
                           style={{
-                            padding: "3px 10px", backgroundColor: C.primary, color: C.white,
+                            padding: "3px 10px", minWidth: "44px", minHeight: "44px",
+                            backgroundColor: C.primary, color: C.white,
                             border: "none", borderRadius: "4px", fontSize: "11px",
                             cursor: "pointer", fontWeight: "600",
                           }}

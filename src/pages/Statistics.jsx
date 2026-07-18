@@ -52,11 +52,13 @@ const CRITERIA_LABELS = {
 // ---------------------------------------------------------------------------
 function Pill({ label, color, active, onClick }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+    <div
+      onClick={onClick}
+      style={{ display: "flex", alignItems: "center", gap: "8px", minHeight: "44px", cursor: "pointer" }}
+    >
       <span style={{ fontSize: "14px", fontWeight: "500" }}>{label}</span>
       <div
-        onClick={onClick}
-        style={{ width: "50px", height: "26px", borderRadius: "20px", backgroundColor: active ? color : "#d1d5db", position: "relative", cursor: "pointer", transition: "background-color 0.3s" }}
+        style={{ width: "50px", height: "26px", borderRadius: "20px", backgroundColor: active ? color : "#d1d5db", position: "relative", transition: "background-color 0.3s", flexShrink: 0 }}
       >
         <div style={{ width: "22px", height: "22px", borderRadius: "50%", backgroundColor: "#fff", position: "absolute", top: "2px", left: active ? "26px" : "2px", transition: "left 0.3s" }} />
       </div>
@@ -90,7 +92,7 @@ function MethodBlock({ sm, result }) {
         <h3 style={{ margin: 0, color: sm.color }}>{sm.label}</h3>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "20px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))", gap: "20px" }}>
 
         {/* GRÁFICO DE BARRAS — sempre visível, nunca substituído */}
         <div style={{ border: `1px solid ${colors.border}`, padding: "16px", borderRadius: "6px" }}>
@@ -204,7 +206,7 @@ function Statistics() {
         <p>Nenhum resultado calculado ainda.</p>
         <button
           onClick={() => navigate("/inputs")}
-          style={{ marginTop: "16px", padding: "10px 24px", cursor: "pointer", backgroundColor: colors.primary, color: "#fff", border: "none", borderRadius: "6px" }}
+          style={{ marginTop: "16px", padding: "10px 24px", minHeight: "44px", cursor: "pointer", backgroundColor: colors.primary, color: "#fff", border: "none", borderRadius: "6px" }}
         >
           Ir para Inputs
         </button>
@@ -217,7 +219,7 @@ function Statistics() {
   );
 
   return (
-    <div style={{ backgroundColor: "var(--color-bg)", minHeight: "100vh", padding: "32px clamp(12px, 4vw, 24px) 96px" }}>
+    <div style={{ backgroundColor: "var(--color-bg)", minHeight: "100vh", padding: "32px clamp(12px, 4vw, 24px) 180px" }}>
       <div style={{ maxWidth: "1400px", margin: "0 auto", width: "100%", color: colors.text }}>
 
       <div style={{ marginBottom: "8px" }}>
