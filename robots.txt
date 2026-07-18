@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://art-f-py.github.io/mms-2.0/sitemap.xml
