@@ -29,6 +29,10 @@ const GRADE_LABELS = {
   "Errático":    "Teor errático",
 };
 
+// Escala de cor do teor (quente = rico, frio = pobre) — a mesma do gradacional.
+// No errático, as zonas recebem cores desta escala em ordem aleatória (seed fixa).
+const ERRATIC_PALETTE = ["#dc2626", "#f97316", "#facc15", "#22c55e", "#3b82f6"];
+
 function dipClassLabel(deg) {
   const d = parseFloat(deg);
   if (isNaN(d)) return "";
@@ -145,15 +149,70 @@ export default function DepositSketch({ shape, thickness, dip, depth, grade }) {
   const f4x = CX - halfLen*dx + hwOff*nx, f4y = centerY - halfLen*dy + hwOff*ny;
   const fwPoly = `${f1x},${f1y} ${f2x},${f2y} ${f3x},${f3y} ${f4x},${f4y}`;
 
-  // Erratic blobs
-  const erraticBlobs = useMemo(() => {
-    const rand = seededRand(7);
-    return Array.from({ length: 9 }, () => ({
-      cx: CX + (rand() * 2 - 1) * halfLen * 0.75 * dx + (rand() * 1.4 - 0.7) * oreHw * nx,
-      cy: centerY + (rand() * 2 - 1) * halfLen * 0.75 * dy + (rand() * 1.4 - 0.7) * oreHw * ny,
-      r:  rand() * oreHw * 0.3 + oreHw * 0.12,
-      op: rand() * 0.35 + 0.2,
-    }));
+  // Teor errático: manchas de cor discretas (mosaico) + bolinhas coloridas.
+  //
+  // Partição tipo Voronoi simples: geram-se N "sítios" (zonas) com posição e cor
+  // aleatórias (seed fixa → reproduzível). O bounding box do corpo é rasterizado
+  // em células; cada célula assume a cor do sítio mais próximo, produzindo zonas
+  // irregulares com bordas DEFINIDAS (mosaico, não gradiente). Tudo é recortado
+  // pelo mesmo polígono do ore (clipPath) para não vazar da geometria.
+  //
+  // Coordenadas locais (u = ao longo do mergulho, v = transversal); o grupo é
+  // rotacionado por transform, então basta trabalhar em eixos alinhados.
+  const erratic = useMemo(() => {
+    const uMax = halfLen * 1.15;   // meio-comprimento com folga (o clip corta o excesso)
+    const vMax = oreHw * 1.5;      // meia-largura com folga
+    const CELL = 15;               // tamanho da célula do mosaico
+    const N    = 8;                // número de zonas (entre 6 e 10)
+
+    // Sítios das zonas — posição aleatória, cor da escala (garante as 5 cores).
+    const rand = seededRand(42);
+    const sites = Array.from({ length: N }, (_, i) => {
+      const u = (rand() * 2 - 1) * uMax;
+      const v = (rand() * 2 - 1) * vMax;
+      const color = i < ERRATIC_PALETTE.length
+        ? ERRATIC_PALETTE[i]
+        : ERRATIC_PALETTE[Math.floor(rand() * ERRATIC_PALETTE.length)];
+      return {
+        u, v, color,
+        sx: CX + u * dx + v * nx,
+        sy: centerY + u * dy + v * ny,
+      };
+    });
+
+    const nearestColor = (u, v) => {
+      let best = sites[0], bd = Infinity;
+      for (const s of sites) {
+        const d = (s.u - u) ** 2 + (s.v - v) ** 2;
+        if (d < bd) { bd = d; best = s; }
+      }
+      return best.color;
+    };
+
+    // Rasterização do bounding box local em células coloridas pelo sítio mais próximo.
+    const cells = [];
+    for (let u = -uMax; u < uMax; u += CELL) {
+      for (let v = -vMax; v < vMax; v += CELL) {
+        cells.push({ u, v, color: nearestColor(u + CELL / 2, v + CELL / 2) });
+      }
+    }
+
+    // Bolinhas: mesmas posições/seed de antes, mas cada uma assume a cor da zona
+    // sob o seu centro (sítio mais próximo em coordenadas de tela = local, rígido).
+    const brand = seededRand(7);
+    const blobs = Array.from({ length: 9 }, () => {
+      const cx = CX + (brand() * 2 - 1) * halfLen * 0.75 * dx + (brand() * 1.4 - 0.7) * oreHw * nx;
+      const cy = centerY + (brand() * 2 - 1) * halfLen * 0.75 * dy + (brand() * 1.4 - 0.7) * oreHw * ny;
+      const r  = brand() * oreHw * 0.3 + oreHw * 0.12;
+      let best = sites[0], bd = Infinity;
+      for (const s of sites) {
+        const d = (s.sx - cx) ** 2 + (s.sy - cy) ** 2;
+        if (d < bd) { bd = d; best = s; }
+      }
+      return { cx, cy, r, color: best.color };
+    });
+
+    return { cells, blobs, CELL };
   }, [halfLen, oreHw, dx, dy, nx, ny, centerY]);
 
   const gradId     = `ore-grad-${dipDeg}-${depthM}`;
@@ -173,6 +232,11 @@ export default function DepositSketch({ shape, thickness, dip, depth, grade }) {
       <defs>
         <clipPath id="below-surface">
           <rect x="0" y={SURFACE_Y} width={W} height={H - SURFACE_Y} />
+        </clipPath>
+
+        {/* Recorte pelo polígono do corpo de minério — usado pelas manchas do errático */}
+        <clipPath id="ore-clip">
+          <path d={poly} />
         </clipPath>
 
         <pattern id="ore-uniforme" patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)">
@@ -244,9 +308,31 @@ export default function DepositSketch({ shape, thickness, dip, depth, grade }) {
             >teor ↑</text>
           </>
         )}
-        {grade === "Errático" && erraticBlobs.map((b, i) => (
-          <circle key={i} cx={b.cx} cy={b.cy} r={b.r} fill="#5bc0de" opacity={b.op}/>
-        ))}
+        {grade === "Errático" && (
+          <>
+            {/* Manchas discretas: mosaico recortado pelo polígono do ore.
+                O grupo é rotacionado pelo mergulho para alinhar as células ao corpo. */}
+            <g clipPath="url(#ore-clip)">
+              <g transform={`translate(${CX} ${centerY}) rotate(${dipDeg})`} opacity="0.85">
+                {erratic.cells.map((c, i) => (
+                  <rect
+                    key={i}
+                    x={c.u} y={c.v}
+                    width={erratic.CELL + 0.6} height={erratic.CELL + 0.6}
+                    fill={c.color} shapeRendering="crispEdges"
+                  />
+                ))}
+              </g>
+            </g>
+            {/* Bolinhas: mantêm-se sobrepostas, agora com a cor da zona sob cada uma. */}
+            {erratic.blobs.map((b, i) => (
+              <circle
+                key={i} cx={b.cx} cy={b.cy} r={b.r}
+                fill={b.color} opacity="0.95" stroke="white" strokeWidth="0.8" strokeOpacity="0.6"
+              />
+            ))}
+          </>
+        )}
 
       </g>
 
@@ -274,8 +360,8 @@ export default function DepositSketch({ shape, thickness, dip, depth, grade }) {
       <rect x={lx} y={ly + 42} width="14" height="10" fill="url(#sk-fw)" stroke="#cbd5e1" strokeWidth="0.6" rx="2"/>
       <text x={lx + 20} y={ly + 48} textAnchor="start" dominantBaseline="central" fontSize="11" fill="#475569">Foot wall</text>
       <rect x={lx} y={ly + 62} width="14" height="10" rx="2"
-        fill={grade === "Gradacional" ? "url(#legend-rainbow)" : "#5bc0de"}
-        opacity={grade === "Gradacional" ? 1 : 0.5}/>
+        fill={grade === "Gradacional" || grade === "Errático" ? "url(#legend-rainbow)" : "#5bc0de"}
+        opacity={grade === "Gradacional" || grade === "Errático" ? 1 : 0.5}/>
       <text x={lx + 20} y={ly + 68} textAnchor="start" dominantBaseline="central" fontSize="11" fill="#475569">{gradeLabel}</text>
 
       {/* Rodapé */}
