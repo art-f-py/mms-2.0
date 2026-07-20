@@ -1,0 +1,298 @@
+{
+  "common": {
+    "select": "Selecione",
+    "next": "Próximo →",
+    "back": "← Anterior",
+    "apply": "Aplicar",
+    "calculate": "CALCULAR",
+    "restoreDefault": "Restaurar padrão",
+    "close": "Fechar",
+    "example": "ex: {{value}}"
+  },
+  "header": {
+    "brasaoAlt": "Brasão da UFRGS",
+    "miningIconAlt": "Ícone de mineração",
+    "language": "Idioma"
+  },
+  "home": {
+    "start": "Iniciar"
+  },
+  "zones": {
+    "ore": "Corpo de minério",
+    "hangingWall": "Hanging wall",
+    "footwall": "Foot wall"
+  },
+  "stepper": {
+    "position": "Etapa {{current}} de {{total}} — {{label}}",
+    "methods": "Métodos",
+    "geometry": "Geometria",
+    "geotechnical": "Geotécnica",
+    "eesg": "EESG",
+    "complementary": "Complementar",
+    "review": "Revisar"
+  },
+  "inputs": {
+    "pageTitle": "Parâmetros do Depósito",
+    "pageSubtitle": "MMS 2.0 — Mining Method Selection",
+    "methods": {
+      "title": "Selecione os métodos de seleção",
+      "subtitle": "O formulário se ajustará automaticamente aos campos necessários.",
+      "warning": "⚠ Selecione pelo menos um método para continuar.",
+      "clear": "Limpar formulário",
+      "clearConfirm": "Limpar todos os campos do formulário? Esta ação não pode ser desfeita."
+    },
+    "geometry": {
+      "title": "Geometria do depósito",
+      "shape": "Forma geral",
+      "thickness": "Espessura",
+      "dip": "Mergulho (°)",
+      "grade": "Distribuição de teores",
+      "depth": "Profundidade do corpo de minério (m)",
+      "depthHint": "UBC: Rasa ≤100m | Interm. 100–600m | Profunda >600m",
+      "sketchTitle": "Seção transversal"
+    },
+    "geotechnical": {
+      "rssTitle": "Rock Substance Strength (RSS)",
+      "rssFill": "Preencha os três campos por domínio.",
+      "rssFormula": "RSS = UCS × 10⁶ / (Densidade × Profundidade × 9,81).",
+      "ucs": "UCS (MPa)",
+      "densityOre": "Densidade (kg/m³)",
+      "densityOverburden": "Densidade média do overburden (kg/m³)",
+      "densityHwTip": "Para o cálculo do RSS, considere a densidade média de todos os materiais desde a superfície até o topo do corpo de minério (overburden completo), não apenas a rocha imediatamente adjacente.",
+      "densityFwTip": "Para o cálculo do RSS, considere a densidade média de todos os materiais desde a superfície até a base do corpo de minério.",
+      "depth": "Profundidade (m)",
+      "rss": "RSS",
+      "rssPlaceholder": "preencha UCS, densidade e profundidade",
+      "nicholasPrefix": "Nicholas: {{value}}",
+      "rmrTitle": "Rock Mass Rating (RMR)",
+      "rmrConvert": "Selecione diretamente, ou converta a partir de GSI ou Q-System.",
+      "rmrGsiFormula": "RMR = (GSI + 11,63) / 1,13",
+      "rmrQFormula": "RMR = 9 × ln(Q) + 44",
+      "rmrGsiApprox": "→ RMR ≈ {{rmr}} ({{class}})",
+      "fracturesTitle": "Fraturas",
+      "jointSpacing": "Espaçamento das fraturas",
+      "jointCondition": "Características das interfraturas"
+    },
+    "eesg": {
+      "title": "EESG — Economic Environmental Social Governance",
+      "subtitle": "Critérios econômicos, ambientais, sociais e de governança.",
+      "oreValue": "Valor do minério"
+    },
+    "complementary": {
+      "title": "Pesos por Critério",
+      "subtitle": "Ajuste a importância de cada critério por método. Padrão: 1.0. Cada método tem pesos independentes.",
+      "criterionHint": "Cada critério é ponderado individualmente dentro do seu domínio geológico (0.00–2.00).",
+      "criterionHintEcon": "Cada critério é ponderado individualmente dentro do seu domínio geológico/econômico (0.00–2.00).",
+      "nicholasModeDomain": "Presets de domínio (Nicholas 92)",
+      "nicholasModeCriteria": "Individualização por critério",
+      "criteriaLayerTitle": "Individualização por critério",
+      "domainLayerTitle": "Multiplicadores de domínio (Nicholas 92)",
+      "domainLayerHint": "Ponderam cada domínio geotécnico. Aplique um preset ou ajuste manualmente.",
+      "groups": {
+        "geo": "Geometria",
+        "econ": "Econômico",
+        "ob": "Corpo de minério",
+        "hw": "Hanging wall",
+        "fw": "Foot wall"
+      },
+      "criteria": {
+        "shape": "Forma",
+        "thickness": "Espessura",
+        "dip": "Mergulho",
+        "grade": "Teores",
+        "depth": "Profundidade",
+        "rss": "RSS",
+        "rmr": "RMR",
+        "jointSpacing": "Espaçamento",
+        "jointCondition": "Interfraturas",
+        "oreValue": "Valor do minério"
+      },
+      "domainCriteria": {
+        "geo": "Geometria (geo)",
+        "ob": "Corpo de minério (ob)",
+        "hw": "Hanging wall (hw)",
+        "fw": "Foot wall (fw)"
+      },
+      "presets": {
+        "default": "Padrão",
+        "preset1": "Preset 1",
+        "preset2": "Preset 2",
+        "preset3": "Preset 3"
+      }
+    },
+    "review": {
+      "title": "Resumo dos parâmetros",
+      "methods": "Métodos",
+      "geometry": "Geometria",
+      "geotechnical": "Geotécnica",
+      "eesg": "EESG",
+      "shape": "Forma",
+      "thickness": "Espessura",
+      "dip": "Mergulho",
+      "grade": "Distribuição",
+      "ucs": "UCS — {{zone}}",
+      "density": "Densidade — {{zone}}",
+      "depth": "Profundidade — {{zone}}",
+      "rss": "RSS — {{zone}}",
+      "rmr": "RMR — {{zone}}",
+      "jointSpacing": "Espaç. fraturas — {{zone}}",
+      "jointCondition": "Interfraturas — {{zone}}",
+      "oreValue": "Valor do minério"
+    }
+  },
+  "results": {
+    "title": "Resultados",
+    "subtitle": "MMS 2.0 — Mining Method Selection",
+    "noResult": "Nenhum resultado calculado ainda.",
+    "goToInputs": "Ir para Inputs",
+    "activateOne": "Ative pelo menos um método para visualizar os resultados.",
+    "comparison": "Comparação",
+    "radarNormalized": "Radar (normalizado)",
+    "breakdown": "Breakdown — {{method}}",
+    "ranking": "Ranking",
+    "rank": "{{n}}º",
+    "backToInputs": "← Voltar para Inputs",
+    "criteria": {
+      "shape": "Forma",
+      "thickness": "Espessura",
+      "dip": "Mergulho",
+      "grade": "Teor",
+      "depth": "Profundidade",
+      "oreValue": "Valor Minério",
+      "rss_ob": "RSS — Ore",
+      "rss_hw": "RSS — HW",
+      "rss_fw": "RSS — FW",
+      "rmr_ob": "RMR — Ore",
+      "rmr_hw": "RMR — HW",
+      "rmr_fw": "RMR — FW",
+      "jointSpacing_ob": "Espaç. Fraturas — Ore",
+      "jointSpacing_hw": "Espaç. Fraturas — HW",
+      "jointSpacing_fw": "Espaç. Fraturas — FW",
+      "jointCondition_ob": "Cond. Interfraturas — Ore",
+      "jointCondition_hw": "Cond. Interfraturas — HW",
+      "jointCondition_fw": "Cond. Interfraturas — FW"
+    }
+  },
+  "deposit": {
+    "surface": "Superfície",
+    "oreBody": "Corpo de minério",
+    "gradeArrow": "teor ↑",
+    "dipLabel": "Mergulho",
+    "depthLabel": "Profundidade",
+    "gradeLabels": {
+      "Uniforme": "Teor uniforme",
+      "Gradacional": "Teor gradacional",
+      "Errático": "Teor errático"
+    }
+  },
+  "rockTooltip": {
+    "density": "Massa Específica",
+    "ucs": "UCS",
+    "consult": "Consultar {{title}} por tipo de rocha",
+    "header": "{{title}} por tipo de rocha ({{unit}})",
+    "rock": "Rocha",
+    "min": "Mín ({{unit}})",
+    "max": "Máx ({{unit}})",
+    "useAvg": "Usar média",
+    "clickHint": "Clique em um valor para preenchê-lo automaticamente no campo."
+  },
+  "floating": {
+    "report": "Reportar erro",
+    "references": "Referências",
+    "credits": "Créditos",
+    "toast": "Obrigado! Seu relatório foi enviado."
+  },
+  "modals": {
+    "report": {
+      "title": "Reportar erro",
+      "name": "Nome completo",
+      "namePlaceholder": "Seu nome",
+      "email": "Email",
+      "emailPlaceholder": "voce@exemplo.com",
+      "message": "Descrição do erro",
+      "messagePlaceholder": "Descreva o que aconteceu, em qual etapa, e o que esperava.",
+      "send": "Enviar",
+      "sending": "Enviando…",
+      "errRequired": "Preencha todos os campos.",
+      "errSend": "Não foi possível enviar. Tente novamente.",
+      "errConnection": "Falha de conexão. Verifique sua internet e tente novamente."
+    },
+    "references": {
+      "title": "Referências"
+    },
+    "credits": {
+      "title": "Créditos",
+      "development": "Desenvolvimento",
+      "advising": "Orientação",
+      "collaborators": "Colaboradores"
+    }
+  },
+  "enums": {
+    "shape": {
+      "Massivo": "Massivo",
+      "Tabular": "Tabular",
+      "Irregular": "Irregular"
+    },
+    "thickness": {
+      "Muito estreito": "Muito estreito",
+      "Estreito": "Estreito",
+      "Intermediário": "Intermediário",
+      "Espesso": "Espesso",
+      "Muito espesso": "Muito espesso"
+    },
+    "grade": {
+      "Uniforme": "Uniforme",
+      "Gradacional": "Gradacional",
+      "Errático": "Errático"
+    },
+    "rssNicholas": {
+      "Fraca": "Fraca",
+      "Moderada": "Moderada",
+      "Resistente": "Resistente"
+    },
+    "rmrClass": {
+      "Muito pobre": "Muito pobre",
+      "Pobre": "Pobre",
+      "Razoável": "Razoável",
+      "Boa": "Boa",
+      "Muito boa": "Muito boa"
+    },
+    "jointSpacing": {
+      "Muito Perto": "Muito Perto",
+      "Perto": "Perto",
+      "Longe": "Longe",
+      "Muito Longe": "Muito Longe"
+    },
+    "jointCondition": {
+      "Fraca": "Fraca",
+      "Média": "Média",
+      "Forte": "Forte"
+    },
+    "oreValue": {
+      "Baixo": "Baixo",
+      "Médio": "Médio",
+      "Alto": "Alto"
+    },
+    "depthFaixa": {
+      "Rasa": "Rasa",
+      "Intermediária": "Intermediária",
+      "Pouco profunda": "Pouco profunda",
+      "Profunda": "Profunda"
+    },
+    "dipClass": {
+      "Plano": "Plano",
+      "Intermediário": "Intermediário",
+      "Inclinado": "Inclinado"
+    },
+    "rockFamily": {
+      "Ígneas": "Ígneas",
+      "Sedimentares": "Sedimentares",
+      "Metamórficas": "Metamórficas"
+    }
+  },
+  "dipRanges": {
+    "ubc": "Plano <20° | Intermediário 20–55° | Inclinado >55°",
+    "nicholas": "Plano <20° | Intermediário 20–55° | Inclinado >55°",
+    "shb": "Plano <15° | Baixo 15–30° | Intermediário 30–45° | Pouco inclinado 45–60° | Inclinado >60°"
+  }
+}

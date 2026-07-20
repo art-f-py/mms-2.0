@@ -1,0 +1,298 @@
+{
+  "common": {
+    "select": "Select",
+    "next": "Next →",
+    "back": "← Back",
+    "apply": "Apply",
+    "calculate": "CALCULATE",
+    "restoreDefault": "Restore default",
+    "close": "Close",
+    "example": "e.g. {{value}}"
+  },
+  "header": {
+    "brasaoAlt": "UFRGS coat of arms",
+    "miningIconAlt": "Mining icon",
+    "language": "Language"
+  },
+  "home": {
+    "start": "Start"
+  },
+  "zones": {
+    "ore": "Ore body",
+    "hangingWall": "Hanging wall",
+    "footwall": "Footwall"
+  },
+  "stepper": {
+    "position": "Step {{current}} of {{total}} — {{label}}",
+    "methods": "Methods",
+    "geometry": "Geometry",
+    "geotechnical": "Geotechnical",
+    "eesg": "EESG",
+    "complementary": "Complementary",
+    "review": "Review"
+  },
+  "inputs": {
+    "pageTitle": "Deposit Parameters",
+    "pageSubtitle": "MMS 2.0 — Mining Method Selection",
+    "methods": {
+      "title": "Select the selection methods",
+      "subtitle": "The form will adjust automatically to the required fields.",
+      "warning": "⚠ Select at least one method to continue.",
+      "clear": "Clear form",
+      "clearConfirm": "Clear all form fields? This action cannot be undone."
+    },
+    "geometry": {
+      "title": "Deposit geometry",
+      "shape": "General shape",
+      "thickness": "Thickness",
+      "dip": "Dip (°)",
+      "grade": "Grade distribution",
+      "depth": "Ore body depth (m)",
+      "depthHint": "UBC: Shallow ≤100m | Interm. 100–600m | Deep >600m",
+      "sketchTitle": "Cross section"
+    },
+    "geotechnical": {
+      "rssTitle": "Rock Substance Strength (RSS)",
+      "rssFill": "Fill in the three fields per domain.",
+      "rssFormula": "RSS = UCS × 10⁶ / (Density × Depth × 9.81).",
+      "ucs": "UCS (MPa)",
+      "densityOre": "Density (kg/m³)",
+      "densityOverburden": "Average overburden density (kg/m³)",
+      "densityHwTip": "For the RSS calculation, consider the average density of all materials from the surface down to the top of the ore body (full overburden), not just the immediately adjacent rock.",
+      "densityFwTip": "For the RSS calculation, consider the average density of all materials from the surface down to the base of the ore body.",
+      "depth": "Depth (m)",
+      "rss": "RSS",
+      "rssPlaceholder": "fill in UCS, density and depth",
+      "nicholasPrefix": "Nicholas: {{value}}",
+      "rmrTitle": "Rock Mass Rating (RMR)",
+      "rmrConvert": "Select directly, or convert from GSI or Q-System.",
+      "rmrGsiFormula": "RMR = (GSI + 11.63) / 1.13",
+      "rmrQFormula": "RMR = 9 × ln(Q) + 44",
+      "rmrGsiApprox": "→ RMR ≈ {{rmr}} ({{class}})",
+      "fracturesTitle": "Fractures",
+      "jointSpacing": "Joint spacing",
+      "jointCondition": "Joint condition"
+    },
+    "eesg": {
+      "title": "EESG — Economic Environmental Social Governance",
+      "subtitle": "Economic, environmental, social and governance criteria.",
+      "oreValue": "Ore value"
+    },
+    "complementary": {
+      "title": "Criterion Weights",
+      "subtitle": "Adjust the importance of each criterion per method. Default: 1.0. Each method has independent weights.",
+      "criterionHint": "Each criterion is weighted individually within its geological domain (0.00–2.00).",
+      "criterionHintEcon": "Each criterion is weighted individually within its geological/economic domain (0.00–2.00).",
+      "nicholasModeDomain": "Domain presets (Nicholas 92)",
+      "nicholasModeCriteria": "Per-criterion weighting",
+      "criteriaLayerTitle": "Per-criterion weighting",
+      "domainLayerTitle": "Domain multipliers (Nicholas 92)",
+      "domainLayerHint": "Weight each geotechnical domain. Apply a preset or adjust manually.",
+      "groups": {
+        "geo": "Geometry",
+        "econ": "Economic",
+        "ob": "Ore body",
+        "hw": "Hanging wall",
+        "fw": "Footwall"
+      },
+      "criteria": {
+        "shape": "Shape",
+        "thickness": "Thickness",
+        "dip": "Dip",
+        "grade": "Grade",
+        "depth": "Depth",
+        "rss": "RSS",
+        "rmr": "RMR",
+        "jointSpacing": "Spacing",
+        "jointCondition": "Joint condition",
+        "oreValue": "Ore value"
+      },
+      "domainCriteria": {
+        "geo": "Geometry (geo)",
+        "ob": "Ore body (ob)",
+        "hw": "Hanging wall (hw)",
+        "fw": "Footwall (fw)"
+      },
+      "presets": {
+        "default": "Default",
+        "preset1": "Preset 1",
+        "preset2": "Preset 2",
+        "preset3": "Preset 3"
+      }
+    },
+    "review": {
+      "title": "Parameter summary",
+      "methods": "Methods",
+      "geometry": "Geometry",
+      "geotechnical": "Geotechnical",
+      "eesg": "EESG",
+      "shape": "Shape",
+      "thickness": "Thickness",
+      "dip": "Dip",
+      "grade": "Distribution",
+      "ucs": "UCS — {{zone}}",
+      "density": "Density — {{zone}}",
+      "depth": "Depth — {{zone}}",
+      "rss": "RSS — {{zone}}",
+      "rmr": "RMR — {{zone}}",
+      "jointSpacing": "Joint spacing — {{zone}}",
+      "jointCondition": "Joint condition — {{zone}}",
+      "oreValue": "Ore value"
+    }
+  },
+  "results": {
+    "title": "Results",
+    "subtitle": "MMS 2.0 — Mining Method Selection",
+    "noResult": "No results calculated yet.",
+    "goToInputs": "Go to Inputs",
+    "activateOne": "Activate at least one method to view the results.",
+    "comparison": "Comparison",
+    "radarNormalized": "Radar (normalized)",
+    "breakdown": "Breakdown — {{method}}",
+    "ranking": "Ranking",
+    "rank": "{{n}}",
+    "backToInputs": "← Back to Inputs",
+    "criteria": {
+      "shape": "Shape",
+      "thickness": "Thickness",
+      "dip": "Dip",
+      "grade": "Grade",
+      "depth": "Depth",
+      "oreValue": "Ore Value",
+      "rss_ob": "RSS — Ore",
+      "rss_hw": "RSS — HW",
+      "rss_fw": "RSS — FW",
+      "rmr_ob": "RMR — Ore",
+      "rmr_hw": "RMR — HW",
+      "rmr_fw": "RMR — FW",
+      "jointSpacing_ob": "Joint Spacing — Ore",
+      "jointSpacing_hw": "Joint Spacing — HW",
+      "jointSpacing_fw": "Joint Spacing — FW",
+      "jointCondition_ob": "Joint Cond. — Ore",
+      "jointCondition_hw": "Joint Cond. — HW",
+      "jointCondition_fw": "Joint Cond. — FW"
+    }
+  },
+  "deposit": {
+    "surface": "Surface",
+    "oreBody": "Ore body",
+    "gradeArrow": "grade ↑",
+    "dipLabel": "Dip",
+    "depthLabel": "Depth",
+    "gradeLabels": {
+      "Uniforme": "Uniform grade",
+      "Gradacional": "Gradational grade",
+      "Errático": "Erratic grade"
+    }
+  },
+  "rockTooltip": {
+    "density": "Bulk Density",
+    "ucs": "UCS",
+    "consult": "Look up {{title}} by rock type",
+    "header": "{{title}} by rock type ({{unit}})",
+    "rock": "Rock",
+    "min": "Min ({{unit}})",
+    "max": "Max ({{unit}})",
+    "useAvg": "Use average",
+    "clickHint": "Click a value to fill it into the field automatically."
+  },
+  "floating": {
+    "report": "Report an error",
+    "references": "References",
+    "credits": "Credits",
+    "toast": "Thank you! Your report has been sent."
+  },
+  "modals": {
+    "report": {
+      "title": "Report an error",
+      "name": "Full name",
+      "namePlaceholder": "Your name",
+      "email": "Email",
+      "emailPlaceholder": "you@example.com",
+      "message": "Error description",
+      "messagePlaceholder": "Describe what happened, at which step, and what you expected.",
+      "send": "Send",
+      "sending": "Sending…",
+      "errRequired": "Fill in all fields.",
+      "errSend": "Could not send. Please try again.",
+      "errConnection": "Connection failed. Check your internet and try again."
+    },
+    "references": {
+      "title": "References"
+    },
+    "credits": {
+      "title": "Credits",
+      "development": "Development",
+      "advising": "Advising",
+      "collaborators": "Collaborators"
+    }
+  },
+  "enums": {
+    "shape": {
+      "Massivo": "Massive",
+      "Tabular": "Tabular",
+      "Irregular": "Irregular"
+    },
+    "thickness": {
+      "Muito estreito": "Very narrow",
+      "Estreito": "Narrow",
+      "Intermediário": "Intermediate",
+      "Espesso": "Thick",
+      "Muito espesso": "Very thick"
+    },
+    "grade": {
+      "Uniforme": "Uniform",
+      "Gradacional": "Gradational",
+      "Errático": "Erratic"
+    },
+    "rssNicholas": {
+      "Fraca": "Weak",
+      "Moderada": "Moderate",
+      "Resistente": "Strong"
+    },
+    "rmrClass": {
+      "Muito pobre": "Very poor",
+      "Pobre": "Poor",
+      "Razoável": "Fair",
+      "Boa": "Good",
+      "Muito boa": "Very good"
+    },
+    "jointSpacing": {
+      "Muito Perto": "Very close",
+      "Perto": "Close",
+      "Longe": "Wide",
+      "Muito Longe": "Very wide"
+    },
+    "jointCondition": {
+      "Fraca": "Weak",
+      "Média": "Medium",
+      "Forte": "Strong"
+    },
+    "oreValue": {
+      "Baixo": "Low",
+      "Médio": "Medium",
+      "Alto": "High"
+    },
+    "depthFaixa": {
+      "Rasa": "Shallow",
+      "Intermediária": "Intermediate",
+      "Pouco profunda": "Moderately deep",
+      "Profunda": "Deep"
+    },
+    "dipClass": {
+      "Plano": "Flat",
+      "Intermediário": "Intermediate",
+      "Inclinado": "Steep"
+    },
+    "rockFamily": {
+      "Ígneas": "Igneous",
+      "Sedimentares": "Sedimentary",
+      "Metamórficas": "Metamorphic"
+    }
+  },
+  "dipRanges": {
+    "ubc": "Flat <20° | Intermediate 20–55° | Steep >55°",
+    "nicholas": "Flat <20° | Intermediate 20–55° | Steep >55°",
+    "shb": "Flat <15° | Low 15–30° | Intermediate 30–45° | Slightly steep 45–60° | Steep >60°"
+  }
+}
