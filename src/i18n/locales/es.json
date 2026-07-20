@@ -247,7 +247,8 @@
       "Gradacional": "Gradacional",
       "Errático": "Errática"
     },
-    "rssNicholas": {
+    "rss": {
+      "Muito fraca": "Muy débil",
       "Fraca": "Débil",
       "Moderada": "Moderada",
       "Resistente": "Resistente"

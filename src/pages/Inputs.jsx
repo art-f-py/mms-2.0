@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useMms, DOMAIN_PRESETS } from "../context/MmsContext";
 import {
   calculateUBC, calculateNicholas, calculateSHB,
@@ -40,7 +41,8 @@ const S = {
   btnGhost:     { padding: "6px 14px", minHeight: "44px", backgroundColor: "transparent", color: C.muted, border: `1px solid ${C.border}`, borderRadius: "6px", fontSize: "13px", cursor: "pointer" },
 };
 
-const zones = { ore: "Corpo de minério", hangingWall: "Hanging wall", footwall: "Foot wall" };
+// Rótulos das zonas resolvidos por i18n no render (ver zones.* nos locales).
+const ZONE_KEYS = ["ore", "hangingWall", "footwall"];
 
 const RSS_COLORS = {
   "Muito fraca": { bg: "#fee2e2", text: "#991b1b" },
@@ -62,11 +64,14 @@ function Field({ label, hint, children, style }) {
   );
 }
 
-function Sel({ value, onChange, options }) {
+// `options` guarda SEMPRE os valores canônicos (chaves usadas pelos algoritmos);
+// `labels` (opcional) mapeia valor canônico → texto traduzido só para exibição.
+function Sel({ value, onChange, options, labels }) {
+  const { t } = useTranslation();
   return (
     <select style={S.inp} value={value} onChange={(e) => onChange(e.target.value)}>
-      <option value="">Selecione</option>
-      {options.map((o) => <option key={o}>{o}</option>)}
+      <option value="">{t("common.select")}</option>
+      {options.map((o) => <option key={o} value={o}>{labels?.[o] ?? o}</option>)}
     </select>
   );
 }
@@ -101,6 +106,7 @@ const RMR_CLASS_COLORS = {
 const rmrBtn = { padding: "0 14px", height: "100%", backgroundColor: C.primary, color: C.white, border: "none", borderRadius: "6px", fontWeight: "600", fontSize: "14px", cursor: "pointer" };
 
 function RmrField({ value, onChange }) {
+  const { t } = useTranslation();
   const [mode, setMode] = useState("rmr");
   const [gsi, setGsi]   = useState("");
   const [q, setQ]       = useState("");
@@ -117,29 +123,27 @@ function RmrField({ value, onChange }) {
 
       {mode === "rmr" && (
         <select style={S.inp} value={value || ""} onChange={(e) => onChange(e.target.value)}>
-          <option value="">Selecione</option>
-          <option>Muito pobre</option>
-          <option>Pobre</option>
-          <option>Razoável</option>
-          <option>Boa</option>
-          <option>Muito boa</option>
+          <option value="">{t("common.select")}</option>
+          {["Muito pobre", "Pobre", "Razoável", "Boa", "Muito boa"].map((c) => (
+            <option key={c} value={c}>{t(`enums.rmrClass.${c}`)}</option>
+          ))}
         </select>
       )}
 
       {mode === "gsi" && (
         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <p style={{ ...S.hint, margin: 0 }}>RMR = (GSI + 11,63) / 1,13</p>
+          <p style={{ ...S.hint, margin: 0 }}>{t("inputs.geotechnical.rmrGsiFormula")}</p>
           <div style={{ display: "flex", gap: "6px", height: "44px" }}>
-            <input type="number" min="0" max="100" style={{ ...S.inp }} placeholder="ex: 55"
+            <input type="number" min="0" max="100" style={{ ...S.inp }} placeholder={t("common.example", { value: "55" })}
               value={gsi} onChange={(e) => setGsi(e.target.value)} />
             <button style={rmrBtn}
               onClick={() => { const v = parseFloat(gsi); if (!isNaN(v)) onChange(rmrToClass(gsiToRmr(v))); }}>
-              Aplicar
+              {t("common.apply")}
             </button>
           </div>
           {gsi && !isNaN(parseFloat(gsi)) && (
             <p style={{ ...S.hint, color: C.primary, fontWeight: "600", margin: 0 }}>
-              → RMR ≈ {gsiToRmr(parseFloat(gsi)).toFixed(1)} ({rmrToClass(gsiToRmr(parseFloat(gsi)))})
+              {t("inputs.geotechnical.rmrGsiApprox", { rmr: gsiToRmr(parseFloat(gsi)).toFixed(1), class: t(`enums.rmrClass.${rmrToClass(gsiToRmr(parseFloat(gsi)))}`) })}
             </p>
           )}
         </div>
@@ -147,18 +151,18 @@ function RmrField({ value, onChange }) {
 
       {mode === "q" && (
         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <p style={{ ...S.hint, margin: 0 }}>RMR = 9 × ln(Q) + 44</p>
+          <p style={{ ...S.hint, margin: 0 }}>{t("inputs.geotechnical.rmrQFormula")}</p>
           <div style={{ display: "flex", gap: "6px", height: "44px" }}>
-            <input type="number" min="0.001" style={{ ...S.inp }} placeholder="ex: 5.0"
+            <input type="number" min="0.001" style={{ ...S.inp }} placeholder={t("common.example", { value: "5.0" })}
               value={q} onChange={(e) => setQ(e.target.value)} />
             <button style={rmrBtn}
               onClick={() => { const v = parseFloat(q); if (!isNaN(v) && v > 0) onChange(rmrToClass(qToRmr(v))); }}>
-              Aplicar
+              {t("common.apply")}
             </button>
           </div>
           {q && !isNaN(parseFloat(q)) && parseFloat(q) > 0 && (
             <p style={{ ...S.hint, color: C.primary, fontWeight: "600", margin: 0 }}>
-              → RMR ≈ {qToRmr(parseFloat(q)).toFixed(1)} ({rmrToClass(qToRmr(parseFloat(q)))})
+              {t("inputs.geotechnical.rmrGsiApprox", { rmr: qToRmr(parseFloat(q)).toFixed(1), class: t(`enums.rmrClass.${rmrToClass(qToRmr(parseFloat(q)))}`) })}
             </p>
           )}
         </div>
@@ -166,7 +170,7 @@ function RmrField({ value, onChange }) {
 
       {value && (
         <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: "12px", fontSize: "13px", fontWeight: "700", backgroundColor: col.bg, color: col.text, alignSelf: "flex-start" }}>
-          {value}
+          {t(`enums.rmrClass.${value}`)}
         </span>
       )}
     </div>
@@ -216,13 +220,16 @@ function InfoTooltip({ text }) {
   );
 }
 
+// Rótulos (nomes dos métodos) mantidos como nomenclatura técnica; o texto das
+// faixas é traduzido por chave (dipRanges.*).
 const DIP_RANGES = [
-  { key: "ubc",      label: "UBC",      text: "Plano <20° | Intermediário 20–55° | Inclinado >55°" },
-  { key: "nicholas", label: "Nicholas", text: "Plano <20° | Intermediário 20–55° | Inclinado >55°" },
-  { key: "shb",      label: "SH&B",     text: "Plano <15° | Baixo 15–30° | Intermediário 30–45° | Pouco inclinado 45–60° | Inclinado >60°" },
+  { key: "ubc",      label: "UBC" },
+  { key: "nicholas", label: "Nicholas" },
+  { key: "shb",      label: "SH&B" },
 ];
 
 function DipTooltipContent({ showUBC, showNich, showSHB }) {
+  const { t } = useTranslation();
   const shown = { ubc: showUBC, nicholas: showNich, shb: showSHB };
   const selected = DIP_RANGES.filter((m) => shown[m.key]);
   const list = selected.length ? selected : DIP_RANGES;
@@ -230,7 +237,7 @@ function DipTooltipContent({ showUBC, showNich, showSHB }) {
     <>
       {list.map((m, i) => (
         <div key={m.key} style={{ marginTop: i > 0 ? "6px" : 0, paddingTop: i > 0 ? "6px" : 0, borderTop: i > 0 ? "1px solid rgba(241,245,249,0.2)" : "none" }}>
-          <strong>{m.label}:</strong> {m.text}
+          <strong>{m.label}:</strong> {t(`dipRanges.${m.key}`)}
         </div>
       ))}
     </>
@@ -238,11 +245,12 @@ function DipTooltipContent({ showUBC, showNich, showSHB }) {
 }
 
 function RSSBadge({ value }) {
-  if (!value) return <span style={{ fontSize: "12px", color: C.muted, fontStyle: "italic" }}>preencha UCS, densidade e profundidade</span>;
+  const { t } = useTranslation();
+  if (!value) return <span style={{ fontSize: "12px", color: C.muted, fontStyle: "italic" }}>{t("inputs.geotechnical.rssPlaceholder")}</span>;
   const col = RSS_COLORS[value] || { bg: "#f3f4f6", text: "#374151" };
   return (
     <span style={{ display: "inline-block", padding: "4px 12px", borderRadius: "12px", fontSize: "12px", fontWeight: "700", backgroundColor: col.bg, color: col.text }}>
-      {value}
+      {t(`enums.rss.${value}`)}
     </span>
   );
 }
@@ -260,93 +268,36 @@ function ReviewRow({ label, value }) {
 // ---------------------------------------------------------------------------
 // PESOS POR CRITÉRIO — config por método
 // ---------------------------------------------------------------------------
+// Títulos de grupo (por `domain`) e rótulos de critério (por `key`) são resolvidos
+// via i18n no render — ver inputs.complementary.groups / .criteria nos locales.
 // UBC — critérios individualizados, agrupados por domínio geológico
 const UBC_CRITERIA_GROUPS = [
-  { domain: "geo", title: "Geometria", items: [
-    { key: "shape",     label: "Forma" },
-    { key: "thickness", label: "Espessura" },
-    { key: "dip",       label: "Mergulho" },
-    { key: "grade",     label: "Teores" },
-    { key: "depth",     label: "Profundidade" },
-  ] },
-  { domain: "ob", title: "Corpo de minério", items: [
-    { key: "rss", label: "RSS" },
-    { key: "rmr", label: "RMR" },
-  ] },
-  { domain: "hw", title: "Hanging wall", items: [
-    { key: "rss", label: "RSS" },
-    { key: "rmr", label: "RMR" },
-  ] },
-  { domain: "fw", title: "Foot wall", items: [
-    { key: "rss", label: "RSS" },
-    { key: "rmr", label: "RMR" },
-  ] },
+  { domain: "geo", items: [{ key: "shape" }, { key: "thickness" }, { key: "dip" }, { key: "grade" }, { key: "depth" }] },
+  { domain: "ob",  items: [{ key: "rss" }, { key: "rmr" }] },
+  { domain: "hw",  items: [{ key: "rss" }, { key: "rmr" }] },
+  { domain: "fw",  items: [{ key: "rss" }, { key: "rmr" }] },
 ];
 
 // Nicholas — 13 critérios individualizados, agrupados por domínio geológico
 const NICHOLAS_CRITERIA_GROUPS = [
-  { domain: "geo", title: "Geometria", items: [
-    { key: "shape",     label: "Forma" },
-    { key: "thickness", label: "Espessura" },
-    { key: "dip",       label: "Mergulho" },
-    { key: "grade",     label: "Teores" },
-  ] },
-  { domain: "ob", title: "Corpo de minério", items: [
-    { key: "rss",            label: "RSS" },
-    { key: "jointSpacing",   label: "Espaçamento" },
-    { key: "jointCondition", label: "Interfraturas" },
-  ] },
-  { domain: "hw", title: "Hanging wall", items: [
-    { key: "rss",            label: "RSS" },
-    { key: "jointSpacing",   label: "Espaçamento" },
-    { key: "jointCondition", label: "Interfraturas" },
-  ] },
-  { domain: "fw", title: "Foot wall", items: [
-    { key: "rss",            label: "RSS" },
-    { key: "jointSpacing",   label: "Espaçamento" },
-    { key: "jointCondition", label: "Interfraturas" },
-  ] },
+  { domain: "geo", items: [{ key: "shape" }, { key: "thickness" }, { key: "dip" }, { key: "grade" }] },
+  { domain: "ob",  items: [{ key: "rss" }, { key: "jointSpacing" }, { key: "jointCondition" }] },
+  { domain: "hw",  items: [{ key: "rss" }, { key: "jointSpacing" }, { key: "jointCondition" }] },
+  { domain: "fw",  items: [{ key: "rss" }, { key: "jointSpacing" }, { key: "jointCondition" }] },
 ];
 
 // SH&B — critérios individualizados, agrupados por domínio geológico/econômico
 const SHB_CRITERIA_GROUPS = [
-  { domain: "geo", title: "Geometria", items: [
-    { key: "shape",     label: "Forma" },
-    { key: "thickness", label: "Espessura" },
-    { key: "dip",       label: "Mergulho" },
-    { key: "grade",     label: "Teores" },
-    { key: "depth",     label: "Profundidade" },
-  ] },
-  { domain: "econ", title: "Econômico", items: [
-    { key: "oreValue", label: "Valor do minério" },
-  ] },
-  { domain: "ob", title: "Corpo de minério", items: [
-    { key: "rss", label: "RSS" },
-    { key: "rmr", label: "RMR" },
-  ] },
-  { domain: "hw", title: "Hanging wall", items: [
-    { key: "rss", label: "RSS" },
-    { key: "rmr", label: "RMR" },
-  ] },
-  { domain: "fw", title: "Foot wall", items: [
-    { key: "rss", label: "RSS" },
-    { key: "rmr", label: "RMR" },
-  ] },
+  { domain: "geo",  items: [{ key: "shape" }, { key: "thickness" }, { key: "dip" }, { key: "grade" }, { key: "depth" }] },
+  { domain: "econ", items: [{ key: "oreValue" }] },
+  { domain: "ob",   items: [{ key: "rss" }, { key: "rmr" }] },
+  { domain: "hw",   items: [{ key: "rss" }, { key: "rmr" }] },
+  { domain: "fw",   items: [{ key: "rss" }, { key: "rmr" }] },
 ];
 
-const DOMAIN_CRITERIA = [
-  { key: "geo", label: "Geometria (geo)" },
-  { key: "ob",  label: "Corpo de minério (ob)" },
-  { key: "hw",  label: "Hanging wall (hw)" },
-  { key: "fw",  label: "Foot wall (fw)" },
-];
+const DOMAIN_CRITERIA_KEYS = ["geo", "ob", "hw", "fw"];
 
-const DOMAIN_PRESET_LABELS = {
-  default: "Padrão",
-  preset1: "Preset 1",
-  preset2: "Preset 2",
-  preset3: "Preset 3",
-};
+const DOMAIN_PRESET_KEYS = ["default", "preset1", "preset2", "preset3"];
 
 function WeightSlider({ label, value, min, max, onChange }) {
   const v = value ?? 1;
@@ -380,10 +331,11 @@ function Collapsible({ title, open, onToggle, children }) {
 // STEPPER
 // ---------------------------------------------------------------------------
 function StepperHeader({ current, steps }) {
+  const { t } = useTranslation();
   const currentLabel = steps.find((s) => s.id === current)?.label || "";
   return (
     <>
-      <p className="mms-stepper-current">Etapa {current} de {steps.length} — {currentLabel}</p>
+      <p className="mms-stepper-current">{t("stepper.position", { current, total: steps.length, label: currentLabel })}</p>
       <div style={{ display: "flex", alignItems: "center", marginBottom: "8px" }}>
         {steps.map((step, i) => {
           const done   = step.id < current;
@@ -413,9 +365,21 @@ function StepperHeader({ current, steps }) {
 // COMPONENTE PRINCIPAL
 // ---------------------------------------------------------------------------
 function Inputs() {
+  const { t } = useTranslation();
   const { state, dispatch } = useMms();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
+
+  // Rótulo traduzido de zona (ore / hangingWall / footwall).
+  const zoneLabel = (z) => t(`zones.${z}`);
+  // Mapas valor-canônico → rótulo traduzido para os selects (valores nunca mudam).
+  const shapeLabels          = t("enums.shape", { returnObjects: true });
+  const thicknessLabels      = t("enums.thickness", { returnObjects: true });
+  const gradeLabels          = t("enums.grade", { returnObjects: true });
+  const rssLabels            = t("enums.rss", { returnObjects: true });
+  const jointSpacingLabels   = t("enums.jointSpacing", { returnObjects: true });
+  const jointConditionLabels = t("enums.jointCondition", { returnObjects: true });
+  const oreValueLabels       = t("enums.oreValue", { returnObjects: true });
   const [openBlocks, setOpenBlocks] = useState({ ubc: true, nicholas: true, shb: true });
   const toggleBlock = (k) => setOpenBlocks((p) => ({ ...p, [k]: !p[k] }));
 
@@ -459,7 +423,7 @@ function Inputs() {
 
   // Reseta todo o formulário e limpa o estado persistido no localStorage
   const clearForm = () => {
-    if (!window.confirm("Limpar todos os campos do formulário? Esta ação não pode ser desfeita.")) return;
+    if (!window.confirm(t("inputs.methods.clearConfirm"))) return;
     localStorage.removeItem("mms2-state");
     dispatch({ type: "RESET_ALL" });
     setStep(1);
@@ -496,9 +460,9 @@ function Inputs() {
   // ---------------------------------------------------------------------------
   const Step1 = (
     <div style={S.card}>
-      <SecTitle>Selecione os métodos de seleção</SecTitle>
+      <SecTitle>{t("inputs.methods.title")}</SecTitle>
       <p style={{ fontSize: "16px", color: C.muted, marginTop: 0, marginBottom: "20px" }}>
-        O formulário se ajustará automaticamente aos campos necessários.
+        {t("inputs.methods.subtitle")}
       </p>
       <div className="mms-grid2">
         {[
@@ -522,9 +486,9 @@ function Inputs() {
           );
         })}
       </div>
-      {!anyMethod && <p style={{ marginTop: "16px", fontSize: "15px", color: C.warning, fontWeight: "600" }}>⚠ Selecione pelo menos um método para continuar.</p>}
+      {!anyMethod && <p style={{ marginTop: "16px", fontSize: "15px", color: C.warning, fontWeight: "600" }}>{t("inputs.methods.warning")}</p>}
       <div style={{ marginTop: "24px", borderTop: `1px solid ${C.border}`, paddingTop: "16px", display: "flex", justifyContent: "flex-end" }}>
-        <button style={S.btnGhost} onClick={clearForm}>Limpar formulário</button>
+        <button style={S.btnGhost} onClick={clearForm}>{t("inputs.methods.clear")}</button>
       </div>
     </div>
   );
@@ -534,36 +498,36 @@ function Inputs() {
   // ---------------------------------------------------------------------------
   const Step2 = (
     <div style={S.card}>
-      <SecTitle>Geometria do depósito</SecTitle>
+      <SecTitle>{t("inputs.geometry.title")}</SecTitle>
       <div className="mms-grid2">
-        <Field label="Forma geral">
+        <Field label={t("inputs.geometry.shape")}>
           <Sel value={fd.geometry.shape} onChange={(v) => set("geometry", "shape", v)}
-            options={["Massivo", "Tabular", "Irregular"]} />
+            options={["Massivo", "Tabular", "Irregular"]} labels={shapeLabels} />
         </Field>
-        <Field label="Espessura">
+        <Field label={t("inputs.geometry.thickness")}>
           <Sel value={fd.geometry.thickness} onChange={(v) => set("geometry", "thickness", v)}
-            options={["Muito estreito", "Estreito", "Intermediário", "Espesso", "Muito espesso"]} />
+            options={["Muito estreito", "Estreito", "Intermediário", "Espesso", "Muito espesso"]} labels={thicknessLabels} />
         </Field>
         <div style={S.sec}>
           <label style={{ ...S.label, display: "flex", alignItems: "center", gap: "6px" }}>
-            Mergulho (°)
+            {t("inputs.geometry.dip")}
             <InfoTooltip text={<DipTooltipContent showUBC={showUBC} showNich={showNich} showSHB={showSHB} />} />
           </label>
-          <Num value={fd.dip} onChange={(v) => set("dip", null, v)} placeholder="ex: 65" />
+          <Num value={fd.dip} onChange={(v) => set("dip", null, v)} placeholder={t("common.example", { value: "65" })} />
         </div>
-        <Field label="Distribuição de teores">
+        <Field label={t("inputs.geometry.grade")}>
           <Sel value={fd.geometry.grade} onChange={(v) => set("geometry", "grade", v)}
-            options={["Uniforme", "Gradacional", "Errático"]} />
+            options={["Uniforme", "Gradacional", "Errático"]} labels={gradeLabels} />
         </Field>
         {(showUBC || showSHB) && (
-          <Field label="Profundidade do corpo de minério (m)" hint="UBC: Rasa ≤100m | Interm. 100–600m | Profunda >600m">
-            <Num value={fd.depth.ore} onChange={(v) => set("depth", "ore", v)} placeholder="ex: 400" />
+          <Field label={t("inputs.geometry.depth")} hint={t("inputs.geometry.depthHint")}>
+            <Num value={fd.depth.ore} onChange={(v) => set("depth", "ore", v)} placeholder={t("common.example", { value: "400" })} />
           </Field>
         )}
       </div>
 
       <div style={{ marginTop: "24px", borderTop: `1px solid ${C.border}`, paddingTop: "20px" }}>
-        <SecTitle>Seção transversal</SecTitle>
+        <SecTitle>{t("inputs.geometry.sketchTitle")}</SecTitle>
         <DepositSketch
           shape={fd.geometry.shape}
           thickness={fd.geometry.thickness}
@@ -583,45 +547,45 @@ function Inputs() {
 
       {(showUBC || showSHB) && (
         <>
-          <SecTitle>Rock Substance Strength (RSS)</SecTitle>
+          <SecTitle>{t("inputs.geotechnical.rssTitle")}</SecTitle>
           <p style={{ ...S.hint, marginBottom: "20px", display: "flex", alignItems: "center", gap: "6px" }}>
-            Preencha os três campos por domínio.
-            <InfoTooltip text="RSS = UCS × 10⁶ / (Densidade × Profundidade × 9,81)." />
+            {t("inputs.geotechnical.rssFill")}
+            <InfoTooltip text={t("inputs.geotechnical.rssFormula")} />
           </p>
           <div style={S.grid3}>
-            {["ore", "hangingWall", "footwall"].map((z) => (
+            {ZONE_KEYS.map((z) => (
               <div key={z} style={{ display: "flex", flexDirection: "column", gap: "12px", flex: "1 1 280px" }}>
                 <span style={{ fontWeight: "700", fontSize: "15px", color: C.text, borderBottom: `2px solid ${C.primary}`, paddingBottom: "4px" }}>
-                  {zones[z]}
+                  {zoneLabel(z)}
                 </span>
                 <div>
-                  <label style={S.label}>UCS (MPa)</label>
+                  <label style={S.label}>{t("inputs.geotechnical.ucs")}</label>
                   <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                    <Num value={fd.ucs[z]} onChange={(v) => set("ucs", z, v)} placeholder="ex: 185" />
+                    <Num value={fd.ucs[z]} onChange={(v) => set("ucs", z, v)} placeholder={t("common.example", { value: "185" })} />
                     <RockTooltip type="ucs" onSelect={(v) => set("ucs", z, String(v))} />
                   </div>
                 </div>
                 <div>
                   <label style={{ ...S.label, display: "flex", alignItems: "center", gap: "6px" }}>
-                    {z === "ore" ? "Densidade (kg/m³)" : "Densidade média do overburden (kg/m³)"}
+                    {z === "ore" ? t("inputs.geotechnical.densityOre") : t("inputs.geotechnical.densityOverburden")}
                     {z === "hangingWall" && (
-                      <InfoTooltip text="Para o cálculo do RSS, considere a densidade média de todos os materiais desde a superfície até o topo do corpo de minério (overburden completo), não apenas a rocha imediatamente adjacente." />
+                      <InfoTooltip text={t("inputs.geotechnical.densityHwTip")} />
                     )}
                     {z === "footwall" && (
-                      <InfoTooltip text="Para o cálculo do RSS, considere a densidade média de todos os materiais desde a superfície até a base do corpo de minério." />
+                      <InfoTooltip text={t("inputs.geotechnical.densityFwTip")} />
                     )}
                   </label>
-                  <Num value={fd.density[z]} onChange={(v) => set("density", z, v)} placeholder="ex: 2600" />
+                  <Num value={fd.density[z]} onChange={(v) => set("density", z, v)} placeholder={t("common.example", { value: "2600" })} />
                 </div>
                 <div>
-                  <label style={S.label}>Profundidade (m)</label>
-                  <Num value={fd.depth[z]} onChange={(v) => set("depth", z, v)} placeholder="ex: 600" />
+                  <label style={S.label}>{t("inputs.geotechnical.depth")}</label>
+                  <Num value={fd.depth[z]} onChange={(v) => set("depth", z, v)} placeholder={t("common.example", { value: "600" })} />
                 </div>
                 <div>
-                  <label style={S.label}>RSS</label>
+                  <label style={S.label}>{t("inputs.geotechnical.rss")}</label>
                   <RSSBadge value={rssLive[z]} />
                   {showNich && rssNichLive[z] && (
-                    <p style={{ ...S.hint, marginTop: "4px" }}>Nicholas: {rssNichLive[z]}</p>
+                    <p style={{ ...S.hint, marginTop: "4px" }}>{t("inputs.geotechnical.nicholasPrefix", { value: t(`enums.rss.${rssNichLive[z]}`) })}</p>
                   )}
                 </div>
               </div>
@@ -633,12 +597,12 @@ function Inputs() {
 
       {showNich && !showUBC && !showSHB && (
         <>
-          <SecTitle>Rock Substance Strength (RSS)</SecTitle>
+          <SecTitle>{t("inputs.geotechnical.rssTitle")}</SecTitle>
           <div style={S.grid3}>
-            {["ore", "hangingWall", "footwall"].map((z) => (
-              <Field key={z} label={zones[z]} style={{ flex: "1 1 280px" }}>
+            {ZONE_KEYS.map((z) => (
+              <Field key={z} label={zoneLabel(z)} style={{ flex: "1 1 280px" }}>
                 <Sel value={fd.rss[z]} onChange={(v) => set("rss", z, v)}
-                  options={["Fraca", "Moderada", "Resistente"]} />
+                  options={["Fraca", "Moderada", "Resistente"]} labels={rssLabels} />
               </Field>
             ))}
           </div>
@@ -648,14 +612,14 @@ function Inputs() {
 
       {(showUBC || showSHB) && (
         <>
-          <SecTitle>Rock Mass Rating (RMR)</SecTitle>
+          <SecTitle>{t("inputs.geotechnical.rmrTitle")}</SecTitle>
           <p style={{ ...S.hint, marginBottom: "16px" }}>
-            Selecione diretamente, ou converta a partir de GSI ou Q-System.
+            {t("inputs.geotechnical.rmrConvert")}
           </p>
           <div style={S.grid3}>
-            {["ore", "hangingWall", "footwall"].map((z) => (
+            {ZONE_KEYS.map((z) => (
               <div key={z} style={{ display: "flex", flexDirection: "column", gap: "6px", flex: "1 1 280px" }}>
-                <label style={S.label}>{zones[z]}</label>
+                <label style={S.label}>{zoneLabel(z)}</label>
                 <RmrField value={fd.rmr[z]} onChange={(v) => set("rmr", z, v)} />
               </div>
             ))}
@@ -666,22 +630,22 @@ function Inputs() {
       {showNich && (
         <>
           <div style={S.div} />
-          <SecTitle>Fraturas</SecTitle>
-          <p style={{ fontSize: "15px", fontWeight: "600", color: C.text, marginBottom: "12px" }}>Espaçamento das fraturas</p>
+          <SecTitle>{t("inputs.geotechnical.fracturesTitle")}</SecTitle>
+          <p style={{ fontSize: "15px", fontWeight: "600", color: C.text, marginBottom: "12px" }}>{t("inputs.geotechnical.jointSpacing")}</p>
           <div style={S.grid3}>
             {["ore", "hangingWall", "footwall"].map((z) => (
-              <Field key={z} label={zones[z]} style={{ flex: "1 1 280px" }}>
+              <Field key={z} label={zoneLabel(z)} style={{ flex: "1 1 280px" }}>
                 <Sel value={fd.jointSpacing[z]} onChange={(v) => set("jointSpacing", z, v)}
-                  options={["Muito Perto", "Perto", "Longe", "Muito Longe"]} />
+                  options={["Muito Perto", "Perto", "Longe", "Muito Longe"]} labels={jointSpacingLabels} />
               </Field>
             ))}
           </div>
-          <p style={{ fontSize: "15px", fontWeight: "600", color: C.text, margin: "28px 0 12px" }}>Características das interfraturas</p>
+          <p style={{ fontSize: "15px", fontWeight: "600", color: C.text, margin: "28px 0 12px" }}>{t("inputs.geotechnical.jointCondition")}</p>
           <div style={S.grid3}>
-            {["ore", "hangingWall", "footwall"].map((z) => (
-              <Field key={z} label={zones[z]} style={{ flex: "1 1 280px" }}>
+            {ZONE_KEYS.map((z) => (
+              <Field key={z} label={zoneLabel(z)} style={{ flex: "1 1 280px" }}>
                 <Sel value={fd.jointCondition[z]} onChange={(v) => set("jointCondition", z, v)}
-                  options={["Fraca", "Média", "Forte"]} />
+                  options={["Fraca", "Média", "Forte"]} labels={jointConditionLabels} />
               </Field>
             ))}
           </div>
@@ -695,14 +659,14 @@ function Inputs() {
   // ---------------------------------------------------------------------------
   const StepEESG = showSHB ? (
     <div style={S.card}>
-      <SecTitle>EESG — Economic Environmental Social Governance</SecTitle>
+      <SecTitle>{t("inputs.eesg.title")}</SecTitle>
       <p style={{ ...S.hint, marginBottom: "20px" }}>
-        Critérios econômicos, ambientais, sociais e de governança.
+        {t("inputs.eesg.subtitle")}
       </p>
-      <Field label="Valor do minério">
+      <Field label={t("inputs.eesg.oreValue")}>
         <div style={{ maxWidth: "280px" }}>
           <Sel value={fd.oreValue} onChange={(v) => set("oreValue", null, v)}
-            options={["Baixo", "Médio", "Alto"]} />
+            options={["Baixo", "Médio", "Alto"]} labels={oreValueLabels} />
         </div>
       </Field>
     </div>
@@ -715,29 +679,29 @@ function Inputs() {
 
   // Detecta qual preset de domínio está ativo (null se houver ajuste manual)
   const activeDomainPreset = Object.keys(DOMAIN_PRESETS).find((p) =>
-    DOMAIN_CRITERIA.every(({ key }) =>
+    DOMAIN_CRITERIA_KEYS.every((key) =>
       Math.abs((cw.nicholas.domain[key] ?? 1) - DOMAIN_PRESETS[p][key]) < 1e-9
     )
   ) || null;
 
   const Step4 = anyMethod ? (
     <div style={S.card}>
-      <SecTitle>Pesos por Critério</SecTitle>
+      <SecTitle>{t("inputs.complementary.title")}</SecTitle>
       <p style={{ ...S.hint, marginBottom: "20px" }}>
-        Ajuste a importância de cada critério por método. Padrão: 1.0. Cada método tem pesos independentes.
+        {t("inputs.complementary.subtitle")}
       </p>
 
       {showUBC && (
         <Collapsible title="UBC 1995" open={openBlocks.ubc} onToggle={() => toggleBlock("ubc")}>
           <p style={{ ...S.hint, marginTop: 0, marginBottom: "16px" }}>
-            Cada critério é ponderado individualmente dentro do seu domínio geológico (0.00–2.00).
+            {t("inputs.complementary.criterionHint")}
           </p>
-          {UBC_CRITERIA_GROUPS.map(({ domain, title, items }) => (
+          {UBC_CRITERIA_GROUPS.map(({ domain, items }) => (
             <div key={domain} style={{ marginBottom: "18px" }}>
-              <p style={{ fontSize: "14px", fontWeight: "700", color: C.primary, margin: "0 0 10px" }}>{title}</p>
+              <p style={{ fontSize: "14px", fontWeight: "700", color: C.primary, margin: "0 0 10px" }}>{t(`inputs.complementary.groups.${domain}`)}</p>
               <div className="mms-grid2">
-                {items.map(({ key, label }) => (
-                  <WeightSlider key={key} label={label} min={0} max={2}
+                {items.map(({ key }) => (
+                  <WeightSlider key={key} label={t(`inputs.complementary.criteria.${key}`)} min={0} max={2}
                     value={cw.ubc[domain][key]}
                     onChange={(v) => dispatch({ type: "SET_UBC_CRITERION", domain, key, value: v })} />
                 ))}
@@ -746,7 +710,7 @@ function Inputs() {
           ))}
           <div style={{ marginTop: "8px" }}>
             <button style={S.btnGhost} onClick={() => dispatch({ type: "RESET_UBC_CRITERIA" })}>
-              Restaurar padrão
+              {t("common.restoreDefault")}
             </button>
           </div>
         </Collapsible>
@@ -757,8 +721,8 @@ function Inputs() {
           {/* Seletor de camada — critério OU domínio, nunca ambos */}
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "18px" }}>
             {[
-              ["domain",   "Presets de domínio (Nicholas 92)"],
-              ["criteria", "Individualização por critério"],
+              ["domain",   t("inputs.complementary.nicholasModeDomain")],
+              ["criteria", t("inputs.complementary.nicholasModeCriteria")],
             ].map(([m, lbl]) => {
               const on = nicholasMode === m;
               return (
@@ -774,17 +738,17 @@ function Inputs() {
           {/* Camada de critério — granular, desativada quando em modo domínio */}
           <div style={nicholasMode === "domain" ? { opacity: 0.4, pointerEvents: "none" } : undefined}>
             <p style={{ fontSize: "15px", fontWeight: "700", color: C.text, margin: "0 0 6px" }}>
-              Individualização por critério
+              {t("inputs.complementary.criteriaLayerTitle")}
             </p>
             <p style={{ ...S.hint, marginTop: 0, marginBottom: "16px" }}>
-              Cada critério é ponderado individualmente dentro do seu domínio geológico (0.00–2.00).
+              {t("inputs.complementary.criterionHint")}
             </p>
-            {NICHOLAS_CRITERIA_GROUPS.map(({ domain, title, items }) => (
+            {NICHOLAS_CRITERIA_GROUPS.map(({ domain, items }) => (
               <div key={domain} style={{ marginBottom: "18px" }}>
-                <p style={{ fontSize: "14px", fontWeight: "700", color: C.primary, margin: "0 0 10px" }}>{title}</p>
+                <p style={{ fontSize: "14px", fontWeight: "700", color: C.primary, margin: "0 0 10px" }}>{t(`inputs.complementary.groups.${domain}`)}</p>
                 <div className="mms-grid2">
-                  {items.map(({ key, label }) => (
-                    <WeightSlider key={key} label={label} min={0} max={2}
+                  {items.map(({ key }) => (
+                    <WeightSlider key={key} label={t(`inputs.complementary.criteria.${key}`)} min={0} max={2}
                       value={cw.nicholas[domain][key]}
                       onChange={(v) => handleNicholasCriteria(domain, key, v)} />
                   ))}
@@ -798,26 +762,26 @@ function Inputs() {
           {/* Camada de domínio — desativada quando em modo critério */}
           <div style={nicholasMode === "criteria" ? { opacity: 0.4, pointerEvents: "none" } : undefined}>
             <p style={{ fontSize: "15px", fontWeight: "700", color: C.text, margin: "0 0 6px" }}>
-              Multiplicadores de domínio (Nicholas 92)
+              {t("inputs.complementary.domainLayerTitle")}
             </p>
             <p style={{ ...S.hint, marginTop: 0, marginBottom: "14px" }}>
-              Ponderam cada domínio geotécnico. Aplique um preset ou ajuste manualmente.
+              {t("inputs.complementary.domainLayerHint")}
             </p>
             <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "18px" }}>
-              {Object.entries(DOMAIN_PRESET_LABELS).map(([p, lbl]) => {
+              {DOMAIN_PRESET_KEYS.map((p) => {
                 const on = nicholasMode === "domain" && activeDomainPreset === p;
                 return (
                   <button key={p}
                     onClick={() => handleDomainPreset(p)}
                     style={{ ...S.btnGhost, backgroundColor: on ? C.primary : "transparent", color: on ? C.white : C.muted, borderColor: on ? C.primary : C.border, fontWeight: on ? "700" : "400" }}>
-                    {lbl}
+                    {t(`inputs.complementary.presets.${p}`)}
                   </button>
                 );
               })}
             </div>
             <div className="mms-grid2">
-              {DOMAIN_CRITERIA.map(({ key, label }) => (
-                <WeightSlider key={key} label={label} min={0} max={2}
+              {DOMAIN_CRITERIA_KEYS.map((key) => (
+                <WeightSlider key={key} label={t(`inputs.complementary.domainCriteria.${key}`)} min={0} max={2}
                   value={cw.nicholas.domain[key]}
                   onChange={(v) => dispatch({ type: "SET_DOMAIN_WEIGHT", key, value: v })} />
               ))}
@@ -831,7 +795,7 @@ function Inputs() {
                 dispatch({ type: "RESET_NICHOLAS_DOMAIN" });
                 setNicholasMode("criteria");
               }}>
-              Restaurar padrão
+              {t("common.restoreDefault")}
             </button>
           </div>
         </Collapsible>
@@ -840,14 +804,14 @@ function Inputs() {
       {showSHB && (
         <Collapsible title="SH&B 2007" open={openBlocks.shb} onToggle={() => toggleBlock("shb")}>
           <p style={{ ...S.hint, marginTop: 0, marginBottom: "16px" }}>
-            Cada critério é ponderado individualmente dentro do seu domínio geológico/econômico (0.00–2.00).
+            {t("inputs.complementary.criterionHintEcon")}
           </p>
-          {SHB_CRITERIA_GROUPS.map(({ domain, title, items }) => (
+          {SHB_CRITERIA_GROUPS.map(({ domain, items }) => (
             <div key={domain} style={{ marginBottom: "18px" }}>
-              <p style={{ fontSize: "14px", fontWeight: "700", color: C.primary, margin: "0 0 10px" }}>{title}</p>
+              <p style={{ fontSize: "14px", fontWeight: "700", color: C.primary, margin: "0 0 10px" }}>{t(`inputs.complementary.groups.${domain}`)}</p>
               <div className="mms-grid2">
-                {items.map(({ key, label }) => (
-                  <WeightSlider key={key} label={label} min={0} max={2}
+                {items.map(({ key }) => (
+                  <WeightSlider key={key} label={t(`inputs.complementary.criteria.${key}`)} min={0} max={2}
                     value={cw.shb[domain][key]}
                     onChange={(v) => dispatch({ type: "SET_SHB_CRITERION", domain, key, value: v })} />
                 ))}
@@ -856,7 +820,7 @@ function Inputs() {
           ))}
           <div style={{ marginTop: "8px" }}>
             <button style={S.btnGhost} onClick={() => dispatch({ type: "RESET_SHB_CRITERIA" })}>
-              Restaurar padrão
+              {t("common.restoreDefault")}
             </button>
           </div>
         </Collapsible>
@@ -873,50 +837,51 @@ function Inputs() {
 
   const StepReview = (
     <div style={S.card}>
-      <SecTitle>Resumo dos parâmetros</SecTitle>
+      <SecTitle>{t("inputs.review.title")}</SecTitle>
 
-      <p style={{ fontSize: "15px", fontWeight: "700", color: C.text, margin: "0 0 8px" }}>Métodos</p>
+      <p style={{ fontSize: "15px", fontWeight: "700", color: C.text, margin: "0 0 8px" }}>{t("inputs.review.methods")}</p>
       <p style={{ fontSize: "16px", color: C.primary, fontWeight: "600", margin: "0 0 20px" }}>{selectedLabels || "—"}</p>
 
-      <p style={{ fontSize: "15px", fontWeight: "700", color: C.text, margin: "0 0 8px" }}>Geometria</p>
-      <ReviewRow label="Forma"        value={fd.geometry.shape} />
-      <ReviewRow label="Espessura"    value={fd.geometry.thickness} />
-      <ReviewRow label="Mergulho"     value={fd.dip ? `${fd.dip}°` : ""} />
-      <ReviewRow label="Distribuição" value={fd.geometry.grade} />
+      <p style={{ fontSize: "15px", fontWeight: "700", color: C.text, margin: "0 0 8px" }}>{t("inputs.review.geometry")}</p>
+      <ReviewRow label={t("inputs.review.shape")}     value={fd.geometry.shape ? shapeLabels[fd.geometry.shape] : ""} />
+      <ReviewRow label={t("inputs.review.thickness")} value={fd.geometry.thickness ? thicknessLabels[fd.geometry.thickness] : ""} />
+      <ReviewRow label={t("inputs.review.dip")}       value={fd.dip ? `${fd.dip}°` : ""} />
+      <ReviewRow label={t("inputs.review.grade")}     value={fd.geometry.grade ? gradeLabels[fd.geometry.grade] : ""} />
 
-      <p style={{ fontSize: "15px", fontWeight: "700", color: C.text, margin: "20px 0 8px" }}>Geotécnica</p>
-      {["ore","hangingWall","footwall"].map((z) => (
-        <ReviewRow key={`ucs-${z}`} label={`UCS — ${zones[z]}`}       value={fd.ucs[z] ? `${fd.ucs[z]} MPa` : ""} />
+      <p style={{ fontSize: "15px", fontWeight: "700", color: C.text, margin: "20px 0 8px" }}>{t("inputs.review.geotechnical")}</p>
+      {ZONE_KEYS.map((z) => (
+        <ReviewRow key={`ucs-${z}`} label={t("inputs.review.ucs", { zone: zoneLabel(z) })}       value={fd.ucs[z] ? `${fd.ucs[z]} MPa` : ""} />
       ))}
-      {["ore","hangingWall","footwall"].map((z) => (
-        <ReviewRow key={`den-${z}`} label={`Densidade — ${zones[z]}`} value={fd.density[z] ? `${fd.density[z]} kg/m³` : ""} />
+      {ZONE_KEYS.map((z) => (
+        <ReviewRow key={`den-${z}`} label={t("inputs.review.density", { zone: zoneLabel(z) })} value={fd.density[z] ? `${fd.density[z]} kg/m³` : ""} />
       ))}
-      {["ore","hangingWall","footwall"].map((z) => (
-        <ReviewRow key={`dep-${z}`} label={`Profundidade — ${zones[z]}`} value={fd.depth[z] ? `${fd.depth[z]} m` : ""} />
+      {ZONE_KEYS.map((z) => (
+        <ReviewRow key={`dep-${z}`} label={t("inputs.review.depth", { zone: zoneLabel(z) })} value={fd.depth[z] ? `${fd.depth[z]} m` : ""} />
       ))}
-      {["ore","hangingWall","footwall"].map((z) => (
-        <ReviewRow key={`rss-${z}`} label={`RSS — ${zones[z]}`}       value={rssLive[z] || fd.rss[z]} />
+      {ZONE_KEYS.map((z) => {
+        const rss = rssLive[z] || fd.rss[z];
+        return <ReviewRow key={`rss-${z}`} label={t("inputs.review.rss", { zone: zoneLabel(z) })} value={rss ? t(`enums.rss.${rss}`) : ""} />;
+      })}
+      {ZONE_KEYS.map((z) => (
+        <ReviewRow key={`rmr-${z}`} label={t("inputs.review.rmr", { zone: zoneLabel(z) })} value={fd.rmr[z] ? t(`enums.rmrClass.${fd.rmr[z]}`) : ""} />
       ))}
-      {["ore","hangingWall","footwall"].map((z) => (
-        <ReviewRow key={`rmr-${z}`} label={`RMR — ${zones[z]}`}       value={fd.rmr[z]} />
+      {ZONE_KEYS.map((z) => (
+        <ReviewRow key={`js-${z}`}  label={t("inputs.review.jointSpacing", { zone: zoneLabel(z) })} value={fd.jointSpacing[z] ? jointSpacingLabels[fd.jointSpacing[z]] : ""} />
       ))}
-      {["ore","hangingWall","footwall"].map((z) => (
-        <ReviewRow key={`js-${z}`}  label={`Espaç. fraturas — ${zones[z]}`} value={fd.jointSpacing[z]} />
-      ))}
-      {["ore","hangingWall","footwall"].map((z) => (
-        <ReviewRow key={`jc-${z}`}  label={`Interfraturas — ${zones[z]}`}   value={fd.jointCondition[z]} />
+      {ZONE_KEYS.map((z) => (
+        <ReviewRow key={`jc-${z}`}  label={t("inputs.review.jointCondition", { zone: zoneLabel(z) })} value={fd.jointCondition[z] ? jointConditionLabels[fd.jointCondition[z]] : ""} />
       ))}
 
       {showSHB && (
         <>
-          <p style={{ fontSize: "15px", fontWeight: "700", color: C.text, margin: "20px 0 8px" }}>EESG</p>
-          <ReviewRow label="Valor do minério" value={fd.oreValue} />
+          <p style={{ fontSize: "15px", fontWeight: "700", color: C.text, margin: "20px 0 8px" }}>{t("inputs.review.eesg")}</p>
+          <ReviewRow label={t("inputs.review.oreValue")} value={fd.oreValue ? oreValueLabels[fd.oreValue] : ""} />
         </>
       )}
 
       <button onClick={handleCalculate}
         style={{ ...S.btnPrimary, width: "100%", padding: "14px", fontSize: "17px", marginTop: "28px" }}>
-        CALCULAR
+        {t("common.calculate")}
       </button>
     </div>
   );
@@ -924,12 +889,12 @@ function Inputs() {
   // Monta etapas visíveis dinamicamente: EESG só aparece com SH&B selecionado,
   // Complementar só aparece com algum método selecionado.
   const stepDefs = [
-    { label: "Métodos",      show: true,      content: Step1 },
-    { label: "Geometria",    show: true,      content: Step2 },
-    { label: "Geotécnica",   show: true,      content: Step3 },
-    { label: "EESG",         show: showSHB,   content: StepEESG },
-    { label: "Complementar", show: anyMethod, content: Step4 },
-    { label: "Revisar",      show: true,      content: StepReview },
+    { label: t("stepper.methods"),      show: true,      content: Step1 },
+    { label: t("stepper.geometry"),     show: true,      content: Step2 },
+    { label: t("stepper.geotechnical"), show: true,      content: Step3 },
+    { label: t("stepper.eesg"),         show: showSHB,   content: StepEESG },
+    { label: t("stepper.complementary"), show: anyMethod, content: Step4 },
+    { label: t("stepper.review"),       show: true,      content: StepReview },
   ];
   const visibleStepDefs = stepDefs.filter((s) => s.show).map((s, i) => ({ ...s, id: i + 1 }));
   const visibleSteps    = visibleStepDefs.map(({ id, label }) => ({ id, label }));
@@ -943,19 +908,19 @@ function Inputs() {
     <div style={S.page}>
       <div style={S.wrap}>
         <div style={{ marginBottom: "28px" }}>
-          <h2 style={{ margin: "0 0 4px", color: C.text, fontSize: "24px" }}>Parâmetros do Depósito</h2>
-          <p style={{ margin: 0, color: C.muted, fontSize: "16px" }}>MMS 2.0 — Mining Method Selection</p>
+          <h2 style={{ margin: "0 0 4px", color: C.text, fontSize: "24px" }}>{t("inputs.pageTitle")}</h2>
+          <p style={{ margin: 0, color: C.muted, fontSize: "16px" }}>{t("inputs.pageSubtitle")}</p>
         </div>
 
         <StepperHeader current={step} steps={visibleSteps} />
         {stepContents[step - 1]}
 
         <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", marginTop: "20px" }}>
-          <button style={S.btnSecondary} onClick={prev} disabled={step === 1}>← Anterior</button>
+          <button style={S.btnSecondary} onClick={prev} disabled={step === 1}>{t("common.back")}</button>
           {step < totalSteps && (
             <button style={{ ...S.btnPrimary, opacity: step === 1 && !anyMethod ? 0.5 : 1 }}
               onClick={next} disabled={step === 1 && !anyMethod}>
-              Próximo →
+              {t("common.next")}
             </button>
           )}
         </div>
