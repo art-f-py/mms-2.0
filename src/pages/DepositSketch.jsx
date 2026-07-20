@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { classifyDepthSHB } from "../algorithms/algorithms";
 
 // ---------------------------------------------------------------------------
@@ -29,21 +28,12 @@ const GRADE_LABELS = {
   "Errático":    "Teor errático",
 };
 
-// Escala de cor do teor (quente = rico, frio = pobre) — a mesma do gradacional.
-// No errático, as zonas recebem cores desta escala em ordem aleatória (seed fixa).
-const ERRATIC_PALETTE = ["#dc2626", "#f97316", "#facc15", "#22c55e", "#3b82f6"];
-
 function dipClassLabel(deg) {
   const d = parseFloat(deg);
   if (isNaN(d)) return "";
   if (d < 20)  return "Plano";
   if (d <= 55) return "Intermediário";
   return "Inclinado";
-}
-
-function seededRand(seed) {
-  let s = seed;
-  return () => { s = (s * 9301 + 49297) % 233280; return s / 233280; };
 }
 
 // ---------------------------------------------------------------------------
@@ -149,72 +139,6 @@ export default function DepositSketch({ shape, thickness, dip, depth, grade }) {
   const f4x = CX - halfLen*dx + hwOff*nx, f4y = centerY - halfLen*dy + hwOff*ny;
   const fwPoly = `${f1x},${f1y} ${f2x},${f2y} ${f3x},${f3y} ${f4x},${f4y}`;
 
-  // Teor errático: manchas de cor discretas (mosaico) + bolinhas coloridas.
-  //
-  // Partição tipo Voronoi simples: geram-se N "sítios" (zonas) com posição e cor
-  // aleatórias (seed fixa → reproduzível). O bounding box do corpo é rasterizado
-  // em células; cada célula assume a cor do sítio mais próximo, produzindo zonas
-  // irregulares com bordas DEFINIDAS (mosaico, não gradiente). Tudo é recortado
-  // pelo mesmo polígono do ore (clipPath) para não vazar da geometria.
-  //
-  // Coordenadas locais (u = ao longo do mergulho, v = transversal); o grupo é
-  // rotacionado por transform, então basta trabalhar em eixos alinhados.
-  const erratic = useMemo(() => {
-    const uMax = halfLen * 1.15;   // meio-comprimento com folga (o clip corta o excesso)
-    const vMax = oreHw * 1.5;      // meia-largura com folga
-    const CELL = 15;               // tamanho da célula do mosaico
-    const N    = 8;                // número de zonas (entre 6 e 10)
-
-    // Sítios das zonas — posição aleatória, cor da escala (garante as 5 cores).
-    const rand = seededRand(42);
-    const sites = Array.from({ length: N }, (_, i) => {
-      const u = (rand() * 2 - 1) * uMax;
-      const v = (rand() * 2 - 1) * vMax;
-      const color = i < ERRATIC_PALETTE.length
-        ? ERRATIC_PALETTE[i]
-        : ERRATIC_PALETTE[Math.floor(rand() * ERRATIC_PALETTE.length)];
-      return {
-        u, v, color,
-        sx: CX + u * dx + v * nx,
-        sy: centerY + u * dy + v * ny,
-      };
-    });
-
-    const nearestColor = (u, v) => {
-      let best = sites[0], bd = Infinity;
-      for (const s of sites) {
-        const d = (s.u - u) ** 2 + (s.v - v) ** 2;
-        if (d < bd) { bd = d; best = s; }
-      }
-      return best.color;
-    };
-
-    // Rasterização do bounding box local em células coloridas pelo sítio mais próximo.
-    const cells = [];
-    for (let u = -uMax; u < uMax; u += CELL) {
-      for (let v = -vMax; v < vMax; v += CELL) {
-        cells.push({ u, v, color: nearestColor(u + CELL / 2, v + CELL / 2) });
-      }
-    }
-
-    // Bolinhas: mesmas posições/seed de antes, mas cada uma assume a cor da zona
-    // sob o seu centro (sítio mais próximo em coordenadas de tela = local, rígido).
-    const brand = seededRand(7);
-    const blobs = Array.from({ length: 9 }, () => {
-      const cx = CX + (brand() * 2 - 1) * halfLen * 0.75 * dx + (brand() * 1.4 - 0.7) * oreHw * nx;
-      const cy = centerY + (brand() * 2 - 1) * halfLen * 0.75 * dy + (brand() * 1.4 - 0.7) * oreHw * ny;
-      const r  = brand() * oreHw * 0.3 + oreHw * 0.12;
-      let best = sites[0], bd = Infinity;
-      for (const s of sites) {
-        const d = (s.sx - cx) ** 2 + (s.sy - cy) ** 2;
-        if (d < bd) { bd = d; best = s; }
-      }
-      return { cx, cy, r, color: best.color };
-    });
-
-    return { cells, blobs, CELL };
-  }, [halfLen, oreHw, dx, dy, nx, ny, centerY]);
-
   const gradId     = `ore-grad-${dipDeg}-${depthM}`;
   const lx         = W - 168, ly = SURFACE_Y + 16;
   const gradeLabel = GRADE_LABELS[grade] || "Teor";
@@ -234,10 +158,31 @@ export default function DepositSketch({ shape, thickness, dip, depth, grade }) {
           <rect x="0" y={SURFACE_Y} width={W} height={H - SURFACE_Y} />
         </clipPath>
 
-        {/* Recorte pelo polígono do corpo de minério — usado pelas manchas do errático */}
+        {/* Recorte pelo polígono do corpo de minério — usado pela textura do errático */}
         <clipPath id="ore-clip">
           <path d={poly} />
         </clipPath>
+
+        {/* Teor errático: ruído fractal colorizado (efeito mármore).
+            1) feTurbulence gera ruído orgânico em escala de cinza (seed fixa → reproduzível).
+            2) feColorMatrix colapsa o ruído para luminância e estica o contraste
+               (ganho 0.825, viés -0.75) para usar toda a faixa da escala.
+            3) feComponentTransfer mapeia essa luminância (0→1) para a paleta rainbow
+               via tabelas por canal: frio/pobre (azul) nas zonas baixas, quente/rico
+               (vermelho) nas altas — mesmas 5 cores do gradacional, misturadas sem ordem. */}
+        <filter id="erratic-noise" x="-5%" y="-5%" width="110%" height="110%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.022" numOctaves="4" seed="17" result="noise"/>
+          <feColorMatrix in="noise" type="matrix"
+            values="0.825 0.825 0.825 0 -0.75
+                    0.825 0.825 0.825 0 -0.75
+                    0.825 0.825 0.825 0 -0.75
+                    0     0     0     0  1" result="gray"/>
+          <feComponentTransfer in="gray">
+            <feFuncR type="table" tableValues="0.231 0.133 0.980 0.976 0.863"/>
+            <feFuncG type="table" tableValues="0.510 0.773 0.800 0.451 0.149"/>
+            <feFuncB type="table" tableValues="0.965 0.369 0.082 0.086 0.149"/>
+          </feComponentTransfer>
+        </filter>
 
         <pattern id="ore-uniforme" patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)">
           <line x1="0" y1="0" x2="0" y2="8" stroke="#5bc0de" strokeWidth="1.5" opacity="0.45"/>
@@ -310,27 +255,15 @@ export default function DepositSketch({ shape, thickness, dip, depth, grade }) {
         )}
         {grade === "Errático" && (
           <>
-            {/* Manchas discretas: mosaico recortado pelo polígono do ore.
-                O grupo é rotacionado pelo mergulho para alinhar as células ao corpo. */}
+            {/* Textura de ruído fractal colorizado (mármore), recortada pelo polígono
+                do ore para não vazar. Comunica zonas ricas e pobres misturadas sem
+                ordem previsível, usando a mesma escala de cor do gradacional. */}
             <g clipPath="url(#ore-clip)">
-              <g transform={`translate(${CX} ${centerY}) rotate(${dipDeg})`} opacity="0.85">
-                {erratic.cells.map((c, i) => (
-                  <rect
-                    key={i}
-                    x={c.u} y={c.v}
-                    width={erratic.CELL + 0.6} height={erratic.CELL + 0.6}
-                    fill={c.color} shapeRendering="crispEdges"
-                  />
-                ))}
-              </g>
-            </g>
-            {/* Bolinhas: mantêm-se sobrepostas, agora com a cor da zona sob cada uma. */}
-            {erratic.blobs.map((b, i) => (
-              <circle
-                key={i} cx={b.cx} cy={b.cy} r={b.r}
-                fill={b.color} opacity="0.95" stroke="white" strokeWidth="0.8" strokeOpacity="0.6"
+              <rect
+                x="0" y={SURFACE_Y} width={W} height={H - SURFACE_Y}
+                filter="url(#erratic-noise)" opacity="0.9"
               />
-            ))}
+            </g>
           </>
         )}
 
