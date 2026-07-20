@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import Modal from "./Modal";
 
 // Referências em ordem; `link` é exibido como âncora clicável quando presente
@@ -45,8 +46,9 @@ const REFERENCES = [
 ];
 
 export default function ReferencesModal({ onClose }) {
+  const { t } = useTranslation();
   return (
-    <Modal title="Referências" onClose={onClose} maxWidth="640px">
+    <Modal title={t("modals.references.title")} onClose={onClose} maxWidth="640px">
       <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
         {REFERENCES.map((ref, i) => (
           <li

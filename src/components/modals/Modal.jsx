@@ -1,7 +1,9 @@
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 // Casca genérica de modal — overlay + cartão centralizado, ciente do tema
 export default function Modal({ title, onClose, children, maxWidth = "480px" }) {
+  const { t } = useTranslation();
   // Fecha com Esc
   useEffect(() => {
     const onKey = (e) => { if (e.key === "Escape") onClose(); };
@@ -42,7 +44,7 @@ export default function Modal({ title, onClose, children, maxWidth = "480px" }) 
           <h3 style={{ fontSize: "17px", fontWeight: 700, color: "var(--text)" }}>{title}</h3>
           <button
             onClick={onClose}
-            aria-label="Fechar"
+            aria-label={t("common.close")}
             style={{
               border: "none", background: "transparent", color: "var(--muted)",
               fontSize: "22px", lineHeight: 1, cursor: "pointer", padding: 0,

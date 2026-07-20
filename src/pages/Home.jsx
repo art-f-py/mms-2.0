@@ -1,7 +1,9 @@
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 export default function Home() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   return (
     <div style={{
       minHeight: "100vh",
@@ -47,7 +49,7 @@ export default function Home() {
           boxShadow: "0 4px 14px rgba(0,0,0,0.25)",
         }}
       >
-        Iniciar
+        {t("home.start")}
       </button>
     </div>
   );

@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { DENSITY_DATA, UCS_DATA } from "../data/rockData";
 
 // Tokens semânticos → variáveis CSS centralizadas em index.css
@@ -19,6 +20,7 @@ const C = {
  *   onSelect: (value: number) => void  — chamado quando o usuário clica em um valor
  */
 export default function RockTooltip({ type, onSelect }) {
+  const { t } = useTranslation();
   const [open, setOpen]         = useState(false);
   const [family, setFamily]     = useState("Ígneas");
   const [align, setAlign]       = useState("left");
@@ -26,7 +28,7 @@ export default function RockTooltip({ type, onSelect }) {
 
   const data   = type === "density" ? DENSITY_DATA : UCS_DATA;
   const unit   = type === "density" ? "kg/m³" : "MPa";
-  const title  = type === "density" ? "Massa Específica" : "UCS";
+  const title  = type === "density" ? t("rockTooltip.density") : t("rockTooltip.ucs");
   const families = Object.keys(data);
 
   const handleSelect = (min, max) => {
@@ -50,7 +52,7 @@ export default function RockTooltip({ type, onSelect }) {
       <button
         ref={btnRef}
         onClick={handleToggle}
-        title={`Consultar ${title} por tipo de rocha`}
+        title={t("rockTooltip.consult", { title })}
         style={{
           width: "44px", height: "44px", borderRadius: "6px",
           border: `1px solid ${C.border}`, backgroundColor: C.white,
@@ -82,7 +84,7 @@ export default function RockTooltip({ type, onSelect }) {
           }}>
             {/* Header */}
             <div style={{ backgroundColor: C.primary, padding: "10px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ color: C.white, fontWeight: "700", fontSize: "13px" }}>{title} por tipo de rocha ({unit})</span>
+              <span style={{ color: C.white, fontWeight: "700", fontSize: "13px" }}>{t("rockTooltip.header", { title, unit })}</span>
               <button onClick={() => setOpen(false)} style={{ background: "none", border: "none", color: C.white, cursor: "pointer", fontSize: "16px", lineHeight: 1 }}>×</button>
             </div>
 
@@ -99,7 +101,7 @@ export default function RockTooltip({ type, onSelect }) {
                     background: "none", border: "none", cursor: "pointer",
                   }}
                 >
-                  {f}
+                  {t(`enums.rockFamily.${f}`)}
                 </button>
               ))}
             </div>
@@ -109,10 +111,10 @@ export default function RockTooltip({ type, onSelect }) {
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
                 <thead>
                   <tr style={{ backgroundColor: C.bg }}>
-                    <th style={{ padding: "8px 12px", textAlign: "left", color: C.muted, fontWeight: "600", borderBottom: `1px solid ${C.border}` }}>Rocha</th>
-                    <th style={{ padding: "8px 12px", textAlign: "center", color: C.muted, fontWeight: "600", borderBottom: `1px solid ${C.border}` }}>Mín ({unit})</th>
-                    <th style={{ padding: "8px 12px", textAlign: "center", color: C.muted, fontWeight: "600", borderBottom: `1px solid ${C.border}` }}>Máx ({unit})</th>
-                    <th style={{ padding: "8px 12px", textAlign: "center", color: C.muted, fontWeight: "600", borderBottom: `1px solid ${C.border}` }}>Usar média</th>
+                    <th style={{ padding: "8px 12px", textAlign: "left", color: C.muted, fontWeight: "600", borderBottom: `1px solid ${C.border}` }}>{t("rockTooltip.rock")}</th>
+                    <th style={{ padding: "8px 12px", textAlign: "center", color: C.muted, fontWeight: "600", borderBottom: `1px solid ${C.border}` }}>{t("rockTooltip.min", { unit })}</th>
+                    <th style={{ padding: "8px 12px", textAlign: "center", color: C.muted, fontWeight: "600", borderBottom: `1px solid ${C.border}` }}>{t("rockTooltip.max", { unit })}</th>
+                    <th style={{ padding: "8px 12px", textAlign: "center", color: C.muted, fontWeight: "600", borderBottom: `1px solid ${C.border}` }}>{t("rockTooltip.useAvg")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -141,7 +143,7 @@ export default function RockTooltip({ type, onSelect }) {
             </div>
 
             <div style={{ padding: "8px 14px", backgroundColor: C.bg, fontSize: "11px", color: C.muted, borderTop: `1px solid ${C.border}` }}>
-              Clique em um valor para preenchê-lo automaticamente no campo.
+              {t("rockTooltip.clickHint")}
             </div>
           </div>
         </>

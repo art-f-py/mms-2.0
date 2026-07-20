@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import Modal from "./Modal";
 
 const ENDPOINT = "https://formcarry.com/s/lVe6Ba2CKVq";
@@ -12,6 +13,7 @@ const inputStyle = {
 };
 
 export default function ReportModal({ onClose, onSuccess }) {
+  const { t } = useTranslation();
   const [name, setName]       = useState("");
   const [email, setEmail]     = useState("");
   const [message, setMessage] = useState("");
@@ -21,7 +23,7 @@ export default function ReportModal({ onClose, onSuccess }) {
   const submit = async () => {
     setError("");
     if (!name.trim() || !email.trim() || !message.trim()) {
-      setError("Preencha todos os campos.");
+      setError(t("modals.report.errRequired"));
       return;
     }
     setSending(true);
@@ -35,44 +37,44 @@ export default function ReportModal({ onClose, onSuccess }) {
       if (data.code === 200) {
         onSuccess();
       } else {
-        setError(data.message || "Não foi possível enviar. Tente novamente.");
+        setError(data.message || t("modals.report.errSend"));
       }
     } catch {
-      setError("Falha de conexão. Verifique sua internet e tente novamente.");
+      setError(t("modals.report.errConnection"));
     } finally {
       setSending(false);
     }
   };
 
   return (
-    <Modal title="Reportar erro" onClose={onClose}>
+    <Modal title={t("modals.report.title")} onClose={onClose}>
       <div role="form" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
         <div>
-          <label style={labelStyle}>Nome completo</label>
+          <label style={labelStyle}>{t("modals.report.name")}</label>
           <input
             style={inputStyle}
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Seu nome"
+            placeholder={t("modals.report.namePlaceholder")}
           />
         </div>
         <div>
-          <label style={labelStyle}>Email</label>
+          <label style={labelStyle}>{t("modals.report.email")}</label>
           <input
             type="email"
             style={inputStyle}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="voce@exemplo.com"
+            placeholder={t("modals.report.emailPlaceholder")}
           />
         </div>
         <div>
-          <label style={labelStyle}>Descrição do erro</label>
+          <label style={labelStyle}>{t("modals.report.message")}</label>
           <textarea
             style={{ ...inputStyle, minHeight: "120px", resize: "vertical" }}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder="Descreva o que aconteceu, em qual etapa, e o que esperava."
+            placeholder={t("modals.report.messagePlaceholder")}
           />
         </div>
 
@@ -91,7 +93,7 @@ export default function ReportModal({ onClose, onSuccess }) {
             opacity: sending ? 0.6 : 1,
           }}
         >
-          {sending ? "Enviando…" : "Enviar"}
+          {sending ? t("modals.report.sending") : t("modals.report.send")}
         </button>
       </div>
     </Modal>

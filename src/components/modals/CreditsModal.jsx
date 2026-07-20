@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import Modal from "./Modal";
 
 const groupTitle = {
@@ -19,8 +20,9 @@ function Group({ title, people }) {
 }
 
 export default function CreditsModal({ onClose }) {
+  const { t } = useTranslation();
   return (
-    <Modal title="Créditos" onClose={onClose} maxWidth="440px">
+    <Modal title={t("modals.credits.title")} onClose={onClose} maxWidth="440px">
       <div style={{ textAlign: "center", marginBottom: "24px" }}>
         <div style={{ fontSize: "18px", fontWeight: 800, color: "var(--text)" }}>
           MMS 2.0 — Mining Method Selection Tool
@@ -30,9 +32,9 @@ export default function CreditsModal({ onClose }) {
         </div>
       </div>
 
-      <Group title="Desenvolvimento" people={["Artur Feijó"]} />
-      <Group title="Orientação" people={["Higor Campos"]} />
-      <Group title="Colaboradores" people={["Fernando Cardozo", "Carlos Petter", "Renato Petter"]} />
+      <Group title={t("modals.credits.development")} people={["Artur Feijó"]} />
+      <Group title={t("modals.credits.advising")} people={["Higor Campos"]} />
+      <Group title={t("modals.credits.collaborators")} people={["Fernando Cardozo", "Carlos Petter", "Renato Petter"]} />
 
       <div style={{
         borderTop: "1px solid var(--border)", paddingTop: "16px", marginTop: "4px",

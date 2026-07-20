@@ -1,12 +1,14 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import ReportModal     from "./modals/ReportModal";
 import ReferencesModal from "./modals/ReferencesModal";
 import CreditsModal    from "./modals/CreditsModal";
 
+// Rótulos resolvidos por i18n em tempo de render (ver floating.* nos locales).
 const ACTIONS = [
-  { key: "report",     icon: "🚩", label: "Reportar erro" },
-  { key: "references", icon: "📖", label: "Referências" },
-  { key: "credits",    icon: "ℹ️", label: "Créditos" },
+  { key: "report",     icon: "🚩" },
+  { key: "references", icon: "📖" },
+  { key: "credits",    icon: "ℹ️" },
 ];
 
 function FloatingButton({ icon, label, onClick }) {
@@ -47,6 +49,7 @@ function FloatingButton({ icon, label, onClick }) {
 }
 
 export default function FloatingActions() {
+  const { t } = useTranslation();
   const [open, setOpen]   = useState(null);
   const [toast, setToast] = useState(false);
 
@@ -63,7 +66,7 @@ export default function FloatingActions() {
         display: "flex", flexDirection: "column", gap: "10px",
       }}>
         {ACTIONS.map((a) => (
-          <FloatingButton key={a.key} icon={a.icon} label={a.label} onClick={() => setOpen(a.key)} />
+          <FloatingButton key={a.key} icon={a.icon} label={t(`floating.${a.key}`)} onClick={() => setOpen(a.key)} />
         ))}
       </div>
 
@@ -78,7 +81,7 @@ export default function FloatingActions() {
           padding: "12px 22px", borderRadius: "8px", fontSize: "14px", fontWeight: 600,
           boxShadow: "0 6px 20px rgba(0,0,0,0.3)",
         }}>
-          Obrigado! Seu relatório foi enviado.
+          {t("floating.toast")}
         </div>
       )}
     </>

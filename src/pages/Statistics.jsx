@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useMms } from "../context/MmsContext";
 import { METHODS, METHOD_LABELS } from "../algorithms/ubcWeights";
 import { normalizeScores } from "../algorithms/algorithms";
@@ -25,28 +26,6 @@ const colors = {
   background: "var(--color-bg-card)",
 };
 
-const CRITERIA_LABELS = {
-  shape:              "Forma",
-  thickness:          "Espessura",
-  dip:                "Mergulho",
-  grade:              "Teor",
-  depth:              "Profundidade",
-  oreValue:           "Valor Minério",
-  // Chaves compostas por domínio (ver breakdownKey em algorithms.js)
-  rss_ob:             "RSS — Ore",
-  rss_hw:             "RSS — HW",
-  rss_fw:             "RSS — FW",
-  rmr_ob:             "RMR — Ore",
-  rmr_hw:             "RMR — HW",
-  rmr_fw:             "RMR — FW",
-  jointSpacing_ob:    "Espaç. Fraturas — Ore",
-  jointSpacing_hw:    "Espaç. Fraturas — HW",
-  jointSpacing_fw:    "Espaç. Fraturas — FW",
-  jointCondition_ob:  "Cond. Interfraturas — Ore",
-  jointCondition_hw:  "Cond. Interfraturas — HW",
-  jointCondition_fw:  "Cond. Interfraturas — FW",
-};
-
 // ---------------------------------------------------------------------------
 // PILL
 // ---------------------------------------------------------------------------
@@ -70,6 +49,7 @@ function Pill({ label, color, active, onClick }) {
 // BLOCO DE RESULTADO (barra + ranking + radar) por método
 // ---------------------------------------------------------------------------
 function MethodBlock({ sm, result }) {
+  const { t } = useTranslation();
   const [selectedMethod, setSelectedMethod] = useState(null);
 
   const barData   = [...METHODS].map((m) => ({ method: m, score: result.scores[m] })).sort((a, b) => b.score - a.score);
@@ -78,7 +58,7 @@ function MethodBlock({ sm, result }) {
 
   const breakdownRadarData = selectedMethod
     ? Object.entries(result.breakdown).map(([key, scores]) => ({
-        criteria: CRITERIA_LABELS[key.split("__")[0]] || key.split("__")[0],
+        criteria: t(`results.criteria.${key.split("__")[0]}`, key.split("__")[0]),
         value: scores[selectedMethod] ?? 0,
       }))
     : [];
@@ -96,7 +76,7 @@ function MethodBlock({ sm, result }) {
 
         {/* GRÁFICO DE BARRAS — sempre visível, nunca substituído */}
         <div style={{ border: `1px solid ${colors.border}`, padding: "16px", borderRadius: "6px" }}>
-          <h4 style={{ marginTop: 0, fontSize: "13px", color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>Comparação</h4>
+          <h4 style={{ marginTop: 0, fontSize: "13px", color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>{t("results.comparison")}</h4>
           <ResponsiveContainer width="100%" height={340}>
             <BarChart data={barData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -124,7 +104,7 @@ function MethodBlock({ sm, result }) {
         <div style={{ border: `1px solid ${colors.border}`, padding: "16px", borderRadius: "6px" }}>
           {selectedMethod === null ? (
             <>
-              <h4 style={{ marginTop: 0, fontSize: "13px", color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>Radar (normalizado)</h4>
+              <h4 style={{ marginTop: 0, fontSize: "13px", color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>{t("results.radarNormalized")}</h4>
               <ResponsiveContainer width="100%" height={340}>
                 <RadarChart data={radarData}>
                   <PolarGrid />
@@ -138,7 +118,7 @@ function MethodBlock({ sm, result }) {
           ) : (
             <>
               <h4 style={{ marginTop: 0, fontSize: "13px", color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                Breakdown — {METHOD_LABELS[selectedMethod] || selectedMethod}
+                {t("results.breakdown", { method: METHOD_LABELS[selectedMethod] || selectedMethod })}
               </h4>
               <ResponsiveContainer width="100%" height={340}>
                 <RadarChart data={breakdownRadarData}>
@@ -156,7 +136,7 @@ function MethodBlock({ sm, result }) {
 
       {/* RANKING */}
       <div style={{ border: `1px solid ${colors.border}`, padding: "16px", marginTop: "12px", borderRadius: "6px" }}>
-        <h4 style={{ marginTop: 0, fontSize: "13px", color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>Ranking</h4>
+        <h4 style={{ marginTop: 0, fontSize: "13px", color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>{t("results.ranking")}</h4>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(90px, 1fr))", gap: "6px" }}>
           {result.ranking.map((m, i) => (
             <div
@@ -176,7 +156,7 @@ function MethodBlock({ sm, result }) {
                 justifyContent: "center",
               }}
             >
-              <div style={{ fontWeight: "700" }}>{i + 1}º</div>
+              <div style={{ fontWeight: "700" }}>{t("results.rank", { n: i + 1 })}</div>
               <div style={{ fontWeight: "600" }}>{METHOD_LABELS[m] || m}</div>
               <div style={{ opacity: 0.8 }}>{result.scores[m].toFixed(1)}</div>
             </div>
@@ -191,6 +171,7 @@ function MethodBlock({ sm, result }) {
 // COMPONENTE PRINCIPAL
 // ---------------------------------------------------------------------------
 function Statistics() {
+  const { t } = useTranslation();
   const { state } = useMms();
   const navigate  = useNavigate();
 
@@ -203,12 +184,12 @@ function Statistics() {
   if (!hasAnyResult) {
     return (
       <div style={{ padding: "40px", textAlign: "center" }}>
-        <p>Nenhum resultado calculado ainda.</p>
+        <p>{t("results.noResult")}</p>
         <button
           onClick={() => navigate("/inputs")}
           style={{ marginTop: "16px", padding: "10px 24px", minHeight: "44px", cursor: "pointer", backgroundColor: colors.primary, color: "#fff", border: "none", borderRadius: "6px" }}
         >
-          Ir para Inputs
+          {t("results.goToInputs")}
         </button>
       </div>
     );
@@ -223,8 +204,8 @@ function Statistics() {
       <div style={{ maxWidth: "1400px", margin: "0 auto", width: "100%", color: colors.text }}>
 
       <div style={{ marginBottom: "8px" }}>
-        <h2 style={{ margin: "0 0 4px", color: "var(--color-text)", fontSize: "24px" }}>Resultados</h2>
-        <p style={{ margin: 0, color: "var(--color-muted)", fontSize: "16px" }}>MMS 2.0 — Mining Method Selection</p>
+        <h2 style={{ margin: "0 0 4px", color: "var(--color-text)", fontSize: "24px" }}>{t("results.title")}</h2>
+        <p style={{ margin: 0, color: "var(--color-muted)", fontSize: "16px" }}>{t("results.subtitle")}</p>
       </div>
 
       {/* PILLS */}
@@ -242,7 +223,7 @@ function Statistics() {
 
       {activeMethods.length === 0 && (
         <div style={{ padding: "40px", textAlign: "center", color: "#6b7280" }}>
-          Ative pelo menos um método para visualizar os resultados.
+          {t("results.activateOne")}
         </div>
       )}
 
@@ -256,7 +237,7 @@ function Statistics() {
         onClick={() => navigate("/inputs")}
         style={{ position: "fixed", bottom: "clamp(12px, 4vw, 24px)", left: "clamp(12px, 4vw, 24px)", color: "var(--color-primary)", padding: "10px clamp(16px, 5vw, 28px)", minHeight: "44px", backgroundColor: "#f1f5f9", border: `1px solid ${colors.border}`, borderRadius: "6px", cursor: "pointer", fontSize: "14px", boxShadow: "0 2px 8px rgba(0,0,0,0.15)", zIndex: 100 }}
       >
-        ← Voltar para Inputs
+        {t("results.backToInputs")}
       </button>
       </div>
     </div>

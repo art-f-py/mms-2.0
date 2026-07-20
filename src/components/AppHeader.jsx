@@ -1,9 +1,50 @@
 import { useLocation, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import brasao    from "../assets/brasao.png";
 import mineracao from "../assets/mineracao.png";
+import { LANGUAGES } from "../i18n/index.js";
+
+// Seletor de idioma — grupo segmentado PT · EN · ES, consistente com o header.
+function LanguageSelector() {
+  const { t, i18n } = useTranslation();
+  const current = i18n.resolvedLanguage || i18n.language;
+
+  return (
+    <div
+      role="group"
+      aria-label={t("header.language")}
+      style={{
+        display: "flex", alignItems: "center",
+        border: "1px solid rgba(255,255,255,0.35)", borderRadius: "6px",
+        overflow: "hidden", flexShrink: 0,
+      }}
+    >
+      {LANGUAGES.map(({ code, label }) => {
+        const active = current === code;
+        return (
+          <button
+            key={code}
+            onClick={() => i18n.changeLanguage(code)}
+            aria-pressed={active}
+            style={{
+              padding: "5px clamp(6px, 2vw, 10px)", minHeight: "30px",
+              border: "none", cursor: "pointer",
+              fontSize: "clamp(10px, 2.4vw, 12px)", fontWeight: 700, letterSpacing: "0.04em",
+              backgroundColor: active ? "var(--color-white)" : "transparent",
+              color: active ? "var(--color-primary)" : "var(--color-white)",
+            }}
+          >
+            {label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 export default function AppHeader() {
   const { pathname } = useLocation();
+  const { t } = useTranslation();
   if (pathname === "/") return null;
 
   return (
@@ -23,7 +64,7 @@ export default function AppHeader() {
       <Link to="/" style={{ display: "flex", alignItems: "center", textDecoration: "none", minWidth: 0 }}>
         <img
           src={brasao}
-          alt="Brasão UFRGS"
+          alt={t("header.brasaoAlt")}
           style={{ height: "clamp(34px, 9vw, 52px)", width: "auto" }}
         />
       </Link>
@@ -38,11 +79,12 @@ export default function AppHeader() {
         </div>
       </Link>
 
-      {/* Coluna direita — ícone mineração */}
-      <div style={{ display: "flex", justifyContent: "flex-end", minWidth: 0 }}>
+      {/* Coluna direita — seletor de idioma + ícone mineração */}
+      <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "clamp(8px, 2.5vw, 14px)", minWidth: 0 }}>
+        <LanguageSelector />
         <img
           src={mineracao}
-          alt="Ícone mineração"
+          alt={t("header.miningIconAlt")}
           style={{ height: "clamp(26px, 7vw, 40px)", width: "auto", filter: "brightness(0) invert(1)", opacity: 0.7 }}
         />
       </div>

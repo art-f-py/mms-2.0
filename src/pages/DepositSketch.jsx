@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { classifyDepthSHB } from "../algorithms/algorithms";
 
 // ---------------------------------------------------------------------------
@@ -22,13 +23,8 @@ const DEPTH_CENTER = {
   "Profunda":       H * 0.82,
 };
 
-const GRADE_LABELS = {
-  "Uniforme":    "Teor uniforme",
-  "Gradacional": "Teor gradacional",
-  "Errático":    "Teor errático",
-};
-
-function dipClassLabel(deg) {
+// Retorna a chave canônica da classe de mergulho (traduzida no render via enums.dipClass).
+function dipClassKey(deg) {
   const d = parseFloat(deg);
   if (isNaN(d)) return "";
   if (d < 20)  return "Plano";
@@ -103,6 +99,7 @@ function orePolygon(shape, halfLen, hw, cx, centerY, dx, dy, nx, ny) {
 // COMPONENTE
 // ---------------------------------------------------------------------------
 export default function DepositSketch({ shape, thickness, dip, depth, grade }) {
+  const { t }     = useTranslation();
   const hw        = THICKNESS_MAP[thickness] || 32;
   const dipDeg    = parseFloat(dip)   || 0;
   const depthM    = parseFloat(depth) || 400;
@@ -141,7 +138,8 @@ export default function DepositSketch({ shape, thickness, dip, depth, grade }) {
 
   const gradId     = `ore-grad-${dipDeg}-${depthM}`;
   const lx         = W - 168, ly = SURFACE_Y + 16;
-  const gradeLabel = GRADE_LABELS[grade] || "Teor";
+  const gradeLabel = grade ? t(`deposit.gradeLabels.${grade}`) : "";
+  const dipKey     = dipClassKey(dipDeg);
 
   return (
     <svg
@@ -150,8 +148,8 @@ export default function DepositSketch({ shape, thickness, dip, depth, grade }) {
       role="img"
       style={{ display: "block", borderRadius: "8px", maxWidth: "100%", height: "auto" }}
     >
-      <title>Seção transversal do depósito</title>
-      <desc>Visualização geométrica do depósito mineral gerada a partir dos inputs do formulário.</desc>
+      <title>{t("deposit.svgTitle")}</title>
+      <desc>{t("deposit.svgDesc")}</desc>
 
       <defs>
         <clipPath id="below-surface">
@@ -250,7 +248,7 @@ export default function DepositSketch({ shape, thickness, dip, depth, grade }) {
               x={CX - halfLen * dx - oreHw * nx - 6}
               y={centerY - halfLen * dy - oreHw * ny - 14}
               textAnchor="middle" dominantBaseline="central" fontSize="11" fill="#dc2626"
-            >teor ↑</text>
+            >{t("deposit.gradeArrow")}</text>
           </>
         )}
         {grade === "Errático" && (
@@ -287,11 +285,11 @@ export default function DepositSketch({ shape, thickness, dip, depth, grade }) {
       {/* Legenda */}
       <rect x={lx - 8} y={ly - 8} width="164" height="88" rx="6" fill="white" fillOpacity="0.85" stroke="#e2e8f0" strokeWidth="0.8"/>
       <rect x={lx} y={ly + 2}  width="14" height="10" fill="#1e3a5f" opacity="0.8" rx="2"/>
-      <text x={lx + 20} y={ly + 8}  textAnchor="start" dominantBaseline="central" fontSize="11" fill="#475569">Corpo de minério</text>
+      <text x={lx + 20} y={ly + 8}  textAnchor="start" dominantBaseline="central" fontSize="11" fill="#475569">{t("zones.ore")}</text>
       <rect x={lx} y={ly + 22} width="14" height="10" fill="url(#sk-hw)" stroke="#cbd5e1" strokeWidth="0.6" rx="2"/>
-      <text x={lx + 20} y={ly + 28} textAnchor="start" dominantBaseline="central" fontSize="11" fill="#475569">Hanging wall</text>
+      <text x={lx + 20} y={ly + 28} textAnchor="start" dominantBaseline="central" fontSize="11" fill="#475569">{t("zones.hangingWall")}</text>
       <rect x={lx} y={ly + 42} width="14" height="10" fill="url(#sk-fw)" stroke="#cbd5e1" strokeWidth="0.6" rx="2"/>
-      <text x={lx + 20} y={ly + 48} textAnchor="start" dominantBaseline="central" fontSize="11" fill="#475569">Foot wall</text>
+      <text x={lx + 20} y={ly + 48} textAnchor="start" dominantBaseline="central" fontSize="11" fill="#475569">{t("zones.footwall")}</text>
       <rect x={lx} y={ly + 62} width="14" height="10" rx="2"
         fill={grade === "Gradacional" || grade === "Errático" ? "url(#legend-rainbow)" : "#5bc0de"}
         opacity={grade === "Gradacional" || grade === "Errático" ? 1 : 0.5}/>
@@ -299,7 +297,7 @@ export default function DepositSketch({ shape, thickness, dip, depth, grade }) {
 
       {/* Rodapé */}
       <text x={CX} y={H - 10} textAnchor="middle" dominantBaseline="central" fontSize="11" fill="#94a3b8">
-        {`Mergulho: ${dipClassLabel(dipDeg)}  |  Profundidade: ${faixaDepth}`}
+        {`${t("deposit.dipLabel")}: ${dipKey ? t(`enums.dipClass.${dipKey}`) : ""}  |  ${t("deposit.depthLabel")}: ${t(`enums.depthFaixa.${faixaDepth}`)}`}
       </text>
     </svg>
   );
