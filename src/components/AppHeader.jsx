@@ -1,43 +1,134 @@
+import { useState, useRef, useEffect } from "react";
 import { useLocation, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import brasao    from "../assets/brasao.png";
 import mineracao from "../assets/mineracao.png";
 import { LANGUAGES } from "../i18n/index.js";
 
-// Seletor de idioma — grupo segmentado PT · EN · ES, consistente com o header.
+// Bandeiras como SVG inline. Emoji de bandeira (🇧🇷/🇬🇧/🇪🇸) NÃO renderiza no
+// Windows/Chrome — aparece como as letras "BR"/"GB"/"ES" —, então desenhamos
+// versões simples e nítidas que funcionam em qualquer navegador, sem assets.
+function FlagIcon({ code, size = 20 }) {
+  const h = Math.round(size * 0.7);
+  const common = { width: size, height: h, style: { display: "block" } };
+  let svg;
+  if (code === "pt-BR") {
+    svg = (
+      <svg {...common} viewBox="0 0 20 14" aria-hidden="true">
+        <rect width="20" height="14" fill="#009C3B" />
+        <polygon points="10,1.5 18.5,7 10,12.5 1.5,7" fill="#FFDF00" />
+        <circle cx="10" cy="7" r="3" fill="#002776" />
+      </svg>
+    );
+  } else if (code === "en") {
+    // Union Jack simplificada (diagonais + cruz de São Jorge).
+    svg = (
+      <svg {...common} viewBox="0 0 60 30" aria-hidden="true">
+        <rect width="60" height="30" fill="#012169" />
+        <path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" strokeWidth="6" />
+        <path d="M0,0 L60,30 M60,0 L0,30" stroke="#C8102E" strokeWidth="2" />
+        <rect x="25" width="10" height="30" fill="#fff" />
+        <rect y="10" width="60" height="10" fill="#fff" />
+        <rect x="27" width="6" height="30" fill="#C8102E" />
+        <rect y="12" width="60" height="6" fill="#C8102E" />
+      </svg>
+    );
+  } else {
+    svg = (
+      <svg {...common} viewBox="0 0 20 14" aria-hidden="true">
+        <rect width="20" height="14" fill="#AA151B" />
+        <rect y="3.5" width="20" height="7" fill="#F1BF00" />
+      </svg>
+    );
+  }
+  return (
+    <span style={{ display: "inline-flex", borderRadius: "3px", overflow: "hidden", boxShadow: "0 0 0 1px rgba(0,0,0,0.15)", flexShrink: 0 }}>
+      {svg}
+    </span>
+  );
+}
+
+// Seletor de idioma — botão único (bandeira + código do idioma atual) que abre
+// um dropdown com as outras opções. Fecha ao selecionar, clicar fora ou Esc.
 function LanguageSelector() {
   const { t, i18n } = useTranslation();
   const current = i18n.resolvedLanguage || i18n.language;
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  // Fecha o dropdown ao clicar fora ou com a tecla Esc.
+  useEffect(() => {
+    if (!open) return;
+    const onPointer = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    const onKey = (e) => { if (e.key === "Escape") { setOpen(false); ref.current?.querySelector("button")?.focus(); } };
+    document.addEventListener("mousedown", onPointer);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onPointer);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  const currentLang = LANGUAGES.find((l) => l.code === current) || LANGUAGES[0];
+  const others = LANGUAGES.filter((l) => l.code !== currentLang.code);
+
+  const choose = (code) => { i18n.changeLanguage(code); setOpen(false); };
 
   return (
-    <div
-      role="group"
-      aria-label={t("header.language")}
-      style={{
-        display: "flex", alignItems: "center",
-        border: "1px solid rgba(255,255,255,0.35)", borderRadius: "6px",
-        overflow: "hidden", flexShrink: 0,
-      }}
-    >
-      {LANGUAGES.map(({ code, label }) => {
-        const active = current === code;
-        return (
-          <button
-            key={code}
-            onClick={() => i18n.changeLanguage(code)}
-            aria-pressed={active}
-            style={{
-              padding: "5px clamp(6px, 2vw, 10px)", minHeight: "30px",
-              border: "none", cursor: "pointer",
-              fontSize: "clamp(10px, 2.4vw, 12px)", fontWeight: 700, letterSpacing: "0.04em",
-              backgroundColor: active ? "var(--color-white)" : "transparent",
-              color: active ? "var(--color-primary)" : "var(--color-white)",
-            }}
-          >
-            {label}
-          </button>
-        );
-      })}
+    <div ref={ref} style={{ position: "relative", flexShrink: 0 }}>
+      {/* Botão principal — bandeira + código do idioma atual */}
+      <button
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label={`${t("header.language")}: ${currentLang.label}`}
+        style={{
+          display: "flex", alignItems: "center", gap: "7px",
+          minHeight: "44px", padding: "0 clamp(8px, 2vw, 12px)",
+          border: "1px solid rgba(255,255,255,0.35)", borderRadius: "6px",
+          backgroundColor: "transparent", color: "var(--color-white)",
+          cursor: "pointer", fontSize: "clamp(11px, 2.4vw, 13px)", fontWeight: 700, letterSpacing: "0.04em",
+        }}
+      >
+        <FlagIcon code={currentLang.code} />
+        <span>{currentLang.label}</span>
+        <span aria-hidden="true" style={{ fontSize: "8px", opacity: 0.85, transform: open ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}>▼</span>
+      </button>
+
+      {/* Dropdown — alinhado à direita do botão para não estourar em mobile */}
+      {open && (
+        <ul
+          role="listbox"
+          aria-label={t("header.language")}
+          style={{
+            position: "absolute", top: "calc(100% + 6px)", right: 0,
+            margin: 0, padding: "4px", listStyle: "none",
+            backgroundColor: "var(--color-white)", borderRadius: "8px",
+            boxShadow: "0 6px 20px rgba(0,0,0,0.25)",
+            minWidth: "100%", zIndex: 200,
+          }}
+        >
+          {others.map((l) => (
+            <li key={l.code} role="option" aria-selected="false">
+              <button
+                onClick={() => choose(l.code)}
+                style={{
+                  display: "flex", alignItems: "center", gap: "9px", width: "100%",
+                  minHeight: "44px", padding: "0 12px",
+                  border: "none", borderRadius: "6px", backgroundColor: "transparent",
+                  color: "var(--color-primary)", cursor: "pointer",
+                  fontSize: "13px", fontWeight: 700, letterSpacing: "0.04em", whiteSpace: "nowrap",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(30,58,95,0.08)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
+              >
+                <FlagIcon code={l.code} />
+                <span>{l.label}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
