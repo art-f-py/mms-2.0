@@ -1,0 +1,115 @@
+name: Build MMS 2.0 e deploy no Mafmine
+
+on:
+  push:
+    branches:
+      - main
+
+  # Permite executar manualmente pela aba Actions
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: "22"
+
+  # Pasta gerada pelo npm run build no repositório A
+  BUILD_DIR: "dist"
+
+  # Altere para a pasta real dentro do repositório Mafmine
+  TARGET_DIR: "v3.1/tools"
+
+  GITLAB_REPOSITORY: "devorama/mafmine"
+  GITLAB_BRANCH: "master"
+
+jobs:
+  build-and-deploy:
+    name: Build e deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      # Repositório A:
+      # git@github.com:art-f-py/mms-2.0.git
+      - name: Baixar o repositório MMS 2.0
+        uses: actions/checkout@v6
+        with:
+          repository: art-f-py/mms-2.0
+          ref: main
+          fetch-depth: 1
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Gerar build
+        run: npm run build
+
+      - name: Verificar pasta de build
+        run: |
+          if [ ! -d "$BUILD_DIR" ]; then
+            echo "::error::A pasta de build '$BUILD_DIR' não foi encontrada."
+            echo "Conteúdo da raiz do projeto:"
+            ls -la
+            exit 1
+          fi
+
+      # Repositório B:
+      # git@gitlab.com:devorama/mafmine.git
+      # O clone acontece no servidor temporário do GitHub Actions,
+      - name: Baixar somente a versão atual do Mafmine
+        env:
+          GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
+        run: |
+          git clone \
+            --branch "$GITLAB_BRANCH" \
+            --single-branch \
+            --depth 1 \
+            --filter=blob:none \
+            --sparse \
+            "https://oauth2:${GITLAB_TOKEN}@gitlab.com/${GITLAB_REPOSITORY}.git" \
+            mafmine
+
+          cd mafmine
+          git sparse-checkout set "$TARGET_DIR"
+
+      - name: Copiar build para o Mafmine
+        run: |
+          mkdir -p "mafmine/$TARGET_DIR"
+
+          rsync \
+            --archive \
+            --delete \
+            "$BUILD_DIR/" \
+            "mafmine/$TARGET_DIR/"
+
+      - name: Criar commit no Mafmine
+        working-directory: mafmine
+        run: |
+          git config user.name "higorjsc"
+          git config user.email "hh1217higorcampos@hotmail.com"
+
+          git add -A "$TARGET_DIR"
+
+          if git diff --cached --quiet; then
+            echo "O build não produziu alterações no Mafmine."
+            exit 0
+          fi
+
+          git commit \
+            -m "deploy: atualizar MMS 2.0" \
+            -m "Origem: art-f-py/mms-2.0@${GITHUB_SHA}"
+
+      - name: Enviar alterações para o GitLab
+        working-directory: mafmine
+        env:
+          GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
+        run: |
+          git push \
+            "https://oauth2:${GITLAB_TOKEN}@gitlab.com/${GITLAB_REPOSITORY}.git" \
+            "HEAD:${GITLAB_BRANCH}"
