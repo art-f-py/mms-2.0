@@ -5,7 +5,6 @@ on:
     branches:
       - main
 
-  # Permite executar manualmente pela aba Actions
   workflow_dispatch:
 
 permissions:
@@ -14,11 +13,14 @@ permissions:
 env:
   NODE_VERSION: "22"
 
-  # Pasta gerada pelo npm run build no repositório A
+  # Pasta gerada pelo build do repositório MMS 2.0
   BUILD_DIR: "dist"
 
-  # Altere para a pasta real dentro do repositório Mafmine
-  TARGET_DIR: "v3.1/tools"
+  # Pasta existente que será carregada pelo sparse checkout
+  SPARSE_DIR: "v3.1/tools"
+
+  # Pasta exclusiva do MMS 2.0 dentro do Mafmine
+  TARGET_DIR: "v3.1/tools/mms_2.0"
 
   GITLAB_REPOSITORY: "devorama/mafmine"
   GITLAB_BRANCH: "master"
@@ -61,8 +63,7 @@ jobs:
 
       # Repositório B:
       # git@gitlab.com:devorama/mafmine.git
-      # O clone acontece no servidor temporário do GitHub Actions,
-      - name: Baixar somente a versão atual do Mafmine
+      - name: Baixar a pasta tools do Mafmine
         env:
           GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
         run: |
@@ -76,9 +77,9 @@ jobs:
             mafmine
 
           cd mafmine
-          git sparse-checkout set "$TARGET_DIR"
+          git sparse-checkout set "$SPARSE_DIR"
 
-      - name: Copiar build para o Mafmine
+      - name: Copiar build para mms_2.0
         run: |
           mkdir -p "mafmine/$TARGET_DIR"
 
