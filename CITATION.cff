@@ -5,7 +5,7 @@ version: 1.0.0
 date-released: 2026-07-09
 license: MIT
 repository-code: "https://github.com/art-f-py/mms-2.0"
-url: "https://mafmine.k8s.inf.ufrgs.br/v3.1/mms_2.0/"
+url: "https://art-f-py.github.io/mms-2.0/"
 abstract: >-
   Ferramenta web de suporte a decisao para selecao de metodos de lavra
   subterranea, implementando simultaneamente os algoritmos de selecao
