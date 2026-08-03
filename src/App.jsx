@@ -10,7 +10,7 @@ import { SEO } from "./components/SEO";
 function App() {
   return (
     <MmsProvider>
-      <Router basename="/mms-2.0">
+      <Router basename="/v3.1/tools/mms_2.0">
         <SEO />
         <AppHeader />
         <Routes>
