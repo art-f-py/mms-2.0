@@ -10,7 +10,7 @@
         var redirect = sessionStorage.getItem('redirect');
         if (redirect) {
           sessionStorage.removeItem('redirect');
-          window.history.replaceState(null, null, '/mms-2.0/' + redirect);
+          window.history.replaceState(null, null, '/v3.1/mms_2.0/' + redirect);
         }
       })();
     </script>

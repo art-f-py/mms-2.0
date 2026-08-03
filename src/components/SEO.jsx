@@ -3,8 +3,8 @@ import { Helmet } from 'react-helmet-async';
 export function SEO({
   title       = "MMS 2.0 — Mining Method Selection Tool",
   description = "Ferramenta web de suporte à decisão para seleção de métodos de lavra subterrânea, implementando os algoritmos UBC (1995), Nicholas (1981/1992) e SH&B (2007) com ponderação por critério e comparação entre métodos.",
-  url         = "https://art-f-py.github.io/mms-2.0/",
-  image       = "https://art-f-py.github.io/mms-2.0/preview-placeholder.png",
+  url         = "https://mafmine.k8s.inf.ufrgs.br/v3.1/mms_2.0/",
+  image       = "https://mafmine.k8s.inf.ufrgs.br/v3.1/mms_2.0/preview-placeholder.png",
   author      = "Artur Feijó — LAPROM/UFRGS",
   keywords    = "mining method selection, seleção de métodos de lavra, UBC 1995, Nicholas 1981, Nicholas 1992, SH&B 2007, mineração subterrânea, engenharia de minas, RMR, RSS, mining engineering, underground mining, LAPROM, UFRGS",
 }) {

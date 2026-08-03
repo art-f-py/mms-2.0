@@ -41,7 +41,7 @@ O **MMS 2.0** e uma aplicacao web para selecao de metodos de lavra subterranea, 
 
 O projeto e desenvolvido no **LAPROM (Laboratorio de Processamento Mineral)**, na Universidade Federal do Rio Grande do Sul, como parte de um projeto de iniciacao cientifica.
 
-**Aplicacao publicada:** https://art-f-py.github.io/mms-2.0/
+**Aplicacao publicada:** https://mafmine.k8s.inf.ufrgs.br/v3.1/mms_2.0/
 
 ## Principais recursos
 

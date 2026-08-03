@@ -3,6 +3,6 @@ import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/mms-2.0/',
+  base: '/v3.1/mms_2.0/',
   plugins: [react()],
 })
