@@ -79,6 +79,51 @@ export function classifyDipSHB(degrees) {
 const DEFAULT_DOMAIN = { geo: 1, ob: 1, hw: 1, fw: 1 };
 
 // ---------------------------------------------------------------------------
+// INSTRUMENTAÇÃO DE DESENVOLVIMENTO
+// ---------------------------------------------------------------------------
+// sumCriteria descarta critérios em silêncio em dois pontos. O segundo já
+// escondeu dois bugs reais — espessura "Muito estreito" ausente da tabela do
+// Nicholas, e RSS lido de um campo de outra escala — e nenhum dos dois apareceu
+// pelo uso: ambos saíram de teste e leitura de código. Em dev, o descarte passa
+// a deixar rastro no console. NÃO altera o cálculo: os `continue` permanecem.
+
+// As tabelas de peso não carregam o próprio nome. Mapa montado sob demanda,
+// só quando um aviso realmente dispara (custo zero em produção).
+let TABLE_NAMES = null;
+function tableNameOf(table) {
+  if (!TABLE_NAMES) {
+    TABLE_NAMES = new Map([
+      [UBC_GEOMETRY, "UBC_GEOMETRY"],
+      [UBC_OREBODY, "UBC_OREBODY"],
+      [UBC_HANGINGWALL, "UBC_HANGINGWALL"],
+      [UBC_FOOTWALL, "UBC_FOOTWALL"],
+      [NICHOLAS_GEOMETRY, "NICHOLAS_GEOMETRY"],
+      [NICHOLAS_OREBODY, "NICHOLAS_OREBODY"],
+      [NICHOLAS_HANGINGWALL, "NICHOLAS_HANGINGWALL"],
+      [NICHOLAS_FOOTWALL, "NICHOLAS_FOOTWALL"],
+      [SHB_GEOMETRY, "SHB_GEOMETRY"],
+      [SHB_ECONOMIC, "SHB_ECONOMIC"],
+      [SHB_OREBODY, "SHB_OREBODY"],
+      [SHB_HANGINGWALL, "SHB_HANGINGWALL"],
+      [SHB_FOOTWALL, "SHB_FOOTWALL"],
+    ]);
+  }
+  return TABLE_NAMES.get(table) || "tabela desconhecida";
+}
+
+// "vazio"  — critério não preenchido no formulário (esperado num form parcial).
+// "ausente"— valor preenchido que não existe na tabela: este é o sinal de bug.
+function warnCriterionDropped(table, key, selectedValue, motivo) {
+  if (!import.meta.env?.DEV) return;
+  const onde = `${tableNameOf(table)}.${key}`;
+  if (motivo === "vazio") {
+    console.warn(`[MMS] critério descartado: ${onde} não preenchido`);
+  } else {
+    console.warn(`[MMS] critério descartado: ${onde} = "${selectedValue}" não existe na tabela`);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // FUNÇÃO GENÉRICA DE PONTUAÇÃO
 // ---------------------------------------------------------------------------
 // Cada critério é uma tupla [table, key, selectedValue, multiplier?, breakdownKey?].
@@ -89,9 +134,15 @@ function sumCriteria(criteria) {
   const breakdown = {};
 
   for (const [table, key, selectedValue, multiplier = 1, breakdownKey] of criteria) {
-    if (!selectedValue || selectedValue === "") continue;
+    if (!selectedValue || selectedValue === "") {
+      warnCriterionDropped(table, key, selectedValue, "vazio");
+      continue;
+    }
     const scores = table[key]?.options?.[selectedValue];
-    if (!scores) continue;
+    if (!scores) {
+      warnCriterionDropped(table, key, selectedValue, "ausente");
+      continue;
+    }
 
     const bKey = `${breakdownKey || key}__${selectedValue}`;
     breakdown[bKey] = {};
