@@ -65,3 +65,85 @@ export function normalizeRss(formData) {
   }
   return formData;
 }
+
+// ---------------------------------------------------------------------------
+// VALIDAÇÃO POR ETAPA
+// ---------------------------------------------------------------------------
+// Identidade estável de cada etapa. O número da etapa no stepper é dinâmico
+// (EESG só existe com SH&B), então a validação se ancora no id, não no índice.
+export const STEPS = {
+  METHODS:       "methods",
+  GEOMETRY:      "geometry",
+  GEOTECHNICAL:  "geotechnical",
+  EESG:          "eesg",
+  COMPLEMENTARY: "complementary",
+  REVIEW:        "review",
+};
+
+// Zonas do formulário, na ordem em que aparecem na tela.
+const ZONES = ["ore", "hangingWall", "footwall"];
+
+// Preenchido: só "" / null / undefined faltam. "0" conta — mergulho horizontal
+// é um valor legítimo, não um campo em branco.
+const isFilled = (value) => value !== undefined && value !== null && String(value).trim() !== "";
+
+// Lê um campo pelo caminho ("dip", "geometry.shape", "ucs.ore").
+const valueAt = (formData, path) => {
+  const [section, field] = path.split(".");
+  return field === undefined ? formData?.[section] : formData?.[section]?.[field];
+};
+
+const forZones = (...prefixes) => ZONES.flatMap((z) => prefixes.map((p) => `${p}.${z}`));
+
+/**
+ * Campos obrigatórios de uma etapa para a seleção de métodos dada.
+ *
+ * REGRA INEGOCIÁVEL: cada condicional aqui espelha a condicional de render do
+ * Inputs.jsx. Campo que não aparece na tela nunca é exigido — exigir o
+ * invisível trava o usuário sem saída.
+ */
+export function requiredFieldsForStep(stepId, methods) {
+  // Mesmas condicionais do Inputs.jsx:
+  const showUbcShb = Boolean(methods?.ubc || methods?.shb); // trio UCS/densidade/profundidade + RMR
+  const showNich   = Boolean(methods?.nicholas);            // fraturas
+  const showManualRss = isNicholasOnly(methods);            // select manual de RSS
+
+  switch (stepId) {
+    case STEPS.GEOMETRY: {
+      const fields = ["geometry.shape", "geometry.thickness", "dip", "geometry.grade"];
+      // Profundidade: o Nicholas não usa, e o campo só renderiza com UBC/SH&B.
+      if (showUbcShb) fields.push("depth.ore");
+      return fields;
+    }
+    case STEPS.GEOTECHNICAL: {
+      const fields = [];
+      // RSS calculado (UBC/SH&B) x RSS manual (Nicholas sozinho) — nunca os dois.
+      if (showUbcShb)    fields.push(...forZones("ucs", "density", "depth"));
+      if (showManualRss) fields.push(...forZones("rss"));
+      if (showUbcShb)    fields.push(...forZones("rmr"));
+      if (showNich)      fields.push(...forZones("jointSpacing", "jointCondition"));
+      return fields;
+    }
+    case STEPS.EESG:
+      return methods?.shb ? ["oreValue"] : [];
+    default:
+      // Métodos tem regra própria (ver missingFieldsForStep); complementar e
+      // revisar não têm campo obrigatório — os pesos já vêm com padrão.
+      return [];
+  }
+}
+
+/**
+ * Campos obrigatórios ainda vazios na etapa. Lista vazia = etapa liberada.
+ * `methods` default vem do próprio formData; o parâmetro existe para testar
+ * combinações sem remontar o estado.
+ */
+export function missingFieldsForStep(stepId, formData, methods = formData?.selectedMethods) {
+  if (stepId === STEPS.METHODS) {
+    return Object.values(methods || {}).some(Boolean) ? [] : ["selectedMethods"];
+  }
+  return requiredFieldsForStep(stepId, methods).filter((path) => !isFilled(valueAt(formData, path)));
+}
+
+export const isStepComplete = (stepId, formData, methods) =>
+  missingFieldsForStep(stepId, formData, methods).length === 0;

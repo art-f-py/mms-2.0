@@ -17,6 +17,8 @@
   --color-border:     #e2e8f0;
   --color-success:    #0f766e;
   --color-warning:    #b45309;
+  --color-danger:     #b91c1c;
+  --color-danger-50:  #fef2f2;
 
   /* Aliases legados usados por modais e ações flutuantes.
      Nota: --bg era #ffffff (fundo de input) e --bg-card era #f8fafc (cartão),
