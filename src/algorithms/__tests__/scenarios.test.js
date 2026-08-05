@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calculateSHB } from "../algorithms";
+import { calculateSHB, classifyRSS } from "../algorithms";
 import { METHODS } from "../ubcWeights";
 
 // ---------------------------------------------------------------------------
@@ -16,17 +16,23 @@ import { METHODS } from "../ubcWeights";
 //   RMR Pobre (ob) / Razoavel (hw) / Razoavel (fw)
 //   todos os pesos neutros (1.00)
 //
-// Observacao sobre RSS: densidade e UCS ficam vazios de proposito. Com eles
-// vazios classifyRSS devolve "" e o algoritmo cai no valor manual de fd.rss,
-// que e como o cenario foi montado no MMS 1.0.
+// Observacao sobre RSS: o SH&B obtem a classe exclusivamente do calculo
+// (o campo manual fd.rss e exclusivo do Nicholas, que usa outra escala).
+// O cenario traz UCS/densidade/profundidade fisicos de uma camada de carvao,
+// escolhidos para cair em "Muito fraca" (<5) nos 3 dominios — a mesma classe
+// que o MMS 1.0 usou, entao os 10 scores esperados nao mudam.
+//
+//   RSS = UCS x 1e6 / (densidade x profundidade x 9.81)
+//   minerio (carvao):   25 MPa / 1400 kg/m3 / 900 m -> 2.02
+//   capa (folhelho):    40 MPa / 2400 kg/m3 / 900 m -> 1.89
+//   lapa (arenito):     50 MPa / 2500 kg/m3 / 900 m -> 2.27
 
 const COAL_SCENARIO = {
   geometry: { shape: "Tabular", thickness: "Intermediário", grade: "Uniforme" },
   dip:      "8",
   depth:    { ore: "900", hangingWall: "900", footwall: "900" },
-  density:  { ore: "", hangingWall: "", footwall: "" },
-  ucs:      { ore: "", hangingWall: "", footwall: "" },
-  rss:      { ore: "Muito fraca", hangingWall: "Muito fraca", footwall: "Muito fraca" },
+  density:  { ore: "1400", hangingWall: "2400", footwall: "2500" },
+  ucs:      { ore: "25",   hangingWall: "40",   footwall: "50" },
   rmr:      { ore: "Pobre", hangingWall: "Razoável", footwall: "Razoável" },
   oreValue: "Baixo",
 };
@@ -98,10 +104,28 @@ describe("Golden test SH&B — cenario do carvao (paridade com MMS 1.0)", () => 
     expect(result.breakdown).toHaveProperty("depth__Profunda");
   });
 
-  it("o RSS manual e usado quando densidade/UCS estao vazios", () => {
+  it("o RSS vem do calculo (UCS/densidade/profundidade) nos 3 dominios", () => {
     expect(result.breakdown).toHaveProperty("rss_ob__Muito fraca");
     expect(result.breakdown).toHaveProperty("rss_hw__Muito fraca");
     expect(result.breakdown).toHaveProperty("rss_fw__Muito fraca");
+  });
+
+  // Trava a premissa do cenario: se algum UCS/densidade mudar a ponto de sair
+  // da faixa "Muito fraca", os 10 scores acima deixam de valer.
+  it("o cenario classifica os 3 dominios como Muito fraca", () => {
+    expect(classifyRSS(COAL_SCENARIO.ucs.ore, COAL_SCENARIO.density.ore, COAL_SCENARIO.depth.ore)).toBe("Muito fraca");
+    expect(classifyRSS(COAL_SCENARIO.ucs.hangingWall, COAL_SCENARIO.density.hangingWall, COAL_SCENARIO.depth.hangingWall)).toBe("Muito fraca");
+    expect(classifyRSS(COAL_SCENARIO.ucs.footwall, COAL_SCENARIO.density.footwall, COAL_SCENARIO.depth.footwall)).toBe("Muito fraca");
+  });
+
+  // O campo manual pertence ao Nicholas: preenche-lo com outra classe nao pode
+  // mexer no SH&B (era o vazamento entre escalas que a Parte 1 fechou).
+  it("fd.rss manual nao altera o resultado do SH&B", () => {
+    const comManual = calculateSHB({
+      ...COAL_SCENARIO,
+      rss: { ore: "Resistente", hangingWall: "Resistente", footwall: "Resistente" },
+    });
+    expect(comManual.scores).toEqual(result.scores);
   });
 
   it("o RMR do formulario e traduzido para a nomenclatura SH&B", () => {
