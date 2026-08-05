@@ -15,8 +15,11 @@ import {
 import { SHB_OREBODY, SHB_HANGINGWALL, SHB_FOOTWALL } from "../shbWeights";
 
 // ---------------------------------------------------------------------------
-// Fixtures — densidade/UCS vazios de proposito para o RSS cair no valor manual
+// Fixtures
 // ---------------------------------------------------------------------------
+// densidade/UCS vazios: o Nicholas cai no valor manual de fd.rss (fallback que
+// so ele mantem). UBC e SH&B obtem o RSS exclusivamente do calculo, entao suas
+// fixtures preenchem os numeros via rssInputs() logo abaixo.
 const BASE_GEOMETRY = {
   geometry: { shape: "Tabular", thickness: "Intermediário", grade: "Uniforme" },
   dip:      "35",   // UBC -> Intermediário | SH&B -> Intermediário
@@ -25,14 +28,36 @@ const BASE_GEOMETRY = {
   ucs:      { ore: "", hangingWall: "", footwall: "" },
 };
 
+// RSS = UCS x 1e6 / (densidade x profundidade x 9.81). Com densidade 2700 e a
+// profundidade 300 do BASE_GEOMETRY o denominador e ~7.946.100, entao estes UCS
+// caem no meio de cada faixa da escala UBC/SH&B (<5 | 5-10 | 10-15 | >=15).
+const RSS_DENSITY = "2700";
+const UCS_FOR_RSS = {
+  "Muito fraca": "24",  // RSS ~3.0
+  "Fraca":       "56",  // RSS ~7.0
+  "Moderada":    "95",  // RSS ~12.0
+  "Resistente":  "143", // RSS ~18.0
+};
+
+// Monta ucs/densidade das 3 zonas a partir das classes de RSS desejadas.
+const rssInputs = ({ ore, hangingWall, footwall }) => ({
+  ucs: {
+    ore:         UCS_FOR_RSS[ore],
+    hangingWall: UCS_FOR_RSS[hangingWall],
+    footwall:    UCS_FOR_RSS[footwall],
+  },
+  density: { ore: RSS_DENSITY, hangingWall: RSS_DENSITY, footwall: RSS_DENSITY },
+});
+
 const UBC_FD = {
   ...BASE_GEOMETRY,
-  rss: { ore: "Fraca", hangingWall: "Moderada", footwall: "Resistente" },
+  ...rssInputs({ ore: "Fraca", hangingWall: "Moderada", footwall: "Resistente" }),
   rmr: { ore: "Pobre", hangingWall: "Razoável", footwall: "Boa" },
 };
 
 const SHB_FD = { ...UBC_FD, oreValue: "Médio" };
 
+// O Nicholas segue no valor manual — escala propria (<8 | 8-15 | >15).
 const NICHOLAS_FD = {
   ...BASE_GEOMETRY,
   rss:            { ore: "Moderada", hangingWall: "Fraca", footwall: "Resistente" },
@@ -234,9 +259,11 @@ describe("Nicholas — multiplicadores de dominio x pesos por criterio", () => {
 describe("Breakdown — chaves compostas por dominio (bug de colisao corrigido)", () => {
   const SAME_CLASS = "Moderada";
   const sameRss = { ore: SAME_CLASS, hangingWall: SAME_CLASS, footwall: SAME_CLASS };
+  // UBC/SH&B: mesma classe nos 3 dominios, mas vinda do calculo.
+  const sameRssInputs = rssInputs(sameRss);
 
   it("UBC — 3 chaves distintas quando os 3 dominios tem a mesma classe de RSS", () => {
-    const r = calculateUBC({ ...BASE_GEOMETRY, rss: sameRss });
+    const r = calculateUBC({ ...BASE_GEOMETRY, ...sameRssInputs });
     const keys = Object.keys(r.breakdown).filter((k) => k.startsWith("rss_"));
     expect(keys.sort()).toEqual([
       `rss_fw__${SAME_CLASS}`,
@@ -246,7 +273,7 @@ describe("Breakdown — chaves compostas por dominio (bug de colisao corrigido)"
   });
 
   it("UBC — cada chave carrega a linha da SUA tabela, nao a do ultimo dominio", () => {
-    const r = calculateUBC({ ...BASE_GEOMETRY, rss: sameRss });
+    const r = calculateUBC({ ...BASE_GEOMETRY, ...sameRssInputs });
     METHODS.forEach((m, i) => {
       expect(r.breakdown[`rss_ob__${SAME_CLASS}`][m], `ob/${m}`)
         .toBeCloseTo(UBC_OREBODY.rss.options[SAME_CLASS][i], 10);
@@ -257,15 +284,18 @@ describe("Breakdown — chaves compostas por dominio (bug de colisao corrigido)"
     });
   });
 
+  // Sem o fallback manual nao da para isolar o RSS pelo score total: o UBC so
+  // classifica RSS com profundidade preenchida, e a profundidade e ela propria
+  // um criterio. Isolamos pelas linhas do breakdown, que e mais direto.
   it("UBC — o total continua somando os 3 dominios", () => {
-    const r = calculateUBC({ ...BASE_GEOMETRY, rss: sameRss });
-    const rssOnly = calculateUBC({ rss: sameRss });
+    const r = calculateUBC({ ...BASE_GEOMETRY, ...sameRssInputs });
+    const rssTotal = contributionOf(r.breakdown, /^rss_/);
     METHODS.forEach((m, i) => {
       const expected =
         UBC_OREBODY.rss.options[SAME_CLASS][i] +
         UBC_HANGINGWALL.rss.options[SAME_CLASS][i] +
         UBC_FOOTWALL.rss.options[SAME_CLASS][i];
-      expect(rssOnly.scores[m], `metodo ${m}`).toBeCloseTo(expected, 10);
+      expect(rssTotal[m], `metodo ${m}`).toBeCloseTo(expected, 10);
     });
     expect(Object.keys(r.breakdown).filter((k) => k.startsWith("rss_"))).toHaveLength(3);
   });
@@ -297,7 +327,7 @@ describe("Breakdown — chaves compostas por dominio (bug de colisao corrigido)"
   });
 
   it("SH&B — RSS igual nos 3 dominios gera 3 chaves com as linhas corretas", () => {
-    const r = calculateSHB({ ...BASE_GEOMETRY, rss: sameRss });
+    const r = calculateSHB({ ...BASE_GEOMETRY, ...sameRssInputs });
     METHODS.forEach((m, i) => {
       expect(r.breakdown[`rss_ob__${SAME_CLASS}`][m], `ob/${m}`)
         .toBeCloseTo(SHB_OREBODY.rss.options[SAME_CLASS][i], 10);

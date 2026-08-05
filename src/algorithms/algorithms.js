@@ -119,9 +119,12 @@ export function calculateUBC(fd, criteriaWeights = {}) {
   const fw  = { rss: 1, rmr: 1,                                     ...(criteriaWeights.fw  || {}) };
   const depthClass = classifyDepthUBC(fd.depth?.ore);
   const dipClass   = classifyDipUBC(fd.dip);
-  const rssOre = classifyRSS(fd.ucs?.ore,         fd.density?.ore,         fd.depth?.ore)         || fd.rss?.ore;
-  const rssHW  = classifyRSS(fd.ucs?.hangingWall, fd.density?.hangingWall, fd.depth?.hangingWall) || fd.rss?.hangingWall;
-  const rssFW  = classifyRSS(fd.ucs?.footwall,    fd.density?.footwall,    fd.depth?.footwall)    || fd.rss?.footwall;
+  // RSS vem exclusivamente do cálculo. O campo manual fd.rss é um controle
+  // exclusivo do Nicholas (escala <8 / 8-15 / >15) e o UBC opera noutra
+  // (<5 / 5-10 / 10-15 / >=15): aceitá-lo aqui lia a classe na escala errada.
+  const rssOre = classifyRSS(fd.ucs?.ore,         fd.density?.ore,         fd.depth?.ore);
+  const rssHW  = classifyRSS(fd.ucs?.hangingWall, fd.density?.hangingWall, fd.depth?.hangingWall);
+  const rssFW  = classifyRSS(fd.ucs?.footwall,    fd.density?.footwall,    fd.depth?.footwall);
 
   const criteria = [
     [UBC_GEOMETRY,    "shape",     fd.geometry?.shape,        geo.shape],
@@ -157,6 +160,10 @@ export function calculateNicholas(fd, criteriaWeights = {}) {
   // Sem isso o critério não achava a linha e sumia da pontuação EM SILÊNCIO:
   // o método saía com 3 critérios de geometria em vez de 4 e o ranking mudava.
   const mapThicknessToNicholas = (val) => (val === "Muito estreito" ? "Estreito" : val);
+  // Fallback preservado só aqui: o select manual de RSS (Inputs.jsx) renderiza
+  // exclusivamente no modo Nicholas-sozinho e oferece as 3 classes desta escala
+  // (<8 / 8-15 / >15), então o valor tem origem legítima e leitura correspondente.
+  // UBC e SH&B não o aceitam — operam noutra escala.
   const rssOre = classifyRSSNicholas(fd.ucs?.ore,         fd.density?.ore,         fd.depth?.ore)         || fd.rss?.ore;
   const rssHW  = classifyRSSNicholas(fd.ucs?.hangingWall, fd.density?.hangingWall, fd.depth?.hangingWall) || fd.rss?.hangingWall;
   const rssFW  = classifyRSSNicholas(fd.ucs?.footwall,    fd.density?.footwall,    fd.depth?.footwall)    || fd.rss?.footwall;
@@ -194,9 +201,11 @@ export function calculateSHB(fd, criteriaWeights = {}) {
   const fw   = { rss: 1, rmr: 1,                                     ...(criteriaWeights.fw   || {}) };
   const dipClass   = classifyDipSHB(fd.dip);
   const depthClass = classifyDepthSHB(fd.depth?.ore);
-  const rssOre = classifyRSS(fd.ucs?.ore,         fd.density?.ore,         fd.depth?.ore)         || fd.rss?.ore;
-  const rssHW  = classifyRSS(fd.ucs?.hangingWall, fd.density?.hangingWall, fd.depth?.hangingWall) || fd.rss?.hangingWall;
-  const rssFW  = classifyRSS(fd.ucs?.footwall,    fd.density?.footwall,    fd.depth?.footwall)    || fd.rss?.footwall;
+  // Mesma regra do UBC: sem fallback para o campo manual fd.rss, que pertence
+  // ao Nicholas e usa outra escala. Ver comentário em calculateUBC.
+  const rssOre = classifyRSS(fd.ucs?.ore,         fd.density?.ore,         fd.depth?.ore);
+  const rssHW  = classifyRSS(fd.ucs?.hangingWall, fd.density?.hangingWall, fd.depth?.hangingWall);
+  const rssFW  = classifyRSS(fd.ucs?.footwall,    fd.density?.footwall,    fd.depth?.footwall);
 
   const mapRmrToSHB = (val) => ({
     "Muito pobre": "Muito fraca",
