@@ -44,3 +44,24 @@ export function normalizeThickness(formData) {
   }
   return formData;
 }
+
+// Domínios do RSS manual — o mesmo trio de zonas do formulário.
+const RSS_ZONES = ["ore", "hangingWall", "footwall"];
+
+export const emptyRss = () => ({ ore: "", hangingWall: "", footwall: "" });
+
+export const hasManualRss = (rss) => RSS_ZONES.some((z) => Boolean(rss?.[z]));
+
+/**
+ * Limpa o RSS manual órfão: o <select> de RSS só é renderizado com o Nicholas
+ * sozinho, e só calculateNicholas ainda lê fd.rss (como fallback). Ao marcar
+ * UBC/SH&B o campo sai da tela, mas o valor gravado seguiria pontuando —
+ * invisível e sem como editar. Devolve o mesmo objeto quando não há o que
+ * corrigir.
+ */
+export function normalizeRss(formData) {
+  if (!isNicholasOnly(formData.selectedMethods) && hasManualRss(formData.rss)) {
+    return { ...formData, rss: emptyRss() };
+  }
+  return formData;
+}

@@ -1,5 +1,5 @@
 import { createContext, useContext, useReducer, useEffect } from "react";
-import { normalizeThickness } from "../data/formRules";
+import { normalizeThickness, normalizeRss } from "../data/formRules";
 
 const STORAGE_KEY = "mms2-state";
 
@@ -229,8 +229,9 @@ function loadInitialState() {
     const parsed = JSON.parse(saved);
     return {
       ...initialState,
-      // Estado salvo antes desta regra pode trazer a combinação órfã.
-      formData: normalizeThickness({ ...initialFormData, ...(parsed.formData || {}) }),
+      // Estado salvo antes destas regras pode trazer as combinações órfãs
+      // (espessura fora do select, RSS manual sem UI de origem).
+      formData: normalizeRss(normalizeThickness({ ...initialFormData, ...(parsed.formData || {}) })),
     };
   } catch {
     return initialState;

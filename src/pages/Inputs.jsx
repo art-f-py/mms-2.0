@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useMms, DOMAIN_PRESETS } from "../context/MmsContext";
-import { isNicholasOnly, thicknessOptionsFor } from "../data/formRules";
+import { isNicholasOnly, thicknessOptionsFor, hasManualRss, emptyRss } from "../data/formRules";
 import {
   calculateUBC, calculateNicholas, calculateSHB,
   classifyRSS, classifyRSSNicholas,
@@ -430,6 +430,12 @@ function Inputs() {
     // gravado viraria órfão. Reverte junto, na mesma interação.
     if (isNicholasOnly(next) && fd.geometry.thickness === "Muito estreito") {
       set("geometry", "thickness", "Estreito");
+    }
+    // O select manual de RSS só existe com o Nicholas sozinho. Saindo dessa
+    // seleção o campo some da tela — limpa junto, na mesma interação, para não
+    // seguir pontuando escondido.
+    if (!isNicholasOnly(next) && hasManualRss(fd.rss)) {
+      set("rss", null, emptyRss());
     }
     dispatch({ type: "SET_FORM_FIELD", section: "selectedMethods", field: key, value: !sm[key] });
   };

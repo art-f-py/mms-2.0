@@ -4,6 +4,9 @@ import {
   isNicholasOnly,
   thicknessOptionsFor,
   normalizeThickness,
+  normalizeRss,
+  hasManualRss,
+  emptyRss,
 } from "../formRules";
 
 // ---------------------------------------------------------------------------
@@ -112,5 +115,135 @@ describe("normalizeThickness — estado orfao", () => {
   it("nao quebra com geometria ausente", () => {
     const fd = { selectedMethods: sm(false, true, false) };
     expect(() => normalizeThickness(fd)).not.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// RSS manual orfao: o <select> de RSS so e renderizado com o Nicholas sozinho,
+// e so calculateNicholas ainda le fd.rss (como fallback). Marcar UBC/SH&B tira
+// o campo da tela — o valor gravado nao pode seguir pontuando escondido.
+// ---------------------------------------------------------------------------
+
+const rssFilled = { ore: "Fraca", hangingWall: "Moderada", footwall: "Resistente" };
+
+describe("hasManualRss", () => {
+  it("e verdadeiro com qualquer dominio preenchido", () => {
+    expect(hasManualRss(rssFilled)).toBe(true);
+    expect(hasManualRss({ ore: "", hangingWall: "Moderada", footwall: "" })).toBe(true);
+  });
+
+  it("e falso com os tres dominios vazios", () => {
+    expect(hasManualRss(emptyRss())).toBe(false);
+  });
+
+  it("nao quebra com o campo ausente", () => {
+    expect(hasManualRss(undefined)).toBe(false);
+  });
+});
+
+describe("normalizeRss — estado orfao", () => {
+  it("preserva o RSS manual com o Nicholas sozinho", () => {
+    const fd = { selectedMethods: sm(false, true, false), rss: { ...rssFilled } };
+    expect(normalizeRss(fd).rss).toEqual(rssFilled);
+  });
+
+  it.each([
+    ["marca UBC",       sm(true,  true,  false)],
+    ["marca SH&B",      sm(false, true,  true)],
+    ["marca os dois",   sm(true,  true,  true)],
+  ])("limpa os tres dominios quando %s", (_caso, methods) => {
+    const fd = { selectedMethods: methods, rss: { ...rssFilled } };
+    expect(normalizeRss(fd).rss).toEqual(emptyRss());
+  });
+
+  it("limpa tambem quando o Nicholas e desmarcado", () => {
+    const fd = { selectedMethods: sm(true, false, false), rss: { ...rssFilled } };
+    expect(normalizeRss(fd).rss).toEqual(emptyRss());
+  });
+
+  it("limpa os dominios vizinhos, nao so o preenchido", () => {
+    const fd = {
+      selectedMethods: sm(true, true, false),
+      rss: { ore: "", hangingWall: "Moderada", footwall: "" },
+    };
+    expect(normalizeRss(fd).rss).toEqual(emptyRss());
+  });
+
+  it("nao ressuscita o valor antigo ao voltar para o Nicholas sozinho", () => {
+    const comUbc = normalizeRss({ selectedMethods: sm(true, true, false), rss: { ...rssFilled } });
+    const soNich = normalizeRss({ ...comUbc, selectedMethods: sm(false, true, false) });
+    expect(soNich.rss).toEqual(emptyRss());
+  });
+
+  it("preserva os outros campos do formulario", () => {
+    const fd = {
+      selectedMethods: sm(true, true, false),
+      rss: { ...rssFilled },
+      ucs: { ore: "100", hangingWall: "80", footwall: "90" },
+      geometry: { thickness: "Espesso" },
+    };
+    const out = normalizeRss(fd);
+    expect(out.ucs).toEqual({ ore: "100", hangingWall: "80", footwall: "90" });
+    expect(out.geometry.thickness).toBe("Espesso");
+  });
+
+  it("nao muta o formData original", () => {
+    const fd = { selectedMethods: sm(true, true, false), rss: { ...rssFilled } };
+    normalizeRss(fd);
+    expect(fd.rss).toEqual(rssFilled);
+  });
+
+  it("devolve o mesmo objeto quando nao ha o que corrigir", () => {
+    const fd = { selectedMethods: sm(true, false, false), rss: emptyRss() };
+    expect(normalizeRss(fd)).toBe(fd);
+  });
+
+  it("nao quebra com o campo rss ausente", () => {
+    const fd = { selectedMethods: sm(true, false, false) };
+    expect(() => normalizeRss(fd)).not.toThrow();
+  });
+});
+
+describe("sanitizacao do estado persistido", () => {
+  // loadInitialState (MmsContext) encadeia as duas normalizacoes na carga —
+  // estado salvo antes destas regras pode trazer as duas combinacoes orfas.
+  const load = (formData) => normalizeRss(normalizeThickness(formData));
+
+  it("limpa o RSS manual salvo junto com UBC marcado", () => {
+    const out = load({
+      selectedMethods: sm(true, true, false),
+      geometry: { thickness: "Espesso" },
+      rss: { ...rssFilled },
+    });
+    expect(out.rss).toEqual(emptyRss());
+  });
+
+  it("mantem o RSS manual salvo com o Nicholas sozinho", () => {
+    const out = load({
+      selectedMethods: sm(false, true, false),
+      geometry: { thickness: "Espesso" },
+      rss: { ...rssFilled },
+    });
+    expect(out.rss).toEqual(rssFilled);
+  });
+
+  it("corrige espessura e RSS na mesma carga", () => {
+    // Nicholas sozinho: a espessura reverte e o RSS manual segue valido.
+    const orfaoNich = load({
+      selectedMethods: sm(false, true, false),
+      geometry: { thickness: "Muito estreito" },
+      rss: { ...rssFilled },
+    });
+    expect(orfaoNich.geometry.thickness).toBe("Estreito");
+    expect(orfaoNich.rss).toEqual(rssFilled);
+
+    // Com UBC junto: a espessura e valida e o RSS manual e que fica orfao.
+    const orfaoRss = load({
+      selectedMethods: sm(true, true, false),
+      geometry: { thickness: "Muito estreito" },
+      rss: { ...rssFilled },
+    });
+    expect(orfaoRss.geometry.thickness).toBe("Muito estreito");
+    expect(orfaoRss.rss).toEqual(emptyRss());
   });
 });
