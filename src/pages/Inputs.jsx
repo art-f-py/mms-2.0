@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useMms, DOMAIN_PRESETS } from "../context/MmsContext";
+import { isNicholasOnly, thicknessOptionsFor } from "../data/formRules";
 import {
   calculateUBC, calculateNicholas, calculateSHB,
   classifyRSS, classifyRSSNicholas,
@@ -415,11 +416,23 @@ function Inputs() {
   const showSHB  = sm.shb;
   const anyMethod = Object.values(sm).some(Boolean);
 
+  // Com o Nicholas sozinho, a publicação dele não cobre a faixa "muito
+  // estreito" (<3 m) — a opção sai do select. Com UBC e/ou SH&B juntos ela
+  // volta, e o Nicholas a trata pelo mapeamento em calculateNicholas.
+  const thicknessOptions = thicknessOptionsFor(sm);
+
   const set = (section, field, value) =>
     dispatch({ type: "SET_FORM_FIELD", section, field, value });
 
-  const toggleMethod = (key) =>
-    dispatch({ type: "SET_FORM_FIELD", section: "selectedMethods", field: key, value: !fd.selectedMethods[key] });
+  const toggleMethod = (key) => {
+    const next = { ...sm, [key]: !sm[key] };
+    // Se o Nicholas ficar sozinho, "Muito estreito" sai do select — o valor
+    // gravado viraria órfão. Reverte junto, na mesma interação.
+    if (isNicholasOnly(next) && fd.geometry.thickness === "Muito estreito") {
+      set("geometry", "thickness", "Estreito");
+    }
+    dispatch({ type: "SET_FORM_FIELD", section: "selectedMethods", field: key, value: !sm[key] });
+  };
 
   // Reseta todo o formulário e limpa o estado persistido no localStorage
   const clearForm = () => {
@@ -506,7 +519,7 @@ function Inputs() {
         </Field>
         <Field label={t("inputs.geometry.thickness")}>
           <Sel value={fd.geometry.thickness} onChange={(v) => set("geometry", "thickness", v)}
-            options={["Muito estreito", "Estreito", "Intermediário", "Espesso", "Muito espesso"]} labels={thicknessLabels} />
+            options={thicknessOptions} labels={thicknessLabels} />
         </Field>
         <div style={S.sec}>
           <label style={{ ...S.label, display: "flex", alignItems: "center", gap: "6px" }}>
