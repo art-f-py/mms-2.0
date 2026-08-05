@@ -151,6 +151,12 @@ export function calculateNicholas(fd, criteriaWeights = {}) {
   // o modo inativo fica em 1.00, então a multiplicação dupla é sempre neutra de um lado.
   const domain   = { ...DEFAULT_DOMAIN, ...(criteriaWeights.domain || {}) };
   const dipClass = classifyDipUBC(fd.dip);
+  // Nicholas (1981/92) classifica a espessura em 4 faixas — não existe classe
+  // "muito estreito" (essa é uma extensão do UBC 1995). O formulário oferece as
+  // 5 do UBC/SH&B, então a faixa mais fina cai na mais próxima do Nicholas.
+  // Sem isso o critério não achava a linha e sumia da pontuação EM SILÊNCIO:
+  // o método saía com 3 critérios de geometria em vez de 4 e o ranking mudava.
+  const mapThicknessToNicholas = (val) => (val === "Muito estreito" ? "Estreito" : val);
   const rssOre = classifyRSSNicholas(fd.ucs?.ore,         fd.density?.ore,         fd.depth?.ore)         || fd.rss?.ore;
   const rssHW  = classifyRSSNicholas(fd.ucs?.hangingWall, fd.density?.hangingWall, fd.depth?.hangingWall) || fd.rss?.hangingWall;
   const rssFW  = classifyRSSNicholas(fd.ucs?.footwall,    fd.density?.footwall,    fd.depth?.footwall)    || fd.rss?.footwall;
@@ -158,7 +164,7 @@ export function calculateNicholas(fd, criteriaWeights = {}) {
   const criteria = [
     // Geometria — peso por critério geo[...] × multiplicador de domínio geo
     [NICHOLAS_GEOMETRY,    "shape",          fd.geometry?.shape,             geo.shape          * domain.geo],
-    [NICHOLAS_GEOMETRY,    "thickness",      fd.geometry?.thickness,         geo.thickness      * domain.geo],
+    [NICHOLAS_GEOMETRY,    "thickness",      mapThicknessToNicholas(fd.geometry?.thickness), geo.thickness * domain.geo],
     [NICHOLAS_GEOMETRY,    "dip",            dipClass,                       geo.dip            * domain.geo],
     [NICHOLAS_GEOMETRY,    "grade",          fd.geometry?.grade,             geo.grade          * domain.geo],
     // Corpo de minério — peso por critério ob[...] × multiplicador de domínio ob

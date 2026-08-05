@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Worktrees criados pelo Claude Code (cópias locais do repo, não versionar)
+.claude/worktrees/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

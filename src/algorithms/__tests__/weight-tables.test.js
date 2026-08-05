@@ -27,6 +27,7 @@ import {
   classifyDipUBC,
   classifyDipSHB,
   calculateUBC,
+  calculateNicholas,
   calculateSHB,
 } from "../algorithms";
 
@@ -199,14 +200,13 @@ describe("Alinhamento: opcoes do formulario x chaves das tabelas", () => {
     it("aceita as 3 formas do formulario", () => {
       expect(missing(table, "shape", FORM_OPTIONS.shape)).toEqual([]);
     });
-    // FALHA CONHECIDA (NICHOLAS_GEOMETRY): a tabela do Nicholas tem 4 espessuras,
-    // sem "Muito estreito", enquanto o formulario oferece 5. Selecionando
-    // "Muito estreito" com Nicholas ativo, sumCriteria nao acha a linha e pula o
-    // criterio EM SILENCIO — o resultado sai com 3 criterios de geometria em vez
-    // de 4 e o ranking muda. Teste mantido falhando de proposito, aguardando
-    // decisao: estender a tabela ou restringir as opcoes do formulario.
-    it("aceita as 5 espessuras do formulario", () => {
-      expect(missing(table, "thickness", FORM_OPTIONS.thickness)).toEqual([]);
+    // O Nicholas e a excecao: a tabela dele tem 4 espessuras (a classe "muito
+    // estreito" e uma extensao do UBC 1995), entao o alinhamento direto nao
+    // vale. calculateNicholas resolve mapeando "Muito estreito" -> "Estreito";
+    // a cobertura desse mapa fica no bloco comportamental mais abaixo.
+    const expectedMissing = table === NICHOLAS_GEOMETRY ? ["Muito estreito"] : [];
+    it("aceita as espessuras do formulario", () => {
+      expect(missing(table, "thickness", FORM_OPTIONS.thickness)).toEqual(expectedMissing);
     });
     it("aceita os 3 teores do formulario", () => {
       expect(missing(table, "grade", FORM_OPTIONS.grade)).toEqual([]);
@@ -261,5 +261,33 @@ describe("Alinhamento: opcoes do formulario x chaves das tabelas", () => {
       expect(keys).toContain(`rmr_hw__${rmrClass}`);
       expect(keys).toContain(`rmr_fw__${rmrClass}`);
     });
+  });
+
+  // O Nicholas so tem 4 espessuras; "Muito estreito" (extensao do UBC 1995) e
+  // mapeado para "Estreito". Sem o mapa o criterio sumia do score em silencio,
+  // derrubando a geometria de 4 para 3 criterios e mudando o ranking.
+  describe.each(FORM_OPTIONS.thickness)("espessura \"%s\" pontua no Nicholas", (thickness) => {
+    it("mantem o criterio de espessura no breakdown", () => {
+      const fd = { geometry: { thickness } };
+      const keys = Object.keys(calculateNicholas(fd).breakdown);
+      expect(keys.filter((k) => k.startsWith("thickness__"))).toHaveLength(1);
+    });
+  });
+
+  it("Nicholas trata \"Muito estreito\" exatamente como \"Estreito\"", () => {
+    const muitoEstreito = calculateNicholas({ geometry: { thickness: "Muito estreito" } });
+    const estreito      = calculateNicholas({ geometry: { thickness: "Estreito" } });
+    expect(muitoEstreito.scores).toEqual(estreito.scores);
+  });
+
+  // As outras 4 espessuras seguem distintas entre si — o mapa nao pode ter
+  // achatado a tabela inteira em uma classe so.
+  it("Nicholas mantem as 4 espessuras da tabela distintas", () => {
+    const scoreOf = (thickness) =>
+      JSON.stringify(calculateNicholas({ geometry: { thickness } }).scores);
+    const distintos = new Set(
+      ["Estreito", "Intermediário", "Espesso", "Muito espesso"].map(scoreOf)
+    );
+    expect(distintos.size).toBe(4);
   });
 });
