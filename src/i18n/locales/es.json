@@ -90,6 +90,7 @@
       "domainLayerTitle": "Multiplicadores de dominio (Nicholas 92)",
       "domainLayerHint": "Ponderan cada dominio geotécnico. Aplique un preset o ajuste manualmente.",
       "exportMatrix": "Exportar matriz de decisión (.xlsx)",
+      "exportMatrixHint": "Los valores exportados suman 50 a cada puntaje, para compatibilidad con Pro D.M. En pantalla, los puntajes se mantienen sin ese desplazamiento.",
       "groups": {
         "geo": "Geometría",
         "econ": "Económico",

@@ -857,6 +857,9 @@ function Inputs() {
           onClick={() => { downloadDecisionMatrix(fd, sm).catch((err) => console.error("[MMS] falha ao exportar a matriz de decisão:", err)); }}>
           {t("inputs.complementary.exportMatrix")}
         </button>
+        <p style={{ ...S.hint, marginTop: "10px", marginBottom: 0 }}>
+          {t("inputs.complementary.exportMatrixHint")}
+        </p>
       </div>
     </div>
   ) : null;

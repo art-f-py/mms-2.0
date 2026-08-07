@@ -1,10 +1,12 @@
 import { describe, it, expect } from "vitest";
 import {
   buildDecisionMatrix,
+  applyExportOffset,
   sheetToAoa,
   neutralWeights,
   EXPORT_CRITERION_LABELS,
   EXPORT_ROW_HEADER,
+  PRO_DM_SCORE_OFFSET,
 } from "../decisionMatrix";
 import { calculateUBC, calculateNicholas } from "../algorithms";
 import { METHODS } from "../ubcWeights";
@@ -191,6 +193,7 @@ describe("buildDecisionMatrix — linhas", () => {
 
   it("mantem os metodos penalizados, com o score negativo intacto", () => {
     // "Muito estreito" penaliza BC/SLC com -49 na tabela de espessura do UBC.
+    // buildDecisionMatrix devolve o BRUTO — o offset e um passo posterior.
     const sheet = sheetByKey(
       buildDecisionMatrix({ geometry: { thickness: "Muito estreito" } }, { ubc: true }),
       "ubc",
@@ -203,6 +206,131 @@ describe("buildDecisionMatrix — linhas", () => {
     expect(valorDe("SLS")).toBe(-10);
     // A matriz e de scores brutos, nao de ranking: nada e filtrado nem reordenado.
     expect(sheet.rows.some((r) => r.values[0] < 0)).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// OFFSET DE EXPORTACAO (+50) — compatibilidade com o Pro D.M.
+// ---------------------------------------------------------------------------
+describe("applyExportOffset", () => {
+  const primeiraColuna = (matrix, key, code) =>
+    sheetByKey(matrix, key).rows.find((r) => r.code === code).values[0];
+
+  it("a constante e 50", () => {
+    expect(PRO_DM_SCORE_OFFSET).toBe(50);
+  });
+
+  it("penalidade -49 do UBC exporta como 1", () => {
+    // Espessura "Muito estreito": BC e SLC valem -49 na tabela do UBC.
+    const bruta = buildDecisionMatrix({ geometry: { thickness: "Muito estreito" } }, { ubc: true });
+    const comOffset = applyExportOffset(bruta, PRO_DM_SCORE_OFFSET);
+
+    expect(primeiraColuna(bruta, "ubc", "BC")).toBe(-49);
+    expect(primeiraColuna(comOffset, "ubc", "BC")).toBe(1);
+    expect(primeiraColuna(comOffset, "ubc", "SLC")).toBe(1);
+  });
+
+  it("penalidade -49 do Nicholas exporta como 1", () => {
+    // Forma "Massivo": LW vale -49 na tabela de geometria do Nicholas.
+    const bruta = buildDecisionMatrix({ geometry: { shape: "Massivo" } }, { nicholas: true });
+    const comOffset = applyExportOffset(bruta, PRO_DM_SCORE_OFFSET);
+
+    expect(primeiraColuna(bruta, "nicholas", "LW")).toBe(-49);
+    expect(primeiraColuna(comOffset, "nicholas", "LW")).toBe(1);
+  });
+
+  it("penalidade -50 do SH&B exporta como 0", () => {
+    // Mergulho 70 -> "Inclinado": LW e R&P valem -50 na tabela do SH&B.
+    const bruta = buildDecisionMatrix({ dip: "70" }, { shb: true });
+    const comOffset = applyExportOffset(bruta, PRO_DM_SCORE_OFFSET);
+
+    expect(primeiraColuna(bruta, "shb", "LW")).toBe(-50);
+    expect(primeiraColuna(comOffset, "shb", "LW")).toBe(0);
+    expect(primeiraColuna(comOffset, "shb", "R&P")).toBe(0);
+  });
+
+  it("valor comum 4 exporta como 54", () => {
+    const bruta = buildDecisionMatrix({ geometry: { thickness: "Muito estreito" } }, { ubc: true });
+    const comOffset = applyExportOffset(bruta, PRO_DM_SCORE_OFFSET);
+
+    expect(primeiraColuna(bruta, "ubc", "LW")).toBe(4);
+    expect(primeiraColuna(comOffset, "ubc", "LW")).toBe(54);
+  });
+
+  it("aplica o offset uniformemente nas tres abas, em toda celula", () => {
+    const bruta = buildDecisionMatrix(FULL_SCENARIO, ALL_METHODS);
+    const comOffset = applyExportOffset(bruta, PRO_DM_SCORE_OFFSET);
+
+    expect(comOffset.sheets).toHaveLength(3);
+    comOffset.sheets.forEach((sheet, s) => {
+      const original = bruta.sheets[s];
+      expect(sheet.key).toBe(original.key);
+      sheet.rows.forEach((row, r) => {
+        row.values.forEach((valor, c) => {
+          expect(valor).toBe(original.rows[r].values[c] + PRO_DM_SCORE_OFFSET);
+        });
+      });
+    });
+  });
+
+  it("nao mexe em rotulos de linha nem em cabecalhos de coluna", () => {
+    const bruta = buildDecisionMatrix(FULL_SCENARIO, ALL_METHODS);
+    const comOffset = applyExportOffset(bruta, PRO_DM_SCORE_OFFSET);
+
+    comOffset.sheets.forEach((sheet, s) => {
+      expect(sheet.name).toBe(bruta.sheets[s].name);
+      expect(sheet.columns).toEqual(bruta.sheets[s].columns);
+      expect(sheet.criterionKeys).toEqual(bruta.sheets[s].criterionKeys);
+      expect(sheet.rows.map((r) => r.method)).toEqual(bruta.sheets[s].rows.map((r) => r.method));
+    });
+    expect(comOffset.unmappedKeys).toEqual(bruta.unmappedKeys);
+  });
+
+  it("e puro — nao altera a matriz recebida", () => {
+    const bruta = buildDecisionMatrix(FULL_SCENARIO, ALL_METHODS);
+    const antes = JSON.parse(JSON.stringify(bruta));
+    applyExportOffset(bruta, PRO_DM_SCORE_OFFSET);
+    expect(bruta).toEqual(antes);
+  });
+
+  it("usa 50 por padrao e aceita outro deslocamento", () => {
+    const bruta = buildDecisionMatrix({ geometry: { thickness: "Muito estreito" } }, { ubc: true });
+    expect(primeiraColuna(applyExportOffset(bruta), "ubc", "BC")).toBe(1);
+    expect(primeiraColuna(applyExportOffset(bruta, 0), "ubc", "BC")).toBe(-49);
+    expect(primeiraColuna(applyExportOffset(bruta, 100), "ubc", "BC")).toBe(51);
+  });
+
+  it("nao inventa valor onde a celula esta vazia", () => {
+    // Guarda do `?? null` em buildSheet: uma tabela poderia trazer null para um
+    // metodo num criterio, e somar 50 ali criaria um score que nao existe.
+    const comBuraco = {
+      sheets: [{ key: "ubc", name: "UBC 1995", columns: ["Shape"], criterionKeys: ["shape"],
+                 rows: [{ code: "OP", method: "Open Pit", values: [4] },
+                        { code: "BC", method: "Block Caving", values: [null] }] }],
+      unmappedKeys: [],
+    };
+    const r = applyExportOffset(comBuraco, 50).sheets[0].rows;
+    expect(r[0].values[0]).toBe(54);
+    expect(r[1].values[0]).toBeNull();
+  });
+});
+
+describe("matriz exportada — pipeline completo", () => {
+  it("as celulas do AOA saem com o offset e os rotulos sem ele", () => {
+    // Mesma composicao de downloadDecisionMatrix: montar -> offset -> AOA.
+    const matrix = applyExportOffset(
+      buildDecisionMatrix({ geometry: { thickness: "Muito estreito" } }, { ubc: true }),
+      PRO_DM_SCORE_OFFSET,
+    );
+    const aoa = sheetToAoa(matrix.sheets[0]);
+
+    expect(aoa[0]).toEqual([EXPORT_ROW_HEADER, "Thickness"]);
+    expect(aoa[1]).toEqual(["Open Pit", 51]);          // 1 + 50
+    expect(aoa[2]).toEqual(["Block Caving", 1]);       // -49 + 50
+    expect(aoa[4]).toEqual(["Sublevel Caving", 1]);    // -49 + 50
+    expect(aoa[5]).toEqual(["Longwall", 54]);          // 4 + 50
+    // Nenhuma celula negativa sobra na planilha.
+    aoa.slice(1).forEach((linha) => expect(linha[1]).toBeGreaterThanOrEqual(0));
   });
 });
 

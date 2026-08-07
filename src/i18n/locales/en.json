@@ -89,6 +89,7 @@
       "domainLayerTitle": "Domain multipliers (Nicholas 92)",
       "domainLayerHint": "Weight each geotechnical domain. Apply a preset or adjust manually.",
       "exportMatrix": "Export decision matrix (.xlsx)",
+      "exportMatrixHint": "Exported values add 50 to each score, for Pro D.M. compatibility. On screen, scores remain without this offset.",
       "groups": {
         "geo": "Geometry",
         "econ": "Economic",

@@ -90,6 +90,7 @@
       "domainLayerTitle": "Multiplicateurs de domaine (Nicholas 92)",
       "domainLayerHint": "Pondèrent chaque domaine géotechnique. Appliquez un préréglage ou ajustez manuellement.",
       "exportMatrix": "Exporter la matrice de décision (.xlsx)",
+      "exportMatrixHint": "Les valeurs exportées ajoutent 50 à chaque score, pour la compatibilité avec Pro D.M. À l'écran, les scores restent sans ce décalage.",
       "groups": {
         "geo": "Géométrie",
         "econ": "Économique",

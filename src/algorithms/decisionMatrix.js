@@ -152,6 +152,40 @@ export function buildDecisionMatrix(formData, selectedMethods = {}) {
   return { sheets, unmappedKeys: [...unmapped] };
 }
 
+// Deslocamento aplicado aos scores na exportação, por exigência do Pro D.M.
+// O menor valor das tabelas é exatamente -50 (penalidades do SH&B), então +50
+// leva o intervalo para começar em zero: -50 → 0, -49 → 1, 4 → 54.
+export const PRO_DM_SCORE_OFFSET = 50;
+
+/**
+ * Soma um deslocamento constante a TODA célula numérica da matriz.
+ *
+ * Passo separado de propósito: `buildDecisionMatrix` continua devolvendo os
+ * scores BRUTOS das tabelas, e o offset entra só no caminho de exportação
+ * (ver utils/downloadDecisionMatrix.js). Assim o app — ranking, Statistics,
+ * breakdown na tela — segue lendo os valores originais, sem offset.
+ *
+ * Puro: devolve uma estrutura nova, não mexe na recebida. Rótulos de linha
+ * (métodos de lavra) e cabeçalhos de coluna passam intactos — só `values` muda.
+ *
+ * @param {{sheets: Array, unmappedKeys: string[]}} matrix saída de buildDecisionMatrix
+ * @param {number} offset  constante somada a cada score
+ */
+export function applyExportOffset(matrix, offset = PRO_DM_SCORE_OFFSET) {
+  return {
+    ...matrix,
+    sheets: matrix.sheets.map((sheet) => ({
+      ...sheet,
+      rows: sheet.rows.map((row) => ({
+        ...row,
+        // Célula sem score (null) continua vazia: somar o offset ali inventaria
+        // um valor que a tabela não tem.
+        values: row.values.map((v) => (typeof v === "number" ? v + offset : v)),
+      })),
+    })),
+  };
+}
+
 /**
  * Achata uma aba em array-of-arrays, o formato que o SheetJS consome direto.
  * Mantido aqui (e não no módulo de download) para ficar coberto por teste.
