@@ -70,8 +70,8 @@
       "rmrGsiFormula": "RMR = (GSI + 11,63) / 1,13",
       "rmrQFormula": "RMR = 9 × ln(Q) + 44",
       "rmrGsiApprox": "→ RMR ≈ {{rmr}} ({{class}})",
-      "fracturesTitle": "Discontinuidades",
-      "jointSpacing": "Espaciamiento de las discontinuidades",
+      "fracturesTitle": "Fracturas",
+      "jointSpacing": "Espaciamiento de las fracturas",
       "jointCondition": "Condición de las discontinuidades"
     },
     "eesg": {
@@ -136,7 +136,7 @@
       "depth": "Profundidad — {{zone}}",
       "rss": "RSS — {{zone}}",
       "rmr": "RMR — {{zone}}",
-      "jointSpacing": "Espac. discontinuidades — {{zone}}",
+      "jointSpacing": "Espac. fracturas — {{zone}}",
       "jointCondition": "Discontinuidades — {{zone}}",
       "oreValue": "Valor del mineral"
     }
@@ -166,9 +166,9 @@
       "rmr_ob": "RMR — Ore",
       "rmr_hw": "RMR — HW",
       "rmr_fw": "RMR — FW",
-      "jointSpacing_ob": "Espac. Discont. — Ore",
-      "jointSpacing_hw": "Espac. Discont. — HW",
-      "jointSpacing_fw": "Espac. Discont. — FW",
+      "jointSpacing_ob": "Espac. Fracturas — Ore",
+      "jointSpacing_hw": "Espac. Fracturas — HW",
+      "jointSpacing_fw": "Espac. Fracturas — FW",
       "jointCondition_ob": "Cond. Discont. — Ore",
       "jointCondition_hw": "Cond. Discont. — HW",
       "jointCondition_fw": "Cond. Discont. — FW"
