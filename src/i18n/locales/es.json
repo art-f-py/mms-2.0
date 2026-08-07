@@ -1,4 +1,5 @@
 {
+  "_comment": "NOTA DE TERMINOLOGÍA — no 'corregir' sin consultar. Los términos 'hanging wall' y 'foot wall' se mantienen EN INGLÉS a propósito: es el uso corriente en la industria minera chilena, no una traducción pendiente. Revisión de terminología por Francisco Vargas (ingeniero de minas, hablante nativo). Las claves que empiezan con '_' son metadatos y no se traducen. Ver también fr.json, que sigue la misma decisión.",
   "common": {
     "select": "Seleccione",
     "next": "Siguiente →",
@@ -18,9 +19,9 @@
     "start": "Iniciar"
   },
   "zones": {
-    "ore": "Cuerpo mineralizado",
-    "hangingWall": "Caja techo",
-    "footwall": "Caja piso"
+    "ore": "Zona de mineral",
+    "hangingWall": "Hanging wall",
+    "footwall": "Foot wall"
   },
   "stepper": {
     "position": "Etapa {{current}} de {{total}} — {{label}}",
@@ -46,8 +47,8 @@
       "shape": "Forma general",
       "thickness": "Espesor",
       "dip": "Buzamiento (°)",
-      "grade": "Distribución de leyes",
-      "depth": "Profundidad del cuerpo mineralizado (m)",
+      "grade": "Distribución de ley",
+      "depth": "Profundidad de la zona de mineral (m)",
       "depthHint": "UBC: Somera ≤100m | Interm. 100–600m | Profunda >600m",
       "sketchTitle": "Sección transversal"
     },
@@ -58,8 +59,8 @@
       "ucs": "UCS (MPa)",
       "densityOre": "Densidad (kg/m³)",
       "densityOverburden": "Densidad media de la sobrecarga (kg/m³)",
-      "densityHwTip": "Para el cálculo del RSS, considere la densidad media de todos los materiales desde la superficie hasta el techo del cuerpo mineralizado (sobrecarga completa), no solo la roca inmediatamente adyacente.",
-      "densityFwTip": "Para el cálculo del RSS, considere la densidad media de todos los materiales desde la superficie hasta la base del cuerpo mineralizado.",
+      "densityHwTip": "Para el cálculo del RSS, considere la densidad media de todos los materiales desde la superficie hasta el techo de la zona de mineral (sobrecarga completa), no solo la roca inmediatamente adyacente.",
+      "densityFwTip": "Para el cálculo del RSS, considere la densidad media de todos los materiales desde la superficie hasta la base de la zona de mineral.",
       "depth": "Profundidad (m)",
       "rss": "RSS",
       "rssPlaceholder": "complete UCS, densidad y profundidad",
@@ -69,9 +70,9 @@
       "rmrGsiFormula": "RMR = (GSI + 11,63) / 1,13",
       "rmrQFormula": "RMR = 9 × ln(Q) + 44",
       "rmrGsiApprox": "→ RMR ≈ {{rmr}} ({{class}})",
-      "fracturesTitle": "Fracturas",
-      "jointSpacing": "Espaciamiento de las fracturas",
-      "jointCondition": "Características de las juntas"
+      "fracturesTitle": "Discontinuidades",
+      "jointSpacing": "Espaciamiento de las discontinuidades",
+      "jointCondition": "Condición de las discontinuidades"
     },
     "eesg": {
       "title": "EESG — Economic Environmental Social Governance",
@@ -91,27 +92,27 @@
       "groups": {
         "geo": "Geometría",
         "econ": "Económico",
-        "ob": "Cuerpo mineralizado",
-        "hw": "Caja techo",
-        "fw": "Caja piso"
+        "ob": "Zona de mineral",
+        "hw": "Hanging wall",
+        "fw": "Foot wall"
       },
       "criteria": {
         "shape": "Forma",
         "thickness": "Espesor",
         "dip": "Buzamiento",
-        "grade": "Leyes",
+        "grade": "Ley",
         "depth": "Profundidad",
         "rss": "RSS",
         "rmr": "RMR",
         "jointSpacing": "Espaciamiento",
-        "jointCondition": "Juntas",
+        "jointCondition": "Discontinuidades",
         "oreValue": "Valor del mineral"
       },
       "domainCriteria": {
         "geo": "Geometría (geo)",
-        "ob": "Cuerpo mineralizado (ob)",
-        "hw": "Caja techo (hw)",
-        "fw": "Caja piso (fw)"
+        "ob": "Zona de mineral (ob)",
+        "hw": "Hanging wall (hw)",
+        "fw": "Foot wall (fw)"
       },
       "presets": {
         "default": "Predeterminado",
@@ -135,8 +136,8 @@
       "depth": "Profundidad — {{zone}}",
       "rss": "RSS — {{zone}}",
       "rmr": "RMR — {{zone}}",
-      "jointSpacing": "Espac. fracturas — {{zone}}",
-      "jointCondition": "Juntas — {{zone}}",
+      "jointSpacing": "Espac. discontinuidades — {{zone}}",
+      "jointCondition": "Discontinuidades — {{zone}}",
       "oreValue": "Valor del mineral"
     }
   },
@@ -165,25 +166,25 @@
       "rmr_ob": "RMR — Ore",
       "rmr_hw": "RMR — HW",
       "rmr_fw": "RMR — FW",
-      "jointSpacing_ob": "Espac. Fracturas — Ore",
-      "jointSpacing_hw": "Espac. Fracturas — HW",
-      "jointSpacing_fw": "Espac. Fracturas — FW",
-      "jointCondition_ob": "Cond. Juntas — Ore",
-      "jointCondition_hw": "Cond. Juntas — HW",
-      "jointCondition_fw": "Cond. Juntas — FW"
+      "jointSpacing_ob": "Espac. Discont. — Ore",
+      "jointSpacing_hw": "Espac. Discont. — HW",
+      "jointSpacing_fw": "Espac. Discont. — FW",
+      "jointCondition_ob": "Cond. Discont. — Ore",
+      "jointCondition_hw": "Cond. Discont. — HW",
+      "jointCondition_fw": "Cond. Discont. — FW"
     }
   },
   "deposit": {
     "svgTitle": "Sección transversal del depósito",
     "svgDesc": "Visualización geométrica del depósito mineral generada a partir de los datos del formulario.",
     "surface": "Superficie",
-    "oreBody": "Cuerpo mineralizado",
+    "oreBody": "Zona de mineral",
     "gradeArrow": "ley ↑",
     "dipLabel": "Buzamiento",
     "depthLabel": "Profundidad",
     "gradeLabels": {
       "Uniforme": "Ley uniforme",
-      "Gradacional": "Ley gradacional",
+      "Gradacional": "Ley gradual",
       "Errático": "Ley errática"
     }
   },
@@ -239,12 +240,12 @@
       "Muito estreito": "Muy estrecho",
       "Estreito": "Estrecho",
       "Intermediário": "Intermedio",
-      "Espesso": "Espeso",
-      "Muito espesso": "Muy espeso"
+      "Espesso": "Grueso",
+      "Muito espesso": "Muy grueso"
     },
     "grade": {
       "Uniforme": "Uniforme",
-      "Gradacional": "Gradacional",
+      "Gradacional": "Gradual",
       "Errático": "Errática"
     },
     "rss": {
@@ -261,8 +262,8 @@
       "Muito boa": "Muy buena"
     },
     "jointSpacing": {
-      "Muito Perto": "Muy junto",
-      "Perto": "Junto",
+      "Muito Perto": "Muy cerca",
+      "Perto": "Cerca",
       "Longe": "Separado",
       "Muito Longe": "Muy separado"
     },
