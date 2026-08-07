@@ -89,6 +89,7 @@
       "criteriaLayerTitle": "Pondération par critère",
       "domainLayerTitle": "Multiplicateurs de domaine (Nicholas 92)",
       "domainLayerHint": "Pondèrent chaque domaine géotechnique. Appliquez un préréglage ou ajustez manuellement.",
+      "exportMatrix": "Exporter la matrice de décision (.xlsx)",
       "groups": {
         "geo": "Géométrie",
         "econ": "Économique",

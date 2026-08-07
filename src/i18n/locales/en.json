@@ -88,6 +88,7 @@
       "criteriaLayerTitle": "Per-criterion weighting",
       "domainLayerTitle": "Domain multipliers (Nicholas 92)",
       "domainLayerHint": "Weight each geotechnical domain. Apply a preset or adjust manually.",
+      "exportMatrix": "Export decision matrix (.xlsx)",
       "groups": {
         "geo": "Geometry",
         "econ": "Economic",

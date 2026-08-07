@@ -7,6 +7,7 @@ import {
   calculateUBC, calculateNicholas, calculateSHB,
   classifyRSS, classifyRSSNicholas,
 } from "../algorithms/algorithms";
+import { downloadDecisionMatrix } from "../utils/downloadDecisionMatrix";
 import DepositSketch from "./DepositSketch";
 import RockTooltip  from "../components/RockTooltip";
 import { rmrToClass, gsiToRmr, qToRmr } from "../data/rmrData";
@@ -844,6 +845,19 @@ function Inputs() {
           </div>
         </Collapsible>
       )}
+
+      {/* Exportação da matriz de decisão BRUTA para MCDM externo (Pro D.M.).
+          Cálculo paralelo com pesos neutros: ignora tanto os sliders acima
+          quanto os multiplicadores de domínio do Nicholas, e não mexe no
+          estado — ver algorithms/decisionMatrix.js. */}
+      <div style={{ marginTop: "24px", paddingTop: "20px", borderTop: `1px solid ${C.border}` }}>
+        <button
+          style={{ ...S.btnGhost, opacity: anyMethod ? 1 : 0.5, cursor: anyMethod ? "pointer" : "not-allowed" }}
+          disabled={!anyMethod}
+          onClick={() => { downloadDecisionMatrix(fd, sm).catch((err) => console.error("[MMS] falha ao exportar a matriz de decisão:", err)); }}>
+          {t("inputs.complementary.exportMatrix")}
+        </button>
+      </div>
     </div>
   ) : null;
 

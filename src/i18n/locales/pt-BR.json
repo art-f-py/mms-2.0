@@ -88,6 +88,7 @@
       "criteriaLayerTitle": "Individualização por critério",
       "domainLayerTitle": "Multiplicadores de domínio (Nicholas 92)",
       "domainLayerHint": "Ponderam cada domínio geotécnico. Aplique um preset ou ajuste manualmente.",
+      "exportMatrix": "Exportar matriz de decisão (.xlsx)",
       "groups": {
         "geo": "Geometria",
         "econ": "Econômico",
