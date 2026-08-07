@@ -5,12 +5,14 @@ import LanguageDetector from "i18next-browser-languagedetector";
 import ptBR from "./locales/pt-BR.json";
 import en from "./locales/en.json";
 import es from "./locales/es.json";
+import fr from "./locales/fr.json";
 
 // Idiomas disponíveis (código i18next + rótulo curto para o seletor no header)
 export const LANGUAGES = [
   { code: "pt-BR", label: "PT" },
   { code: "en",    label: "EN" },
   { code: "es",    label: "ES" },
+  { code: "fr",    label: "FR" },
 ];
 
 // Chave usada no localStorage para persistir a escolha de idioma.
@@ -27,9 +29,10 @@ i18n
       "pt-BR": { translation: ptBR },
       en:      { translation: en },
       es:      { translation: es },
+      fr:      { translation: fr },
     },
     fallbackLng: "pt-BR",
-    supportedLngs: ["pt-BR", "en", "es"],
+    supportedLngs: ["pt-BR", "en", "es", "fr"],
     detection: {
       order: ["localStorage"],
       lookupLocalStorage: LANGUAGE_STORAGE_KEY,

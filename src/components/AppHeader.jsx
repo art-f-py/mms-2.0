@@ -5,8 +5,8 @@ import brasao    from "../assets/brasao.png";
 import mineracao from "../assets/mineracao.png";
 import { LANGUAGES } from "../i18n/index.js";
 
-// Bandeiras como SVG inline. Emoji de bandeira (🇧🇷/🇬🇧/🇪🇸) NÃO renderiza no
-// Windows/Chrome — aparece como as letras "BR"/"GB"/"ES" —, então desenhamos
+// Bandeiras como SVG inline. Emoji de bandeira (🇧🇷/🇬🇧/🇪🇸/🇫🇷) NÃO renderiza no
+// Windows/Chrome — aparece como as letras "BR"/"GB"/"ES"/"FR" —, então desenhamos
 // versões simples e nítidas que funcionam em qualquer navegador, sem assets.
 function FlagIcon({ code, size = 20 }) {
   const h = Math.round(size * 0.7);
@@ -33,13 +33,25 @@ function FlagIcon({ code, size = 20 }) {
         <rect y="12" width="60" height="6" fill="#C8102E" />
       </svg>
     );
-  } else {
+  } else if (code === "es") {
     svg = (
       <svg {...common} viewBox="0 0 20 14" aria-hidden="true">
         <rect width="20" height="14" fill="#AA151B" />
         <rect y="3.5" width="20" height="7" fill="#F1BF00" />
       </svg>
     );
+  } else if (code === "fr") {
+    // Tricolor vertical — três faixas iguais de 20/3 ≈ 6,667 de largura.
+    svg = (
+      <svg {...common} viewBox="0 0 20 14" aria-hidden="true">
+        <rect width="6.667" height="14" fill="#002395" />
+        <rect x="6.667" width="6.667" height="14" fill="#FFFFFF" />
+        <rect x="13.333" width="6.667" height="14" fill="#ED2939" />
+      </svg>
+    );
+  } else {
+    // Idioma sem bandeira desenhada: mostra só o código, sem quebrar o layout.
+    return null;
   }
   return (
     <span style={{ display: "inline-flex", borderRadius: "3px", overflow: "hidden", boxShadow: "0 0 0 1px rgba(0,0,0,0.15)", flexShrink: 0 }}>

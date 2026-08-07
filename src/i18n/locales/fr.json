@@ -1,0 +1,302 @@
+{
+  "_comment": "NOTE DE TERMINOLOGIE — ne pas « corriger » sans consulter. Les termes « hanging wall » et « foot wall » sont volontairement conservés EN ANGLAIS : les équivalents français « toit » et « mur » existent, mais l'espagnol a fait le choix de garder l'anglais (usage courant dans l'industrie) et le français suit, par cohérence entre les langues. Autres choix consacrés : « puissance » (et non « épaisseur ») pour l'épaisseur du corps minéralisé, « pendage », « teneur », « masse volumique », « morts-terrains ». Les clés commençant par « _ » sont des métadonnées et ne sont pas traduites. Voir aussi es.json.",
+  "common": {
+    "select": "Sélectionnez",
+    "next": "Suivant →",
+    "back": "← Précédent",
+    "apply": "Appliquer",
+    "calculate": "CALCULER",
+    "restoreDefault": "Restaurer les valeurs",
+    "close": "Fermer",
+    "example": "ex. : {{value}}"
+  },
+  "header": {
+    "brasaoAlt": "Blason de l'UFRGS",
+    "miningIconAlt": "Icône minière",
+    "language": "Langue"
+  },
+  "home": {
+    "start": "Démarrer"
+  },
+  "zones": {
+    "ore": "Corps minéralisé",
+    "hangingWall": "Hanging wall",
+    "footwall": "Foot wall"
+  },
+  "stepper": {
+    "position": "Étape {{current}} sur {{total}} — {{label}}",
+    "methods": "Méthodes",
+    "geometry": "Géométrie",
+    "geotechnical": "Géotechnique",
+    "eesg": "EESG",
+    "complementary": "Complémentaire",
+    "review": "Récapitulatif"
+  },
+  "inputs": {
+    "pageTitle": "Paramètres du Gisement",
+    "pageSubtitle": "MMS 2.0 — Mining Method Selection",
+    "methods": {
+      "title": "Sélectionnez les méthodes de sélection",
+      "subtitle": "Le formulaire s'adaptera automatiquement aux champs nécessaires.",
+      "warning": "⚠ Sélectionnez au moins une méthode pour continuer.",
+      "clear": "Effacer le formulaire",
+      "clearConfirm": "Effacer tous les champs du formulaire ? Cette action est irréversible."
+    },
+    "geometry": {
+      "title": "Géométrie du gisement",
+      "shape": "Forme générale",
+      "thickness": "Puissance",
+      "dip": "Pendage (°)",
+      "grade": "Distribution des teneurs",
+      "depth": "Profondeur du corps minéralisé (m)",
+      "depthHint": "UBC : Faible ≤100m | Interm. 100–600m | Profonde >600m",
+      "sketchTitle": "Coupe transversale"
+    },
+    "geotechnical": {
+      "rssTitle": "Rock Substance Strength (RSS)",
+      "rssFill": "Remplissez les trois champs par domaine.",
+      "rssFormula": "RSS = UCS × 10⁶ / (Masse volumique × Profondeur × 9,81).",
+      "ucs": "UCS (MPa)",
+      "densityOre": "Masse volumique (kg/m³)",
+      "densityOverburden": "Masse volumique moyenne des morts-terrains (kg/m³)",
+      "densityHwTip": "Pour le calcul du RSS, considérez la masse volumique moyenne de tous les matériaux depuis la surface jusqu'au toit du corps minéralisé (morts-terrains complets), et non seulement la roche immédiatement adjacente.",
+      "densityFwTip": "Pour le calcul du RSS, considérez la masse volumique moyenne de tous les matériaux depuis la surface jusqu'à la base du corps minéralisé.",
+      "depth": "Profondeur (m)",
+      "rss": "RSS",
+      "rssPlaceholder": "renseignez UCS, masse volumique et profondeur",
+      "nicholasPrefix": "Nicholas : {{value}}",
+      "rmrTitle": "Rock Mass Rating (RMR)",
+      "rmrConvert": "Sélectionnez directement, ou convertissez depuis le GSI ou le Q-System.",
+      "rmrGsiFormula": "RMR = (GSI + 11,63) / 1,13",
+      "rmrQFormula": "RMR = 9 × ln(Q) + 44",
+      "rmrGsiApprox": "→ RMR ≈ {{rmr}} ({{class}})",
+      "fracturesTitle": "Discontinuités",
+      "jointSpacing": "Espacement des discontinuités",
+      "jointCondition": "Condition des discontinuités"
+    },
+    "eesg": {
+      "title": "EESG — Economic Environmental Social Governance",
+      "subtitle": "Critères économiques, environnementaux, sociaux et de gouvernance.",
+      "oreValue": "Valeur du minerai"
+    },
+    "complementary": {
+      "title": "Poids par Critère",
+      "subtitle": "Ajustez l'importance de chaque critère par méthode. Par défaut : 1.0. Chaque méthode a des poids indépendants.",
+      "criterionHint": "Chaque critère est pondéré individuellement au sein de son domaine géologique (0.00–2.00).",
+      "criterionHintEcon": "Chaque critère est pondéré individuellement au sein de son domaine géologique/économique (0.00–2.00).",
+      "nicholasModeDomain": "Préréglages de domaine (Nicholas 92)",
+      "nicholasModeCriteria": "Pondération par critère",
+      "criteriaLayerTitle": "Pondération par critère",
+      "domainLayerTitle": "Multiplicateurs de domaine (Nicholas 92)",
+      "domainLayerHint": "Pondèrent chaque domaine géotechnique. Appliquez un préréglage ou ajustez manuellement.",
+      "groups": {
+        "geo": "Géométrie",
+        "econ": "Économique",
+        "ob": "Corps minéralisé",
+        "hw": "Hanging wall",
+        "fw": "Foot wall"
+      },
+      "criteria": {
+        "shape": "Forme",
+        "thickness": "Puissance",
+        "dip": "Pendage",
+        "grade": "Teneurs",
+        "depth": "Profondeur",
+        "rss": "RSS",
+        "rmr": "RMR",
+        "jointSpacing": "Espacement",
+        "jointCondition": "Discontinuités",
+        "oreValue": "Valeur du minerai"
+      },
+      "domainCriteria": {
+        "geo": "Géométrie (geo)",
+        "ob": "Corps minéralisé (ob)",
+        "hw": "Hanging wall (hw)",
+        "fw": "Foot wall (fw)"
+      },
+      "presets": {
+        "default": "Par défaut",
+        "preset1": "Préréglage 1",
+        "preset2": "Préréglage 2",
+        "preset3": "Préréglage 3"
+      }
+    },
+    "review": {
+      "title": "Récapitulatif des paramètres",
+      "methods": "Méthodes",
+      "geometry": "Géométrie",
+      "geotechnical": "Géotechnique",
+      "eesg": "EESG",
+      "shape": "Forme",
+      "thickness": "Puissance",
+      "dip": "Pendage",
+      "grade": "Distribution",
+      "ucs": "UCS — {{zone}}",
+      "density": "Masse volumique — {{zone}}",
+      "depth": "Profondeur — {{zone}}",
+      "rss": "RSS — {{zone}}",
+      "rmr": "RMR — {{zone}}",
+      "jointSpacing": "Espac. discontinuités — {{zone}}",
+      "jointCondition": "Discontinuités — {{zone}}",
+      "oreValue": "Valeur du minerai"
+    }
+  },
+  "results": {
+    "title": "Résultats",
+    "subtitle": "MMS 2.0 — Mining Method Selection",
+    "noResult": "Aucun résultat calculé pour le moment.",
+    "goToInputs": "Aller aux Inputs",
+    "activateOne": "Activez au moins une méthode pour visualiser les résultats.",
+    "comparison": "Comparaison",
+    "radarNormalized": "Radar (normalisé)",
+    "breakdown": "Détail — {{method}}",
+    "ranking": "Classement",
+    "rank": "N° {{n}}",
+    "backToInputs": "← Retour aux Inputs",
+    "criteria": {
+      "shape": "Forme",
+      "thickness": "Puissance",
+      "dip": "Pendage",
+      "grade": "Teneur",
+      "depth": "Profondeur",
+      "oreValue": "Valeur Minerai",
+      "rss_ob": "RSS — Ore",
+      "rss_hw": "RSS — HW",
+      "rss_fw": "RSS — FW",
+      "rmr_ob": "RMR — Ore",
+      "rmr_hw": "RMR — HW",
+      "rmr_fw": "RMR — FW",
+      "jointSpacing_ob": "Espac. Discont. — Ore",
+      "jointSpacing_hw": "Espac. Discont. — HW",
+      "jointSpacing_fw": "Espac. Discont. — FW",
+      "jointCondition_ob": "Cond. Discont. — Ore",
+      "jointCondition_hw": "Cond. Discont. — HW",
+      "jointCondition_fw": "Cond. Discont. — FW"
+    }
+  },
+  "deposit": {
+    "svgTitle": "Coupe transversale du gisement",
+    "svgDesc": "Visualisation géométrique du gisement minéral générée à partir des données du formulaire.",
+    "surface": "Surface",
+    "oreBody": "Corps minéralisé",
+    "gradeArrow": "teneur ↑",
+    "dipLabel": "Pendage",
+    "depthLabel": "Profondeur",
+    "gradeLabels": {
+      "Uniforme": "Teneur uniforme",
+      "Gradacional": "Teneur graduelle",
+      "Errático": "Teneur erratique"
+    }
+  },
+  "rockTooltip": {
+    "density": "Masse Volumique",
+    "ucs": "UCS",
+    "consult": "Consulter {{title}} par type de roche",
+    "header": "{{title}} par type de roche ({{unit}})",
+    "rock": "Roche",
+    "min": "Min ({{unit}})",
+    "max": "Max ({{unit}})",
+    "useAvg": "Utiliser la moyenne",
+    "clickHint": "Cliquez sur une valeur pour la reporter automatiquement dans le champ."
+  },
+  "floating": {
+    "report": "Signaler une erreur",
+    "references": "Références",
+    "credits": "Crédits",
+    "toast": "Merci ! Votre signalement a été envoyé."
+  },
+  "modals": {
+    "report": {
+      "title": "Signaler une erreur",
+      "name": "Nom complet",
+      "namePlaceholder": "Votre nom",
+      "email": "E-mail",
+      "emailPlaceholder": "vous@exemple.com",
+      "message": "Description de l'erreur",
+      "messagePlaceholder": "Décrivez ce qui s'est passé, à quelle étape, et ce que vous attendiez.",
+      "send": "Envoyer",
+      "sending": "Envoi…",
+      "errRequired": "Remplissez tous les champs.",
+      "errSend": "Envoi impossible. Veuillez réessayer.",
+      "errConnection": "Échec de connexion. Vérifiez votre connexion Internet et réessayez."
+    },
+    "references": {
+      "title": "Références"
+    },
+    "credits": {
+      "title": "Crédits",
+      "development": "Développement",
+      "advising": "Encadrement",
+      "collaborators": "Collaborateurs"
+    }
+  },
+  "enums": {
+    "shape": {
+      "Massivo": "Massif",
+      "Tabular": "Tabulaire",
+      "Irregular": "Irrégulier"
+    },
+    "thickness": {
+      "Muito estreito": "Très étroite",
+      "Estreito": "Étroite",
+      "Intermediário": "Intermédiaire",
+      "Espesso": "Épaisse",
+      "Muito espesso": "Très épaisse"
+    },
+    "grade": {
+      "Uniforme": "Uniforme",
+      "Gradacional": "Graduelle",
+      "Errático": "Erratique"
+    },
+    "rss": {
+      "Muito fraca": "Très faible",
+      "Fraca": "Faible",
+      "Moderada": "Modérée",
+      "Resistente": "Résistante"
+    },
+    "rmrClass": {
+      "Muito pobre": "Très mauvaise",
+      "Pobre": "Mauvaise",
+      "Razoável": "Moyenne",
+      "Boa": "Bonne",
+      "Muito boa": "Très bonne"
+    },
+    "jointSpacing": {
+      "Muito Perto": "Très serré",
+      "Perto": "Serré",
+      "Longe": "Large",
+      "Muito Longe": "Très large"
+    },
+    "jointCondition": {
+      "Fraca": "Faible",
+      "Média": "Moyenne",
+      "Forte": "Forte"
+    },
+    "oreValue": {
+      "Baixo": "Faible",
+      "Médio": "Moyenne",
+      "Alto": "Élevée"
+    },
+    "depthFaixa": {
+      "Rasa": "Faible profondeur",
+      "Intermediária": "Intermédiaire",
+      "Pouco profunda": "Moyennement profonde",
+      "Profunda": "Profonde"
+    },
+    "dipClass": {
+      "Plano": "Plat",
+      "Intermediário": "Intermédiaire",
+      "Inclinado": "Incliné"
+    },
+    "rockFamily": {
+      "Ígneas": "Ignées",
+      "Sedimentares": "Sédimentaires",
+      "Metamórficas": "Métamorphiques"
+    }
+  },
+  "dipRanges": {
+    "ubc": "Plat <20° | Intermédiaire 20–55° | Incliné >55°",
+    "nicholas": "Plat <20° | Intermédiaire 20–55° | Incliné >55°",
+    "shb": "Plat <15° | Faible 15–30° | Intermédiaire 30–45° | Peu incliné 45–60° | Incliné >60°"
+  }
+}
