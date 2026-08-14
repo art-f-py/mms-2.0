@@ -48,7 +48,6 @@
       "dip": "Dip (°)",
       "grade": "Grade distribution",
       "depth": "Ore body depth (m)",
-      "depthHint": "UBC: Shallow ≤100m | Interm. 100–600m | Deep >600m",
       "sketchTitle": "Cross section"
     },
     "geotechnical": {
@@ -61,6 +60,7 @@
       "densityHwTip": "For the RSS calculation, consider the average density of all materials from the surface down to the top of the ore body (full overburden), not just the immediately adjacent rock.",
       "densityFwTip": "For the RSS calculation, consider the average density of all materials from the surface down to the base of the ore body.",
       "depth": "Depth (m)",
+      "depthOreShared": "Same value as in the Geometry step.",
       "rss": "RSS",
       "rssPlaceholder": "fill in UCS, density and depth",
       "nicholasPrefix": "Nicholas: {{value}}",
@@ -297,5 +297,9 @@
     "ubc": "Flat <20° | Intermediate 20–55° | Steep >55°",
     "nicholas": "Flat <20° | Intermediate 20–55° | Steep >55°",
     "shb": "Flat <15° | Low 15–30° | Intermediate 30–45° | Slightly steep 45–60° | Steep >60°"
+  },
+  "depthRanges": {
+    "ubc": "Shallow ≤100m | Intermediate 100–600m | Deep >600m",
+    "shb": "Shallow ≤200m | Intermediate 200–500m | Moderately deep 500–800m | Deep >800m"
   }
 }

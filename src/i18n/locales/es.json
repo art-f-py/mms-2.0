@@ -48,7 +48,6 @@
       "dip": "Buzamiento (°)",
       "grade": "Distribución de leyes",
       "depth": "Profundidad del cuerpo mineralizado (m)",
-      "depthHint": "UBC: Somera ≤100m | Interm. 100–600m | Profunda >600m",
       "sketchTitle": "Sección transversal"
     },
     "geotechnical": {
@@ -61,6 +60,7 @@
       "densityHwTip": "Para el cálculo del RSS, considere la densidad media de todos los materiales desde la superficie hasta el techo del cuerpo mineralizado (sobrecarga completa), no solo la roca inmediatamente adyacente.",
       "densityFwTip": "Para el cálculo del RSS, considere la densidad media de todos los materiales desde la superficie hasta la base del cuerpo mineralizado.",
       "depth": "Profundidad (m)",
+      "depthOreShared": "Mismo valor de la etapa Geometría.",
       "rss": "RSS",
       "rssPlaceholder": "complete UCS, densidad y profundidad",
       "nicholasPrefix": "Nicholas: {{value}}",
@@ -297,5 +297,9 @@
     "ubc": "Plano <20° | Intermedio 20–55° | Inclinado >55°",
     "nicholas": "Plano <20° | Intermedio 20–55° | Inclinado >55°",
     "shb": "Plano <15° | Bajo 15–30° | Intermedio 30–45° | Poco inclinado 45–60° | Inclinado >60°"
+  },
+  "depthRanges": {
+    "ubc": "Somera ≤100m | Intermedia 100–600m | Profunda >600m",
+    "shb": "Somera ≤200m | Intermedia 200–500m | Poco profunda 500–800m | Profunda >800m"
   }
 }

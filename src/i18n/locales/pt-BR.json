@@ -48,7 +48,6 @@
       "dip": "Mergulho (°)",
       "grade": "Distribuição de teores",
       "depth": "Profundidade do corpo de minério (m)",
-      "depthHint": "UBC: Rasa ≤100m | Interm. 100–600m | Profunda >600m",
       "sketchTitle": "Seção transversal"
     },
     "geotechnical": {
@@ -61,6 +60,7 @@
       "densityHwTip": "Para o cálculo do RSS, considere a densidade média de todos os materiais desde a superfície até o topo do corpo de minério (overburden completo), não apenas a rocha imediatamente adjacente.",
       "densityFwTip": "Para o cálculo do RSS, considere a densidade média de todos os materiais desde a superfície até a base do corpo de minério.",
       "depth": "Profundidade (m)",
+      "depthOreShared": "Mesmo valor da etapa Geometria.",
       "rss": "RSS",
       "rssPlaceholder": "preencha UCS, densidade e profundidade",
       "nicholasPrefix": "Nicholas: {{value}}",
@@ -297,5 +297,9 @@
     "ubc": "Plano <20° | Intermediário 20–55° | Inclinado >55°",
     "nicholas": "Plano <20° | Intermediário 20–55° | Inclinado >55°",
     "shb": "Plano <15° | Baixo 15–30° | Intermediário 30–45° | Pouco inclinado 45–60° | Inclinado >60°"
+  },
+  "depthRanges": {
+    "ubc": "Rasa ≤100m | Intermediária 100–600m | Profunda >600m",
+    "shb": "Rasa ≤200m | Intermediária 200–500m | Pouco profunda 500–800m | Profunda >800m"
   }
 }

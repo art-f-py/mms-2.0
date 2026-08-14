@@ -245,6 +245,33 @@ function DipTooltipContent({ showUBC, showNich, showSHB }) {
   );
 }
 
+// Faixas de profundidade — só UBC e SH&B pontuam profundidade; o Nicholas não
+// usa o critério, por isso não entra na lista.
+const DEPTH_RANGES = [
+  { key: "ubc", label: "UBC" },
+  { key: "shb", label: "SH&B" },
+];
+
+// Hint das faixas de profundidade, restrito aos métodos efetivamente
+// selecionados (mesma lógica do DipTooltipContent). Com os dois ativos, cada
+// faixa vem identificada pelo método, que usam cortes diferentes.
+function DepthHint({ showUBC, showSHB }) {
+  const { t } = useTranslation();
+  const shown = { ubc: showUBC, shb: showSHB };
+  const selected = DEPTH_RANGES.filter((m) => shown[m.key]);
+  const list = selected.length ? selected : DEPTH_RANGES;
+  return (
+    <>
+      {list.map((m) => (
+        <span key={m.key} style={{ display: "block" }}>
+          {list.length > 1 && <strong>{m.label}: </strong>}
+          {t(`depthRanges.${m.key}`)}
+        </span>
+      ))}
+    </>
+  );
+}
+
 function RSSBadge({ value }) {
   const { t } = useTranslation();
   if (!value) return <span style={{ fontSize: "12px", color: C.muted, fontStyle: "italic" }}>{t("inputs.geotechnical.rssPlaceholder")}</span>;
@@ -539,7 +566,7 @@ function Inputs() {
             options={["Uniforme", "Gradacional", "Errático"]} labels={gradeLabels} />
         </Field>
         {(showUBC || showSHB) && (
-          <Field label={t("inputs.geometry.depth")} hint={t("inputs.geometry.depthHint")}>
+          <Field label={t("inputs.geometry.depth")} hint={<DepthHint showUBC={showUBC} showSHB={showSHB} />}>
             <Num value={fd.depth.ore} onChange={(v) => set("depth", "ore", v)} placeholder={t("common.example", { value: "400" })} />
           </Field>
         )}
@@ -594,11 +621,25 @@ function Inputs() {
                       <InfoTooltip text={t("inputs.geotechnical.densityFwTip")} />
                     )}
                   </label>
-                  <Num value={fd.density[z]} onChange={(v) => set("density", z, v)} placeholder={t("common.example", { value: "2600" })} />
+                  {/* A consulta por tipo de rocha só cabe no minério: em HW/FW
+                      o campo pede a densidade MÉDIA do overburden inteiro, que
+                      não corresponde a nenhuma linha da tabela. */}
+                  {z === "ore" ? (
+                    <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                      <Num value={fd.density[z]} onChange={(v) => set("density", z, v)} placeholder={t("common.example", { value: "2600" })} />
+                      <RockTooltip type="density" onSelect={(v) => set("density", z, String(v))} />
+                    </div>
+                  ) : (
+                    <Num value={fd.density[z]} onChange={(v) => set("density", z, v)} placeholder={t("common.example", { value: "2600" })} />
+                  )}
                 </div>
                 <div>
                   <label style={S.label}>{t("inputs.geotechnical.depth")}</label>
                   <Num value={fd.depth[z]} onChange={(v) => set("depth", z, v)} placeholder={t("common.example", { value: "600" })} />
+                  {/* fd.depth.ore é o mesmo estado editado na etapa Geometria —
+                      ambos os campos aparecem sob a mesma condição (UBC ou
+                      SH&B), então editar aqui reflete lá e vice-versa. */}
+                  {z === "ore" && <p style={S.hint}>{t("inputs.geotechnical.depthOreShared")}</p>}
                 </div>
                 <div>
                   <label style={S.label}>{t("inputs.geotechnical.rss")}</label>
