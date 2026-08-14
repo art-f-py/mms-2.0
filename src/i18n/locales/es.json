@@ -1,4 +1,5 @@
 {
+  "_comment": "NOTA DE TERMINOLOGÍA — no 'corregir' sin consultar. Los términos 'hanging wall' y 'foot wall' se mantienen EN INGLÉS a propósito: es el uso corriente en la industria minera chilena, no una traducción pendiente. Revisión de terminología por Francisco Vargas (ingeniero de minas, hablante nativo). Las claves que empiezan con '_' son metadatos y no se traducen.",
   "common": {
     "select": "Seleccione",
     "next": "Siguiente →",
@@ -19,8 +20,8 @@
   },
   "zones": {
     "ore": "Cuerpo mineralizado",
-    "hangingWall": "Caja techo",
-    "footwall": "Caja piso"
+    "hangingWall": "Hanging wall",
+    "footwall": "Foot wall"
   },
   "stepper": {
     "position": "Etapa {{current}} de {{total}} — {{label}}",
@@ -92,8 +93,8 @@
         "geo": "Geometría",
         "econ": "Económico",
         "ob": "Cuerpo mineralizado",
-        "hw": "Caja techo",
-        "fw": "Caja piso"
+        "hw": "Hanging wall",
+        "fw": "Foot wall"
       },
       "criteria": {
         "shape": "Forma",
@@ -110,8 +111,8 @@
       "domainCriteria": {
         "geo": "Geometría (geo)",
         "ob": "Cuerpo mineralizado (ob)",
-        "hw": "Caja techo (hw)",
-        "fw": "Caja piso (fw)"
+        "hw": "Hanging wall (hw)",
+        "fw": "Foot wall (fw)"
       },
       "presets": {
         "default": "Predeterminado",
@@ -316,7 +317,7 @@
       ]
     },
     "thickness": {
-      "concept": "Distancia entre el techo y la base del cuerpo mineralizado, medida perpendicularmente a las cajas (caja techo y caja piso).",
+      "concept": "Distancia entre el techo y la base del cuerpo mineralizado, medida perpendicularmente a las paredes (hanging wall y foot wall).",
       "sections": [
         {
           "title": "Rangos de referencia (Nicholas, 1981/1992)",
@@ -351,10 +352,10 @@
       "note": "Los valores típicos se sitúan entre 2.500 y 3.000 kg/m³ para rocas comunes, pudiendo ser superiores para minerales metálicos densos."
     },
     "depth": {
-      "concept": "Distancia vertical entre la superficie y el punto considerado del depósito (cuerpo mineralizado, caja techo o caja piso). En conjunto con la densidad, determina la tensión geostática actuante sobre el macizo rocoso."
+      "concept": "Distancia vertical entre la superficie y el punto considerado del depósito (cuerpo mineralizado, hanging wall o foot wall). En conjunto con la densidad, determina la tensión geostática actuante sobre el macizo rocoso."
     },
     "depthOre": {
-      "concept": "Distancia vertical entre la superficie y el punto considerado del depósito (cuerpo mineralizado, caja techo o caja piso). En conjunto con la densidad, determina la tensión geostática actuante sobre el macizo rocoso.",
+      "concept": "Distancia vertical entre la superficie y el punto considerado del depósito (cuerpo mineralizado, hanging wall o foot wall). En conjunto con la densidad, determina la tensión geostática actuante sobre el macizo rocoso.",
       "note": "Este valor corresponde al mismo campo completado en la etapa Geometría; modificar uno de los campos actualiza el otro."
     },
     "rss": {
@@ -445,7 +446,7 @@
       "sections": [
         {
           "items": [
-            { "term": "Presets de dominio", "desc": "ajusta el peso de bloques completos de criterios (geometría, cuerpo mineralizado, caja techo, caja piso) simultáneamente, según los multiplicadores propuestos en la publicación original de Nicholas (1992)." },
+            { "term": "Presets de dominio", "desc": "ajusta el peso de bloques completos de criterios (geometría, cuerpo mineralizado, hanging wall, foot wall) simultáneamente, según los multiplicadores propuestos en la publicación original de Nicholas (1992)." },
             { "term": "Individualización por criterio", "desc": "permite el ajuste independiente de cada uno de los 13 criterios del método, con mayor granularidad, sin correspondencia directa con un preset publicado." }
           ]
         }
@@ -457,9 +458,9 @@
         {
           "items": [
             { "term": "Predeterminado", "desc": "todos los dominios con peso igual (1,00), sin énfasis diferenciado." },
-            { "term": "Preset 1", "desc": "amplía por igual la importancia de cuerpo mineralizado, caja techo y caja piso (factor 1,33) respecto de la geometría." },
-            { "term": "Preset 2", "desc": "énfasis decreciente entre dominios: cuerpo mineralizado 0,75, caja techo 0,60 y caja piso 0,38." },
-            { "term": "Preset 3", "desc": "énfasis intermedio: cuerpo mineralizado en el peso predeterminado (1,00), caja techo 0,80 y caja piso 0,50." }
+            { "term": "Preset 1", "desc": "amplía por igual la importancia de cuerpo mineralizado, hanging wall y foot wall (factor 1,33) respecto de la geometría." },
+            { "term": "Preset 2", "desc": "énfasis decreciente entre dominios: cuerpo mineralizado 0,75, hanging wall 0,60 y foot wall 0,38." },
+            { "term": "Preset 3", "desc": "énfasis intermedio: cuerpo mineralizado en el peso predeterminado (1,00), hanging wall 0,80 y foot wall 0,50." }
           ]
         }
       ],
