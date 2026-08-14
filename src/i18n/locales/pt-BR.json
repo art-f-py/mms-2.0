@@ -301,5 +301,169 @@
   "depthRanges": {
     "ubc": "Rasa ≤100m | Intermediária 100–600m | Profunda >600m",
     "shb": "Rasa ≤200m | Intermediária 200–500m | Pouco profunda 500–800m | Profunda >800m"
+  },
+  "tips": {
+    "shape": {
+      "concept": "Configuração geométrica do corpo de minério observada em corte transversal.",
+      "sections": [
+        {
+          "items": [
+            { "term": "Massivo", "desc": "o minério ocupa um volume extenso e compacto, sem geometria alongada definida." },
+            { "term": "Tabular", "desc": "o minério constitui uma camada delgada e alongada (filão ou veio), com comprimento e largura substancialmente maiores que a espessura." },
+            { "term": "Irregular", "desc": "o minério não segue um padrão geométrico definido; os limites do corpo variam de forma pouco previsível ao longo do depósito." }
+          ]
+        }
+      ]
+    },
+    "thickness": {
+      "concept": "Distância entre o topo e a base do corpo de minério, medida perpendicularmente às paredes (hanging wall e foot wall).",
+      "sections": [
+        {
+          "title": "Faixas de referência (Nicholas, 1981/1992)",
+          "items": [
+            { "term": "Estreito", "desc": "inferior a 10 m" },
+            { "term": "Intermediário", "desc": "10 a 30 m" },
+            { "term": "Espesso", "desc": "30 a 100 m" },
+            { "term": "Muito espesso", "desc": "superior a 100 m" }
+          ]
+        }
+      ],
+      "note": "\"Muito estreito\" é uma faixa adicional do UBC (1995), para espessuras inferiores ao \"Estreito\" do Nicholas."
+    },
+    "grade": {
+      "concept": "Padrão de variação do teor do minério (concentração do material de interesse econômico) ao longo do corpo mineralizado.",
+      "sections": [
+        {
+          "items": [
+            { "term": "Uniforme", "desc": "o teor apresenta-se relativamente constante em toda a extensão do depósito." },
+            { "term": "Gradacional", "desc": "o teor varia de forma gradual e previsível entre regiões do depósito." },
+            { "term": "Errático", "desc": "o teor varia de forma irregular, sem um padrão espacial definido." }
+          ]
+        }
+      ]
+    },
+    "ucs": {
+      "concept": "Resistência à Compressão Uniaxial — tensão máxima suportada pela rocha antes da ruptura, quando submetida à compressão em uma única direção. Constitui a medida fundamental da resistência mecânica da rocha intacta. Os valores usualmente situam-se entre algumas dezenas e algumas centenas de MPa, conforme o tipo de rocha.",
+      "note": "Consulte valores de referência por tipo de rocha no botão ao lado."
+    },
+    "densityOre": {
+      "concept": "Massa da rocha por unidade de volume. Utilizada no cálculo do RSS para determinar a tensão exercida pelo peso da coluna de rocha sobrejacente em profundidade.",
+      "note": "Valores típicos situam-se entre 2.500 e 3.000 kg/m³ para rochas comuns, podendo ser superiores para minérios metálicos densos."
+    },
+    "depth": {
+      "concept": "Distância vertical entre a superfície e o ponto considerado do depósito (corpo de minério, hanging wall ou foot wall). Em conjunto com a densidade, determina a tensão geostática atuante sobre o maciço rochoso."
+    },
+    "depthOre": {
+      "concept": "Distância vertical entre a superfície e o ponto considerado do depósito (corpo de minério, hanging wall ou foot wall). Em conjunto com a densidade, determina a tensão geostática atuante sobre o maciço rochoso.",
+      "note": "Este valor corresponde ao mesmo campo preenchido na etapa Geometria; alterar um dos campos atualiza o outro."
+    },
+    "rss": {
+      "concept": "Rock Substance Strength — índice que relaciona a resistência da rocha (UCS) à tensão geostática atuante em profundidade. Valores mais baixos indicam menor resistência relativa da rocha face à tensão atuante.",
+      "formula": "RSS = UCS × 10⁶ / (Densidade × Profundidade × 9,81)",
+      "sections": [
+        {
+          "title": "Classificação — UBC e SH&B",
+          "items": [
+            { "term": "Muito fraca", "desc": "RSS < 5" },
+            { "term": "Fraca", "desc": "5 – 10" },
+            { "term": "Moderada", "desc": "10 – 15" },
+            { "term": "Resistente", "desc": "RSS ≥ 15" }
+          ]
+        },
+        {
+          "title": "Classificação — Nicholas",
+          "items": [
+            { "term": "Fraca", "desc": "RSS < 8" },
+            { "term": "Moderada", "desc": "8 – 15" },
+            { "term": "Resistente", "desc": "RSS > 15" }
+          ]
+        }
+      ],
+      "note": "Com o Nicholas ativo junto de UBC/SH&B, os dois valores aparecem: as escalas de classificação são distintas para o mesmo número."
+    },
+    "rmr": {
+      "concept": "Rock Mass Rating — sistema de classificação da qualidade geral do maciço rochoso (estrutura, fraturas, água, orientação, entre outros fatores), em escala de 0 a 100. A classe pode ser selecionada diretamente ou calculada a partir de GSI ou do sistema Q.",
+      "sections": [
+        {
+          "title": "Faixas numéricas (Bieniawski, 1989)",
+          "items": [
+            { "term": "Muito boa", "desc": "81 – 100" },
+            { "term": "Boa", "desc": "61 – 80" },
+            { "term": "Razoável", "desc": "41 – 60" },
+            { "term": "Pobre", "desc": "21 – 40" },
+            { "term": "Muito pobre", "desc": "inferior a 21" }
+          ]
+        }
+      ]
+    },
+    "gsi": {
+      "concept": "Geological Strength Index — sistema de classificação de maciço rochoso, em escala de 0 a 100, baseado principalmente na estrutura das descontinuidades e na condição de suas superfícies. Permite a conversão para RMR quando o valor de GSI é conhecido.",
+      "formula": "RMR = (GSI + 11,63) / 1,13"
+    },
+    "q": {
+      "concept": "Q-System (índice Q, de Barton) — sistema de classificação de maciço rochoso em escala logarítmica, empregado predominantemente em projetos de escavações subterrâneas e túneis. Os valores situam-se tipicamente entre frações inferiores a 1 (maciço de qualidade muito baixa) e algumas centenas (maciço de qualidade muito alta). Permite a conversão para RMR quando o valor de Q é conhecido.",
+      "formula": "RMR = 9 × ln(Q) + 44"
+    },
+    "rssManual": {
+      "concept": "Com apenas o método Nicholas selecionado, a classe de resistência da rocha pode ser informada diretamente, sem preencher UCS, densidade e profundidade — aplicável quando essa classificação já é conhecida por outra fonte, como um relatório geotécnico prévio.",
+      "formula": "RSS = UCS × 10⁶ / (Densidade × Profundidade × 9,81)",
+      "sections": [
+        {
+          "title": "Faixas (escala do Nicholas)",
+          "items": [
+            { "term": "Fraca", "desc": "RSS < 8" },
+            { "term": "Moderada", "desc": "8 – 15" },
+            { "term": "Resistente", "desc": "RSS > 15" }
+          ]
+        }
+      ]
+    },
+    "jointSpacing": {
+      "concept": "Distância média entre planos de descontinuidade (fraturas) no maciço rochoso. Espaçamento reduzido entre fraturas está associado a menor resistência do maciço como um todo, independentemente da resistência da rocha intacta entre as fraturas.",
+      "note": "As opções disponíveis — Muito Perto, Perto, Longe, Muito Longe — correspondem ao espaçamento típico entre planos de fratura consecutivos."
+    },
+    "jointCondition": {
+      "concept": "Condição das superfícies de fratura, incluindo abertura, presença de material de preenchimento e rugosidade. Determina a resistência ao deslizamento entre blocos de rocha adjacentes às fraturas.",
+      "sections": [
+        {
+          "items": [
+            { "term": "Fraca", "desc": "fraturas abertas, preenchidas por material de baixa resistência, ou superfícies lisas: baixa resistência ao deslizamento." },
+            { "term": "Média", "desc": "condição intermediária." },
+            { "term": "Forte", "desc": "fraturas fechadas, com superfícies rugosas e sem material de preenchimento: alta resistência ao deslizamento." }
+          ]
+        }
+      ]
+    },
+    "oreValue": {
+      "concept": "Classificação qualitativa do valor econômico do minério, considerando seu preço de mercado e a viabilidade financeira geral do projeto. Não corresponde a um valor monetário específico, mas a uma categorização relativa utilizada pelo método SH&B na ponderação dos critérios."
+    },
+    "weights": {
+      "concept": "Cada critério (forma, espessura, RSS, RMR, entre outros) contribui para a pontuação final de cada método de lavra candidato. O valor padrão de cada peso é 1,00, correspondendo a importância equivalente entre critérios. Valores superiores a 1,00 aumentam a influência do critério correspondente; valores inferiores a 1,00 a reduzem."
+    },
+    "nicholasMode": {
+      "concept": "O método Nicholas admite duas formas de ajuste de peso, mutuamente exclusivas:",
+      "sections": [
+        {
+          "items": [
+            { "term": "Presets de domínio", "desc": "ajusta o peso de blocos completos de critérios (geometria, corpo de minério, hanging wall, foot wall) simultaneamente, segundo os multiplicadores propostos na publicação original de Nicholas (1992)." },
+            { "term": "Individualização por critério", "desc": "permite o ajuste independente de cada um dos 13 critérios do método, com maior granularidade, sem correspondência direta a um preset publicado." }
+          ]
+        }
+      ],
+      "note": "A seleção de um modo desativa automaticamente o outro, evitando a combinação de pesos sem correspondência metodológica definida."
+    },
+    "domainPresets": {
+      "sections": [
+        {
+          "items": [
+            { "term": "Padrão", "desc": "todos os domínios com peso igual (1,00), sem ênfase diferenciada." },
+            { "term": "Preset 1", "desc": "amplia igualmente a importância de corpo de minério, hanging wall e foot wall (fator 1,33) em relação à geometria." },
+            { "term": "Preset 2", "desc": "ênfase decrescente entre domínios: corpo de minério 0,75, hanging wall 0,60 e foot wall 0,38." },
+            { "term": "Preset 3", "desc": "ênfase intermediária: corpo de minério no peso padrão (1,00), hanging wall 0,80 e foot wall 0,50." }
+          ]
+        }
+      ],
+      "note": "Os valores correspondem aos apresentados na publicação de Nicholas (1992)."
+    }
   }
 }
