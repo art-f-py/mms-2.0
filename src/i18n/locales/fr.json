@@ -32,6 +32,12 @@
     "complementary": "Complémentaire",
     "review": "Récapitulatif"
   },
+  "validation": {
+    "required": "Champ obligatoire",
+    "stepIncomplete": "Renseignez les champs signalés pour continuer.",
+    "formIncomplete": "Complétez toutes les étapes pour lancer le calcul.",
+    "stepLocked": "Complétez les étapes précédentes pour accéder à celle-ci"
+  },
   "inputs": {
     "pageTitle": "Paramètres du Gisement",
     "pageSubtitle": "MMS 2.0 — Mining Method Selection",

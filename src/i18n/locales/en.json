@@ -31,6 +31,12 @@
     "complementary": "Complementary",
     "review": "Review"
   },
+  "validation": {
+    "required": "Required field",
+    "stepIncomplete": "Fill in the highlighted fields to continue.",
+    "formIncomplete": "Complete every step to calculate.",
+    "stepLocked": "Complete the previous steps to reach this one"
+  },
   "inputs": {
     "pageTitle": "Deposit Parameters",
     "pageSubtitle": "MMS 2.0 — Mining Method Selection",

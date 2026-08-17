@@ -2,7 +2,10 @@ import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useMms, DOMAIN_PRESETS } from "../context/MmsContext";
-import { isNicholasOnly, thicknessOptionsFor, hasManualRss, emptyRss } from "../data/formRules";
+import {
+  isNicholasOnly, thicknessOptionsFor, hasManualRss, emptyRss,
+  STEPS, missingFieldsForStep, isStepComplete,
+} from "../data/formRules";
 import {
   calculateUBC, calculateNicholas, calculateSHB,
   classifyRSS, classifyRSSNicholas,
@@ -26,6 +29,8 @@ const C = {
   white:     "var(--color-white)",
   success:   "var(--color-success)",
   warning:   "var(--color-warning)",
+  danger:    "var(--color-danger)",
+  danger50:  "var(--color-danger-50)",
 };
 
 const S = {
@@ -56,9 +61,20 @@ const RSS_COLORS = {
 // ---------------------------------------------------------------------------
 // COMPONENTES AUXILIARES
 // ---------------------------------------------------------------------------
+// Aviso de campo obrigatório vazio. Só aparece depois de uma tentativa de
+// avançar — pintar o formulário de vermelho antes de o usuário digitar
+// qualquer coisa é hostil.
+function RequiredHint({ show }) {
+  const { t } = useTranslation();
+  if (!show) return null;
+  return (
+    <p style={{ ...S.hint, color: C.danger, fontWeight: "600" }}>{t("validation.required")}</p>
+  );
+}
+
 // `tip` recebe um <Tip id="..." />; quando presente o rótulo vira linha flex
 // para acomodar a bolinha "i" ao lado do texto.
-function Field({ label, hint, tip, children, style }) {
+function Field({ label, hint, tip, children, style, invalid }) {
   return (
     <div style={{ ...S.sec, ...style }}>
       <label style={tip ? { ...S.label, display: "flex", alignItems: "center", gap: "6px" } : S.label}>
@@ -67,25 +83,32 @@ function Field({ label, hint, tip, children, style }) {
       </label>
       {children}
       {hint && <p style={S.hint}>{hint}</p>}
+      <RequiredHint show={invalid} />
     </div>
   );
 }
 
+// Realce do campo pendente: borda e fundo em tom de alerta.
+const invalidStyle = (invalid) =>
+  invalid ? { borderColor: C.danger, backgroundColor: C.danger50 } : null;
+
 // `options` guarda SEMPRE os valores canônicos (chaves usadas pelos algoritmos);
 // `labels` (opcional) mapeia valor canônico → texto traduzido só para exibição.
-function Sel({ value, onChange, options, labels }) {
+function Sel({ value, onChange, options, labels, invalid }) {
   const { t } = useTranslation();
   return (
-    <select style={S.inp} value={value} onChange={(e) => onChange(e.target.value)}>
+    <select style={{ ...S.inp, ...invalidStyle(invalid) }} aria-invalid={Boolean(invalid)}
+      value={value} onChange={(e) => onChange(e.target.value)}>
       <option value="">{t("common.select")}</option>
       {options.map((o) => <option key={o} value={o}>{labels?.[o] ?? o}</option>)}
     </select>
   );
 }
 
-function Num({ value, onChange, placeholder }) {
+function Num({ value, onChange, placeholder, invalid }) {
   return (
-    <input type="number" min="0" style={S.inp} placeholder={placeholder} value={value}
+    <input type="number" min="0" style={{ ...S.inp, ...invalidStyle(invalid) }}
+      aria-invalid={Boolean(invalid)} placeholder={placeholder} value={value}
       onChange={(e) => onChange(e.target.value)} />
   );
 }
@@ -112,7 +135,7 @@ const RMR_CLASS_COLORS = {
 
 const rmrBtn = { padding: "0 14px", height: "100%", backgroundColor: C.primary, color: C.white, border: "none", borderRadius: "6px", fontWeight: "600", fontSize: "14px", cursor: "pointer" };
 
-function RmrField({ value, onChange }) {
+function RmrField({ value, onChange, invalid }) {
   const { t } = useTranslation();
   const [mode, setMode] = useState("rmr");
   const [gsi, setGsi]   = useState("");
@@ -122,14 +145,15 @@ function RmrField({ value, onChange }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       {/* Seletor de modo RMR / GSI / Q */}
-      <div style={{ display: "flex", borderRadius: "6px", overflow: "hidden", border: `1px solid ${C.border}` }}>
+      <div style={{ display: "flex", borderRadius: "6px", overflow: "hidden", border: `1px solid ${invalid ? C.danger : C.border}` }}>
         {[["rmr","RMR"],["gsi","GSI"],["q","Q"]].map(([m, lbl]) => (
           <button key={m} onClick={() => setMode(m)} style={{ flex: 1, padding: "7px 4px", minHeight: "44px", fontSize: "13px", fontWeight: mode === m ? "700" : "400", backgroundColor: mode === m ? C.primary : C.white, color: mode === m ? C.white : C.muted, border: "none", cursor: "pointer" }}>{lbl}</button>
         ))}
       </div>
 
       {mode === "rmr" && (
-        <select style={S.inp} value={value || ""} onChange={(e) => onChange(e.target.value)}>
+        <select style={{ ...S.inp, ...invalidStyle(invalid) }} aria-invalid={Boolean(invalid)}
+          value={value || ""} onChange={(e) => onChange(e.target.value)}>
           <option value="">{t("common.select")}</option>
           {["Muito pobre", "Pobre", "Razoável", "Boa", "Muito boa"].map((c) => (
             <option key={c} value={c}>{t(`enums.rmrClass.${c}`)}</option>
@@ -445,7 +469,9 @@ function Collapsible({ title, open, onToggle, children }) {
 // ---------------------------------------------------------------------------
 // STEPPER
 // ---------------------------------------------------------------------------
-function StepperHeader({ current, steps }) {
+// `canGoTo` decide o que é clicável: voltar é sempre livre, pular para a
+// frente de uma etapa incompleta não.
+function StepperHeader({ current, steps, canGoTo, onStepClick }) {
   const { t } = useTranslation();
   const currentLabel = steps.find((s) => s.id === current)?.label || "";
   return (
@@ -453,12 +479,18 @@ function StepperHeader({ current, steps }) {
       <p className="mms-stepper-current">{t("stepper.position", { current, total: steps.length, label: currentLabel })}</p>
       <div style={{ display: "flex", alignItems: "center", marginBottom: "8px" }}>
         {steps.map((step, i) => {
-          const done   = step.id < current;
-          const active = step.id === current;
+          const done    = step.id < current;
+          const active  = step.id === current;
+          const locked  = !canGoTo(step.id);
           return (
             <div key={step.id} style={{ display: "flex", alignItems: "center", flex: i < steps.length - 1 ? 1 : "none" }}>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px" }}>
-                <div title={step.label} aria-label={step.label} style={{ width: "32px", height: "32px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", fontWeight: "700", backgroundColor: done ? C.success : active ? C.primary : C.border, color: done || active ? C.white : C.muted, flexShrink: 0 }}>
+                <div role="button" tabIndex={locked ? -1 : 0}
+                  onClick={() => !locked && onStepClick(step.id)}
+                  onKeyDown={(e) => { if (!locked && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onStepClick(step.id); } }}
+                  title={locked ? t("validation.stepLocked") : step.label} aria-label={step.label}
+                  aria-current={active ? "step" : undefined} aria-disabled={locked}
+                  style={{ width: "32px", height: "32px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", fontWeight: "700", backgroundColor: done ? C.success : active ? C.primary : C.border, color: done || active ? C.white : C.muted, flexShrink: 0, cursor: locked ? "not-allowed" : "pointer", opacity: locked ? 0.6 : 1 }}>
                   {done ? "✓" : step.id}
                 </div>
                 <span className="mms-stepper-label" style={{ fontSize: "11px", fontWeight: active ? "700" : "400", color: active ? C.primary : C.muted, whiteSpace: "nowrap" }}>
@@ -535,6 +567,47 @@ function Inputs() {
   // volta, e o Nicholas a trata pelo mapeamento em calculateNicholas.
   const thicknessOptions = thicknessOptionsFor(sm);
 
+  // -------------------------------------------------------------------------
+  // VALIDAÇÃO POR ETAPA
+  // -------------------------------------------------------------------------
+  // Etapas visíveis, na ordem: EESG só existe com SH&B, complementar só com
+  // algum método marcado. O conteúdo de cada uma é ligado pela chave mais
+  // abaixo (os blocos precisam de `invalid`, que depende deste plano).
+  const stepPlan = [
+    { key: STEPS.METHODS,       label: t("stepper.methods"),       show: true },
+    { key: STEPS.GEOMETRY,      label: t("stepper.geometry"),      show: true },
+    { key: STEPS.GEOTECHNICAL,  label: t("stepper.geotechnical"),  show: true },
+    { key: STEPS.EESG,          label: t("stepper.eesg"),          show: showSHB },
+    { key: STEPS.COMPLEMENTARY, label: t("stepper.complementary"), show: anyMethod },
+    { key: STEPS.REVIEW,        label: t("stepper.review"),        show: true },
+  ].filter((s) => s.show).map((s, i) => ({ ...s, id: i + 1 }));
+
+  const totalSteps   = stepPlan.length;
+  // Desmarcar um método encolhe o plano — `step` pode ficar além do fim até o
+  // próximo clique. Clampa para não renderizar uma etapa inexistente.
+  const safeStep     = Math.min(step, totalSteps);
+  const currentStep  = stepPlan[safeStep - 1];
+
+  const missing      = missingFieldsForStep(currentStep.key, fd);
+  const stepComplete = missing.length === 0;
+
+  // Primeira etapa pendente: limite do avanço e destino do "Calcular".
+  const firstIncomplete = stepPlan.find((s) => !isStepComplete(s.key, fd));
+  const formComplete    = !firstIncomplete;
+
+  // O realce só entra depois de uma tentativa de avançar — formulário todo
+  // vermelho antes de o usuário digitar nada é hostil.
+  const [showErrors, setShowErrors] = useState(false);
+  const invalid = (path) => showErrors && missing.includes(path);
+
+  // Voltar é sempre livre; pular para além da primeira etapa pendente, não.
+  const canGoTo = (id) => id < safeStep || id <= (firstIncomplete?.id ?? totalSteps);
+  const goToStep = (id) => {
+    if (!canGoTo(id)) return;
+    setShowErrors(false);
+    setStep(id);
+  };
+
   const set = (section, field, value) =>
     dispatch({ type: "SET_FORM_FIELD", section, field, value });
 
@@ -575,6 +648,13 @@ function Inputs() {
   };
 
   const handleCalculate = () => {
+    // Bloqueia e leva o usuário até a etapa pendente, já com o realce ligado —
+    // botão morto sem explicação é pior que não bloquear.
+    if (!formComplete) {
+      setShowErrors(true);
+      setStep(firstIncomplete.id);
+      return;
+    }
     const w = fd.criteriaWeights;
     if (showUBC)  dispatch({ type: "SET_RESULT", method: "ubc",      payload: calculateUBC(fd, w.ubc) });
     else          dispatch({ type: "SET_RESULT", method: "ubc",      payload: null });
@@ -585,8 +665,21 @@ function Inputs() {
     navigate("/statistics");
   };
 
-  const next = () => setStep((s) => Math.min(s + 1, totalSteps));
-  const prev = () => setStep((s) => Math.max(s - 1, 1));
+  // Avançar exige a etapa completa. O clique bloqueado não é inerte: liga o
+  // realce dos campos que faltam.
+  const next = () => {
+    if (!stepComplete) {
+      setShowErrors(true);
+      return;
+    }
+    setShowErrors(false);
+    setStep(Math.min(safeStep + 1, totalSteps));
+  };
+  // Voltar é sempre livre — sem validação.
+  const prev = () => {
+    setShowErrors(false);
+    setStep(Math.max(safeStep - 1, 1));
+  };
 
   // ---------------------------------------------------------------------------
   // ETAPA 1 — MÉTODOS
@@ -633,31 +726,37 @@ function Inputs() {
     <div style={S.card}>
       <SecTitle>{t("inputs.geometry.title")}</SecTitle>
       <div className="mms-grid2">
-        <Field label={t("inputs.geometry.shape")} tip={<Tip id="shape" />}>
+        <Field label={t("inputs.geometry.shape")} tip={<Tip id="shape" />} invalid={invalid("geometry.shape")}>
           <Sel value={fd.geometry.shape} onChange={(v) => set("geometry", "shape", v)}
-            options={["Massivo", "Tabular", "Irregular"]} labels={shapeLabels} />
+            options={["Massivo", "Tabular", "Irregular"]} labels={shapeLabels}
+            invalid={invalid("geometry.shape")} />
         </Field>
         {/* TODO: confirmar faixa numérica com a publicação original — o limite
             em metros de "Muito estreito" (UBC 1995) entra na nota de
             tips.thickness nos 3 locales, hoje só descrita em texto. */}
-        <Field label={t("inputs.geometry.thickness")} tip={<Tip id="thickness" />}>
+        <Field label={t("inputs.geometry.thickness")} tip={<Tip id="thickness" />} invalid={invalid("geometry.thickness")}>
           <Sel value={fd.geometry.thickness} onChange={(v) => set("geometry", "thickness", v)}
-            options={thicknessOptions} labels={thicknessLabels} />
+            options={thicknessOptions} labels={thicknessLabels}
+            invalid={invalid("geometry.thickness")} />
         </Field>
         <div style={S.sec}>
           <label style={{ ...S.label, display: "flex", alignItems: "center", gap: "6px" }}>
             {t("inputs.geometry.dip")}
             <InfoTooltip text={<DipTooltipContent showUBC={showUBC} showNich={showNich} showSHB={showSHB} />} />
           </label>
-          <Num value={fd.dip} onChange={(v) => set("dip", null, v)} placeholder={t("common.example", { value: "65" })} />
+          <Num value={fd.dip} onChange={(v) => set("dip", null, v)} placeholder={t("common.example", { value: "65" })}
+            invalid={invalid("dip")} />
+          <RequiredHint show={invalid("dip")} />
         </div>
-        <Field label={t("inputs.geometry.grade")} tip={<Tip id="grade" />}>
+        <Field label={t("inputs.geometry.grade")} tip={<Tip id="grade" />} invalid={invalid("geometry.grade")}>
           <Sel value={fd.geometry.grade} onChange={(v) => set("geometry", "grade", v)}
-            options={["Uniforme", "Gradacional", "Errático"]} labels={gradeLabels} />
+            options={["Uniforme", "Gradacional", "Errático"]} labels={gradeLabels}
+            invalid={invalid("geometry.grade")} />
         </Field>
         {(showUBC || showSHB) && (
-          <Field label={t("inputs.geometry.depth")} hint={<DepthHint showUBC={showUBC} showSHB={showSHB} />}>
-            <Num value={fd.depth.ore} onChange={(v) => set("depth", "ore", v)} placeholder={t("common.example", { value: "400" })} />
+          <Field label={t("inputs.geometry.depth")} hint={<DepthHint showUBC={showUBC} showSHB={showSHB} />} invalid={invalid("depth.ore")}>
+            <Num value={fd.depth.ore} onChange={(v) => set("depth", "ore", v)} placeholder={t("common.example", { value: "400" })}
+              invalid={invalid("depth.ore")} />
           </Field>
         )}
       </div>
@@ -700,9 +799,11 @@ function Inputs() {
                     <Tip id="ucs" />
                   </label>
                   <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                    <Num value={fd.ucs[z]} onChange={(v) => set("ucs", z, v)} placeholder={t("common.example", { value: "185" })} />
+                    <Num value={fd.ucs[z]} onChange={(v) => set("ucs", z, v)} placeholder={t("common.example", { value: "185" })}
+                      invalid={invalid(`ucs.${z}`)} />
                     <RockTooltip type="ucs" onSelect={(v) => set("ucs", z, String(v))} />
                   </div>
+                  <RequiredHint show={invalid(`ucs.${z}`)} />
                 </div>
                 <div>
                   <label style={{ ...S.label, display: "flex", alignItems: "center", gap: "6px" }}>
@@ -720,23 +821,28 @@ function Inputs() {
                       não corresponde a nenhuma linha da tabela. */}
                   {z === "ore" ? (
                     <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                      <Num value={fd.density[z]} onChange={(v) => set("density", z, v)} placeholder={t("common.example", { value: "2600" })} />
+                      <Num value={fd.density[z]} onChange={(v) => set("density", z, v)} placeholder={t("common.example", { value: "2600" })}
+                        invalid={invalid(`density.${z}`)} />
                       <RockTooltip type="density" onSelect={(v) => set("density", z, String(v))} />
                     </div>
                   ) : (
-                    <Num value={fd.density[z]} onChange={(v) => set("density", z, v)} placeholder={t("common.example", { value: "2600" })} />
+                    <Num value={fd.density[z]} onChange={(v) => set("density", z, v)} placeholder={t("common.example", { value: "2600" })}
+                      invalid={invalid(`density.${z}`)} />
                   )}
+                  <RequiredHint show={invalid(`density.${z}`)} />
                 </div>
                 <div>
                   <label style={{ ...S.label, display: "flex", alignItems: "center", gap: "6px" }}>
                     {t("inputs.geotechnical.depth")}
                     <Tip id={z === "ore" ? "depthOre" : "depth"} />
                   </label>
-                  <Num value={fd.depth[z]} onChange={(v) => set("depth", z, v)} placeholder={t("common.example", { value: "600" })} />
+                  <Num value={fd.depth[z]} onChange={(v) => set("depth", z, v)} placeholder={t("common.example", { value: "600" })}
+                    invalid={invalid(`depth.${z}`)} />
                   {/* fd.depth.ore é o mesmo estado editado na etapa Geometria —
                       ambos os campos aparecem sob a mesma condição (UBC ou
                       SH&B), então editar aqui reflete lá e vice-versa. */}
                   {z === "ore" && <p style={S.hint}>{t("inputs.geotechnical.depthOreShared")}</p>}
+                  <RequiredHint show={invalid(`depth.${z}`)} />
                 </div>
                 <div>
                   <label style={{ ...S.label, display: "flex", alignItems: "center", gap: "6px" }}>
@@ -760,9 +866,10 @@ function Inputs() {
           <SecTitle>{t("inputs.geotechnical.rssTitle")}</SecTitle>
           <div style={S.grid3}>
             {ZONE_KEYS.map((z) => (
-              <Field key={z} label={zoneLabel(z)} tip={<Tip id="rssManual" />} style={{ flex: "1 1 280px" }}>
+              <Field key={z} label={zoneLabel(z)} tip={<Tip id="rssManual" />} style={{ flex: "1 1 280px" }} invalid={invalid(`rss.${z}`)}>
                 <Sel value={fd.rss[z]} onChange={(v) => set("rss", z, v)}
-                  options={["Fraca", "Moderada", "Resistente"]} labels={rssLabels} />
+                  options={["Fraca", "Moderada", "Resistente"]} labels={rssLabels}
+                  invalid={invalid(`rss.${z}`)} />
               </Field>
             ))}
           </div>
@@ -783,7 +890,8 @@ function Inputs() {
                   {zoneLabel(z)}
                   <Tip id="rmr" />
                 </label>
-                <RmrField value={fd.rmr[z]} onChange={(v) => set("rmr", z, v)} />
+                <RmrField value={fd.rmr[z]} onChange={(v) => set("rmr", z, v)} invalid={invalid(`rmr.${z}`)} />
+                <RequiredHint show={invalid(`rmr.${z}`)} />
               </div>
             ))}
           </div>
@@ -800,9 +908,10 @@ function Inputs() {
           <GroupLabel tip={<Tip id="jointSpacing" />}>{t("inputs.geotechnical.jointSpacing")}</GroupLabel>
           <div style={S.grid3}>
             {["ore", "hangingWall", "footwall"].map((z) => (
-              <Field key={z} label={zoneLabel(z)} style={{ flex: "1 1 280px" }}>
+              <Field key={z} label={zoneLabel(z)} style={{ flex: "1 1 280px" }} invalid={invalid(`jointSpacing.${z}`)}>
                 <Sel value={fd.jointSpacing[z]} onChange={(v) => set("jointSpacing", z, v)}
-                  options={["Muito Perto", "Perto", "Longe", "Muito Longe"]} labels={jointSpacingLabels} />
+                  options={["Muito Perto", "Perto", "Longe", "Muito Longe"]} labels={jointSpacingLabels}
+                  invalid={invalid(`jointSpacing.${z}`)} />
               </Field>
             ))}
           </div>
@@ -811,9 +920,10 @@ function Inputs() {
           </div>
           <div style={S.grid3}>
             {ZONE_KEYS.map((z) => (
-              <Field key={z} label={zoneLabel(z)} style={{ flex: "1 1 280px" }}>
+              <Field key={z} label={zoneLabel(z)} style={{ flex: "1 1 280px" }} invalid={invalid(`jointCondition.${z}`)}>
                 <Sel value={fd.jointCondition[z]} onChange={(v) => set("jointCondition", z, v)}
-                  options={["Fraca", "Média", "Forte"]} labels={jointConditionLabels} />
+                  options={["Fraca", "Média", "Forte"]} labels={jointConditionLabels}
+                  invalid={invalid(`jointCondition.${z}`)} />
               </Field>
             ))}
           </div>
@@ -831,10 +941,11 @@ function Inputs() {
       <p style={{ ...S.hint, marginBottom: "20px" }}>
         {t("inputs.eesg.subtitle")}
       </p>
-      <Field label={t("inputs.eesg.oreValue")} tip={<Tip id="oreValue" />}>
+      <Field label={t("inputs.eesg.oreValue")} tip={<Tip id="oreValue" />} invalid={invalid("oreValue")}>
         <div style={{ maxWidth: "280px" }}>
           <Sel value={fd.oreValue} onChange={(v) => set("oreValue", null, v)}
-            options={["Baixo", "Médio", "Alto"]} labels={oreValueLabels} />
+            options={["Baixo", "Médio", "Alto"]} labels={oreValueLabels}
+            invalid={invalid("oreValue")} />
         </div>
       </Field>
     </div>
@@ -1066,27 +1177,30 @@ function Inputs() {
         </>
       )}
 
-      <button onClick={handleCalculate}
-        style={{ ...S.btnPrimary, width: "100%", padding: "14px", fontSize: "17px", marginTop: "28px" }}>
+      <button onClick={handleCalculate} aria-disabled={!formComplete}
+        style={{ ...S.btnPrimary, width: "100%", padding: "14px", fontSize: "17px", marginTop: "28px", opacity: formComplete ? 1 : 0.5, cursor: formComplete ? "pointer" : "not-allowed" }}>
         {t("common.calculate")}
       </button>
+      {!formComplete && (
+        <p style={{ ...S.hint, color: C.danger, fontWeight: "600", textAlign: "center" }}>
+          {t("validation.formIncomplete")}
+        </p>
+      )}
     </div>
   );
 
-  // Monta etapas visíveis dinamicamente: EESG só aparece com SH&B selecionado,
-  // Complementar só aparece com algum método selecionado.
-  const stepDefs = [
-    { label: t("stepper.methods"),      show: true,      content: Step1 },
-    { label: t("stepper.geometry"),     show: true,      content: Step2 },
-    { label: t("stepper.geotechnical"), show: true,      content: Step3 },
-    { label: t("stepper.eesg"),         show: showSHB,   content: StepEESG },
-    { label: t("stepper.complementary"), show: anyMethod, content: Step4 },
-    { label: t("stepper.review"),       show: true,      content: StepReview },
-  ];
-  const visibleStepDefs = stepDefs.filter((s) => s.show).map((s, i) => ({ ...s, id: i + 1 }));
-  const visibleSteps    = visibleStepDefs.map(({ id, label }) => ({ id, label }));
-  const totalSteps      = visibleStepDefs.length;
-  const stepContents    = visibleStepDefs.map((s) => s.content);
+  // Liga cada etapa visível (stepPlan, montado lá em cima junto da validação)
+  // ao seu conteúdo.
+  const stepContentByKey = {
+    [STEPS.METHODS]:       Step1,
+    [STEPS.GEOMETRY]:      Step2,
+    [STEPS.GEOTECHNICAL]:  Step3,
+    [STEPS.EESG]:          StepEESG,
+    [STEPS.COMPLEMENTARY]: Step4,
+    [STEPS.REVIEW]:        StepReview,
+  };
+  const visibleSteps = stepPlan.map(({ id, label }) => ({ id, label }));
+  const stepContents = stepPlan.map((s) => stepContentByKey[s.key]);
 
   // ---------------------------------------------------------------------------
   // RENDER
@@ -1099,18 +1213,25 @@ function Inputs() {
           <p style={{ margin: 0, color: C.muted, fontSize: "16px" }}>{t("inputs.pageSubtitle")}</p>
         </div>
 
-        <StepperHeader current={step} steps={visibleSteps} />
-        {stepContents[step - 1]}
+        <StepperHeader current={safeStep} steps={visibleSteps} canGoTo={canGoTo} onStepClick={goToStep} />
+        {stepContents[safeStep - 1]}
 
         <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", marginTop: "20px" }}>
-          <button style={S.btnSecondary} onClick={prev} disabled={step === 1}>{t("common.back")}</button>
-          {step < totalSteps && (
-            <button style={{ ...S.btnPrimary, opacity: step === 1 && !anyMethod ? 0.5 : 1 }}
-              onClick={next} disabled={step === 1 && !anyMethod}>
+          <button style={S.btnSecondary} onClick={prev} disabled={safeStep === 1}>{t("common.back")}</button>
+          {safeStep < totalSteps && (
+            // aria-disabled em vez de disabled: o clique não avança, mas liga o
+            // realce dos campos pendentes. Botão inerte não explica nada.
+            <button style={{ ...S.btnPrimary, opacity: stepComplete ? 1 : 0.5, cursor: stepComplete ? "pointer" : "not-allowed" }}
+              onClick={next} aria-disabled={!stepComplete}>
               {t("common.next")}
             </button>
           )}
         </div>
+        {showErrors && !stepComplete && (
+          <p style={{ ...S.hint, color: C.danger, fontWeight: "600", textAlign: "right", marginTop: "8px" }}>
+            {t("validation.stepIncomplete")}
+          </p>
+        )}
       </div>
     </div>
   );

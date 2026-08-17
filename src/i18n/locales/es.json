@@ -32,6 +32,12 @@
     "complementary": "Complementario",
     "review": "Revisar"
   },
+  "validation": {
+    "required": "Campo obligatorio",
+    "stepIncomplete": "Complete los campos destacados para avanzar.",
+    "formIncomplete": "Complete todas las etapas para calcular.",
+    "stepLocked": "Complete las etapas anteriores para acceder a esta"
+  },
   "inputs": {
     "pageTitle": "Parámetros del Depósito",
     "pageSubtitle": "MMS 2.0 — Mining Method Selection",

@@ -7,6 +7,9 @@ import {
   normalizeRss,
   hasManualRss,
   emptyRss,
+  STEPS,
+  missingFieldsForStep,
+  isStepComplete,
 } from "../formRules";
 
 // ---------------------------------------------------------------------------
@@ -245,5 +248,253 @@ describe("sanitizacao do estado persistido", () => {
     });
     expect(orfaoRss.geometry.thickness).toBe("Muito estreito");
     expect(orfaoRss.rss).toEqual(emptyRss());
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Validacao por etapa.
+// Regra inegociavel: a exigencia acompanha EXATAMENTE a condicional de render
+// do Inputs.jsx. Campo que nao aparece na tela nunca pode ser exigido — isso
+// travaria o usuario sem saida visivel.
+// ---------------------------------------------------------------------------
+
+const zones = ["ore", "hangingWall", "footwall"];
+const perZone = (prefix) => zones.map((z) => `${prefix}.${z}`);
+
+// formData vazio, no formato do initialFormData do MmsContext.
+const emptyForm = (methods) => ({
+  selectedMethods: methods,
+  geometry:       { shape: "", thickness: "", grade: "" },
+  dip:            "",
+  depth:          { ore: "", hangingWall: "", footwall: "" },
+  density:        { ore: "", hangingWall: "", footwall: "" },
+  ucs:            { ore: "", hangingWall: "", footwall: "" },
+  rss:            { ore: "", hangingWall: "", footwall: "" },
+  rmr:            { ore: "", hangingWall: "", footwall: "" },
+  jointSpacing:   { ore: "", hangingWall: "", footwall: "" },
+  jointCondition: { ore: "", hangingWall: "", footwall: "" },
+  oreValue:       "",
+});
+
+const trio = (v) => ({ ore: v, hangingWall: v, footwall: v });
+
+// formData com TODOS os campos de todos os metodos preenchidos.
+const fullForm = (methods) => ({
+  selectedMethods: methods,
+  geometry:       { shape: "Tabular", thickness: "Espesso", grade: "Uniforme" },
+  dip:            "65",
+  depth:          trio("400"),
+  density:        trio("2600"),
+  ucs:            trio("185"),
+  rss:            trio("Moderada"),
+  rmr:            trio("Boa"),
+  jointSpacing:   trio("Longe"),
+  jointCondition: trio("Forte"),
+  oreValue:       "Alto",
+});
+
+describe("missingFieldsForStep — etapa de metodos", () => {
+  it("exige ao menos um metodo marcado", () => {
+    const fd = emptyForm(sm(false, false, false));
+    expect(missingFieldsForStep(STEPS.METHODS, fd)).toEqual(["selectedMethods"]);
+    expect(isStepComplete(STEPS.METHODS, fd)).toBe(false);
+  });
+
+  it.each([
+    ["so UBC",       sm(true,  false, false)],
+    ["so Nicholas",  sm(false, true,  false)],
+    ["so SH&B",      sm(false, false, true)],
+    ["os tres",      sm(true,  true,  true)],
+  ])("esta completa com %s", (_caso, methods) => {
+    expect(isStepComplete(STEPS.METHODS, emptyForm(methods))).toBe(true);
+  });
+});
+
+describe("missingFieldsForStep — geometria", () => {
+  it("exige forma, espessura, mergulho e teor sempre", () => {
+    const faltando = missingFieldsForStep(STEPS.GEOMETRY, emptyForm(sm(false, true, false)));
+    expect(faltando).toEqual(
+      expect.arrayContaining(["geometry.shape", "geometry.thickness", "dip", "geometry.grade"])
+    );
+  });
+
+  it.each([
+    ["UBC",        sm(true,  false, false)],
+    ["SH&B",       sm(false, false, true)],
+    ["UBC + SH&B", sm(true,  false, true)],
+  ])("exige a profundidade com %s", (_caso, methods) => {
+    expect(missingFieldsForStep(STEPS.GEOMETRY, emptyForm(methods))).toContain("depth.ore");
+  });
+
+  it("NAO exige a profundidade com o Nicholas sozinho — o campo nem renderiza", () => {
+    expect(missingFieldsForStep(STEPS.GEOMETRY, emptyForm(sm(false, true, false))))
+      .not.toContain("depth.ore");
+  });
+
+  it("aceita mergulho zero (horizontal) como preenchido", () => {
+    const fd = { ...fullForm(sm(true, false, false)), dip: "0" };
+    expect(missingFieldsForStep(STEPS.GEOMETRY, fd)).not.toContain("dip");
+  });
+
+  it("esta completa com tudo preenchido", () => {
+    expect(isStepComplete(STEPS.GEOMETRY, fullForm(sm(true, true, true)))).toBe(true);
+  });
+});
+
+describe("missingFieldsForStep — geotecnica", () => {
+  it("Nicholas sozinho exige o RSS manual, nao o trio numerico", () => {
+    const faltando = missingFieldsForStep(STEPS.GEOTECHNICAL, emptyForm(sm(false, true, false)));
+    expect(faltando).toEqual(expect.arrayContaining(perZone("rss")));
+    perZone("ucs").concat(perZone("density"), perZone("depth")).forEach((campo) => {
+      expect(faltando).not.toContain(campo);
+    });
+  });
+
+  it.each([
+    ["UBC",        sm(true,  false, false)],
+    ["SH&B",       sm(false, false, true)],
+    ["UBC + SH&B", sm(true,  false, true)],
+  ])("%s exige o trio UCS/densidade/profundidade, nao o RSS manual", (_caso, methods) => {
+    const faltando = missingFieldsForStep(STEPS.GEOTECHNICAL, emptyForm(methods));
+    expect(faltando).toEqual(
+      expect.arrayContaining(perZone("ucs").concat(perZone("density"), perZone("depth")))
+    );
+    perZone("rss").forEach((campo) => expect(faltando).not.toContain(campo));
+  });
+
+  it("UBC + Nicholas exige o trio numerico — o select manual sai da tela", () => {
+    const faltando = missingFieldsForStep(STEPS.GEOTECHNICAL, emptyForm(sm(true, true, false)));
+    expect(faltando).toEqual(expect.arrayContaining(perZone("ucs")));
+    perZone("rss").forEach((campo) => expect(faltando).not.toContain(campo));
+  });
+
+  it("Nicholas sozinho NAO exige RMR", () => {
+    const faltando = missingFieldsForStep(STEPS.GEOTECHNICAL, emptyForm(sm(false, true, false)));
+    perZone("rmr").forEach((campo) => expect(faltando).not.toContain(campo));
+  });
+
+  it.each([
+    ["UBC",  sm(true,  false, false)],
+    ["SH&B", sm(false, false, true)],
+  ])("%s exige RMR", (_caso, methods) => {
+    expect(missingFieldsForStep(STEPS.GEOTECHNICAL, emptyForm(methods)))
+      .toEqual(expect.arrayContaining(perZone("rmr")));
+  });
+
+  it("SH&B sozinho NAO exige espacamento nem condicao de fraturas", () => {
+    const faltando = missingFieldsForStep(STEPS.GEOTECHNICAL, emptyForm(sm(false, false, true)));
+    perZone("jointSpacing").concat(perZone("jointCondition")).forEach((campo) => {
+      expect(faltando).not.toContain(campo);
+    });
+  });
+
+  it.each([
+    ["Nicholas sozinho", sm(false, true, false)],
+    ["UBC + Nicholas",   sm(true,  true, false)],
+  ])("%s exige espacamento e condicao de fraturas", (_caso, methods) => {
+    expect(missingFieldsForStep(STEPS.GEOTECHNICAL, emptyForm(methods))).toEqual(
+      expect.arrayContaining(perZone("jointSpacing").concat(perZone("jointCondition")))
+    );
+  });
+
+  it("os tres juntos exigem a uniao do que cada um precisa", () => {
+    const faltando = missingFieldsForStep(STEPS.GEOTECHNICAL, emptyForm(sm(true, true, true)));
+    expect(faltando).toEqual(
+      expect.arrayContaining(
+        perZone("ucs").concat(
+          perZone("density"), perZone("depth"), perZone("rmr"),
+          perZone("jointSpacing"), perZone("jointCondition")
+        )
+      )
+    );
+    // O RSS manual continua de fora: com UBC/SH&B o select nao renderiza.
+    perZone("rss").forEach((campo) => expect(faltando).not.toContain(campo));
+  });
+
+  it("esta completa com tudo preenchido, em qualquer combinacao", () => {
+    [
+      sm(true, false, false), sm(false, true, false), sm(false, false, true),
+      sm(true, true, false),  sm(false, true, true),  sm(true, true, true),
+    ].forEach((methods) => {
+      expect(isStepComplete(STEPS.GEOTECHNICAL, fullForm(methods))).toBe(true);
+    });
+  });
+
+  it("aponta so a zona que falta", () => {
+    const fd = fullForm(sm(true, false, false));
+    fd.rmr = { ...fd.rmr, hangingWall: "" };
+    expect(missingFieldsForStep(STEPS.GEOTECHNICAL, fd)).toEqual(["rmr.hangingWall"]);
+  });
+});
+
+describe("missingFieldsForStep — EESG", () => {
+  it("SH&B exige o valor do minerio", () => {
+    expect(missingFieldsForStep(STEPS.EESG, emptyForm(sm(false, false, true)))).toEqual(["oreValue"]);
+  });
+
+  it.each([
+    ["Nicholas sozinho", sm(false, true,  false)],
+    ["UBC sozinho",      sm(true,  false, false)],
+    ["UBC + Nicholas",   sm(true,  true,  false)],
+  ])("%s NAO exige o valor do minerio — a etapa nem existe", (_caso, methods) => {
+    expect(missingFieldsForStep(STEPS.EESG, emptyForm(methods))).toEqual([]);
+    expect(isStepComplete(STEPS.EESG, emptyForm(methods))).toBe(true);
+  });
+});
+
+describe("missingFieldsForStep — etapas sem campo obrigatorio", () => {
+  it.each([
+    ["complementar", STEPS.COMPLEMENTARY],
+    ["revisar",      STEPS.REVIEW],
+  ])("a etapa %s nunca bloqueia (pesos ja vem com padrao)", (_caso, stepId) => {
+    expect(missingFieldsForStep(stepId, emptyForm(sm(true, true, true)))).toEqual([]);
+    expect(isStepComplete(stepId, emptyForm(sm(true, true, true)))).toBe(true);
+  });
+
+  it("etapa desconhecida nao inventa exigencia", () => {
+    expect(missingFieldsForStep("inexistente", emptyForm(sm(true, false, false)))).toEqual([]);
+  });
+});
+
+describe("isStepComplete — estado vazio e estado restaurado", () => {
+  it("com o formulario em branco so a etapa de metodos esta completa", () => {
+    const fd = emptyForm(sm(true, true, true));
+    expect(isStepComplete(STEPS.METHODS, fd)).toBe(true);
+    expect(isStepComplete(STEPS.GEOMETRY, fd)).toBe(false);
+    expect(isStepComplete(STEPS.GEOTECHNICAL, fd)).toBe(false);
+    expect(isStepComplete(STEPS.EESG, fd)).toBe(false);
+  });
+
+  it("sem metodo marcado, nem a etapa de metodos esta completa", () => {
+    expect(isStepComplete(STEPS.METHODS, emptyForm(sm(false, false, false)))).toBe(false);
+  });
+
+  // Item 4: o formData vem do localStorage — quem ja preencheu nao pode ser
+  // obrigado a refazer. A validacao e derivada do estado, entao a volta e
+  // reconhecida sem nenhum passo extra.
+  it("estado restaurado completo reconhece todas as etapas como completas", () => {
+    const restaurado = JSON.parse(JSON.stringify(fullForm(sm(true, true, true))));
+    Object.values(STEPS).forEach((stepId) => {
+      expect(isStepComplete(stepId, restaurado)).toBe(true);
+    });
+  });
+
+  it("estado restaurado parcial aponta so o que ficou faltando", () => {
+    const restaurado = { ...fullForm(sm(false, false, true)), oreValue: "" };
+    expect(isStepComplete(STEPS.GEOMETRY, restaurado)).toBe(true);
+    expect(isStepComplete(STEPS.GEOTECHNICAL, restaurado)).toBe(true);
+    expect(isStepComplete(STEPS.EESG, restaurado)).toBe(false);
+  });
+
+  it("aceita a selecao vinda por parametro, sem depender do formData", () => {
+    const fd = emptyForm(sm(true, false, false));
+    // Explicito vence o gravado: sem UBC/SH&B, a profundidade deixa de ser exigida.
+    expect(missingFieldsForStep(STEPS.GEOMETRY, fd, sm(false, true, false)))
+      .not.toContain("depth.ore");
+  });
+
+  it("nao quebra com campos ausentes no formData", () => {
+    expect(() => missingFieldsForStep(STEPS.GEOTECHNICAL, { selectedMethods: sm(true, true, true) }))
+      .not.toThrow();
   });
 });
