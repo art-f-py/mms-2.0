@@ -49,7 +49,6 @@
       "dip": "Pendage (°)",
       "grade": "Distribution des teneurs",
       "depth": "Profondeur du corps minéralisé (m)",
-      "depthHint": "UBC : Faible ≤100m | Interm. 100–600m | Profonde >600m",
       "sketchTitle": "Coupe transversale"
     },
     "geotechnical": {
@@ -62,6 +61,7 @@
       "densityHwTip": "Pour le calcul du RSS, considérez la masse volumique moyenne de tous les matériaux depuis la surface jusqu'au toit du corps minéralisé (morts-terrains complets), et non seulement la roche immédiatement adjacente.",
       "densityFwTip": "Pour le calcul du RSS, considérez la masse volumique moyenne de tous les matériaux depuis la surface jusqu'à la base du corps minéralisé.",
       "depth": "Profondeur (m)",
+      "depthOreShared": "Même valeur que celle de l'étape Géométrie.",
       "rss": "RSS",
       "rssPlaceholder": "renseignez UCS, masse volumique et profondeur",
       "nicholasPrefix": "Nicholas : {{value}}",
@@ -300,5 +300,174 @@
     "ubc": "Plat <20° | Intermédiaire 20–55° | Incliné >55°",
     "nicholas": "Plat <20° | Intermédiaire 20–55° | Incliné >55°",
     "shb": "Plat <15° | Faible 15–30° | Intermédiaire 30–45° | Peu incliné 45–60° | Incliné >60°"
+  },
+  "depthRanges": {
+    "ubc": "Faible profondeur ≤100m | Intermédiaire 100–600m | Profonde >600m",
+    "shb": "Faible profondeur ≤200m | Intermédiaire 200–500m | Moyennement profonde 500–800m | Profonde >800m"
+  },
+  "tips": {
+    "_comment": "Traduction technique non révisée par un locuteur natif — même réserve que celle déjà appliquée au reste du locale français. À valider avant d'être considérée comme définitive.",
+    "shape": {
+      "concept": "Configuration géométrique du corps minéralisé observée en coupe transversale.",
+      "sections": [
+        {
+          "items": [
+            { "term": "Massif", "desc": "le minerai occupe un volume important et compact, sans géométrie allongée définie." },
+            { "term": "Tabulaire", "desc": "le minerai forme une couche mince et allongée (filon ou veine), dont la longueur et la largeur sont nettement supérieures à sa puissance." },
+            { "term": "Irrégulier", "desc": "le minerai ne suit aucun motif géométrique défini ; les limites du corps varient de façon imprévisible à travers le gisement." }
+          ]
+        }
+      ]
+    },
+    "thickness": {
+      "concept": "Distance entre le toit et la base du corps minéralisé, mesurée perpendiculairement aux épontes (hanging wall et foot wall).",
+      "sections": [
+        {
+          "title": "Plages de référence (Nicholas, 1981/1992)",
+          "items": [
+            { "term": "Étroite", "desc": "moins de 10 m" },
+            { "term": "Intermédiaire", "desc": "10 à 30 m" },
+            { "term": "Épaisse", "desc": "30 à 100 m" },
+            { "term": "Très épaisse", "desc": "plus de 100 m" }
+          ]
+        }
+      ],
+      "note": "« Très étroite » est une plage supplémentaire de l'UBC (1995), pour les puissances inférieures à « Étroite » de Nicholas."
+    },
+    "grade": {
+      "concept": "Motif de variation de la teneur du minerai (concentration du matériau présentant un intérêt économique) au sein du corps minéralisé.",
+      "sections": [
+        {
+          "items": [
+            { "term": "Uniforme", "desc": "la teneur est relativement constante dans tout le gisement." },
+            { "term": "Graduelle", "desc": "la teneur varie progressivement et de façon prévisible entre les zones du gisement." },
+            { "term": "Erratique", "desc": "la teneur varie de façon irrégulière, sans motif spatial défini." }
+          ]
+        }
+      ]
+    },
+    "ucs": {
+      "concept": "Uniaxial Compressive Strength — contrainte maximale que la roche supporte avant rupture en compression dans une seule direction. C'est la mesure fondamentale de la résistance de la roche intacte. Les valeurs vont généralement de quelques dizaines à quelques centaines de MPa, selon le type de roche.",
+      "note": "Utilisez le bouton adjacent pour consulter les valeurs de référence par type de roche."
+    },
+    "densityOre": {
+      "concept": "Masse de roche par unité de volume. Utilisée dans le calcul du RSS pour déterminer la contrainte exercée par le poids de la colonne de roche sus-jacente en profondeur.",
+      "note": "Les valeurs typiques vont de 2 500 à 3 000 kg/m³ pour les roches courantes, et peuvent être plus élevées pour les minerais métalliques denses."
+    },
+    "depth": {
+      "concept": "Distance verticale entre la surface et le point considéré du gisement (corps minéralisé, hanging wall ou foot wall). Conjuguée à la masse volumique, elle détermine la contrainte géostatique agissant sur le massif rocheux."
+    },
+    "depthOre": {
+      "concept": "Distance verticale entre la surface et le point considéré du gisement (corps minéralisé, hanging wall ou foot wall). Conjuguée à la masse volumique, elle détermine la contrainte géostatique agissant sur le massif rocheux.",
+      "note": "Cette valeur correspond au même champ que celui renseigné à l'étape Géométrie ; modifier l'un des deux champs met l'autre à jour."
+    },
+    "rss": {
+      "concept": "Rock Substance Strength — indice reliant la résistance de la roche (UCS) à la contrainte géostatique agissant en profondeur. Des valeurs plus faibles indiquent une résistance de la roche plus faible par rapport à la contrainte agissante.",
+      "formula": "RSS = UCS × 10⁶ / (Masse volumique × Profondeur × 9,81)",
+      "sections": [
+        {
+          "title": "Classification — UBC et SH&B",
+          "items": [
+            { "term": "Très faible", "desc": "RSS < 5" },
+            { "term": "Faible", "desc": "5 – 10" },
+            { "term": "Modérée", "desc": "10 – 15" },
+            { "term": "Résistante", "desc": "RSS ≥ 15" }
+          ]
+        },
+        {
+          "title": "Classification — Nicholas",
+          "items": [
+            { "term": "Faible", "desc": "RSS < 8" },
+            { "term": "Modérée", "desc": "8 – 15" },
+            { "term": "Résistante", "desc": "RSS > 15" }
+          ]
+        }
+      ],
+      "note": "Lorsque Nicholas est actif en parallèle d'UBC/SH&B, les deux valeurs sont affichées : les échelles de classification diffèrent pour un même nombre."
+    },
+    "rmr": {
+      "concept": "Rock Mass Rating — système de classification de la qualité globale du massif rocheux (structure, discontinuités, eau, orientation, entre autres facteurs), sur une échelle de 0 à 100. La classe peut être sélectionnée directement ou dérivée du GSI ou du Q-System.",
+      "sections": [
+        {
+          "title": "Plages numériques (Bieniawski, 1989)",
+          "items": [
+            { "term": "Très bonne", "desc": "81 – 100" },
+            { "term": "Bonne", "desc": "61 – 80" },
+            { "term": "Moyenne", "desc": "41 – 60" },
+            { "term": "Mauvaise", "desc": "21 – 40" },
+            { "term": "Très mauvaise", "desc": "inférieur à 21" }
+          ]
+        }
+      ]
+    },
+    "gsi": {
+      "concept": "Geological Strength Index — système de classification du massif rocheux sur une échelle de 0 à 100, fondé principalement sur la structure des discontinuités et l'état de leurs surfaces. Permet la conversion vers le RMR lorsque la valeur du GSI est connue.",
+      "formula": "RMR = (GSI + 11,63) / 1,13"
+    },
+    "q": {
+      "concept": "Q-System (indice Q de Barton) — système de classification du massif rocheux sur une échelle logarithmique, utilisé principalement dans les projets d'excavation souterraine et de tunnels. Les valeurs vont généralement de fractions inférieures à 1 (massif rocheux de très mauvaise qualité) à quelques centaines (massif rocheux de très haute qualité). Permet la conversion vers le RMR lorsque la valeur de Q est connue.",
+      "formula": "RMR = 9 × ln(Q) + 44"
+    },
+    "rssManual": {
+      "concept": "Lorsque seule la méthode Nicholas est sélectionnée, la classe de résistance de la roche peut être saisie directement, sans renseigner l'UCS, la masse volumique et la profondeur — utile lorsque la classification est déjà connue par une autre source, comme un rapport géotechnique antérieur.",
+      "formula": "RSS = UCS × 10⁶ / (Masse volumique × Profondeur × 9,81)",
+      "sections": [
+        {
+          "title": "Plages (échelle Nicholas)",
+          "items": [
+            { "term": "Faible", "desc": "RSS < 8" },
+            { "term": "Modérée", "desc": "8 – 15" },
+            { "term": "Résistante", "desc": "RSS > 15" }
+          ]
+        }
+      ]
+    },
+    "jointSpacing": {
+      "concept": "Distance moyenne entre les plans de discontinuité (joints) du massif rocheux. Un espacement plus serré des discontinuités est associé à une résistance plus faible du massif rocheux dans son ensemble, indépendamment de la résistance de la roche intacte entre les discontinuités.",
+      "note": "Les options disponibles — Très serré, Serré, Large, Très large — correspondent à l'espacement typique entre plans de discontinuité consécutifs."
+    },
+    "jointCondition": {
+      "concept": "État des surfaces des discontinuités, incluant l'ouverture, la présence de matériau de remplissage et la rugosité. Il détermine la résistance au cisaillement entre les blocs rocheux adjacents aux discontinuités.",
+      "sections": [
+        {
+          "items": [
+            { "term": "Faible", "desc": "discontinuités ouvertes, remplies d'un matériau de faible résistance, ou surfaces lisses : faible résistance au cisaillement." },
+            { "term": "Moyenne", "desc": "état intermédiaire." },
+            { "term": "Forte", "desc": "discontinuités fermées, à surfaces rugueuses et sans matériau de remplissage : résistance au cisaillement élevée." }
+          ]
+        }
+      ]
+    },
+    "oreValue": {
+      "concept": "Classification qualitative de la valeur économique du minerai, tenant compte de son prix de marché et de la viabilité financière globale du projet. Elle ne correspond pas à une valeur monétaire précise, mais à une catégorisation relative utilisée par la méthode SH&B lors de la pondération des critères."
+    },
+    "weights": {
+      "concept": "Chaque critère (forme, puissance, RSS, RMR, entre autres) contribue au score final de chaque méthode d'exploitation candidate. La valeur par défaut de chaque poids est 1,00, ce qui signifie une importance égale entre les critères. Les valeurs supérieures à 1,00 augmentent l'influence du critère correspondant ; les valeurs inférieures à 1,00 la réduisent."
+    },
+    "nicholasMode": {
+      "concept": "La méthode Nicholas admet deux manières mutuellement exclusives d'ajuster les poids :",
+      "sections": [
+        {
+          "items": [
+            { "term": "Presets de domaine", "desc": "ajuste simultanément le poids de blocs entiers de critères (géométrie, corps minéralisé, hanging wall, foot wall), selon les multiplicateurs proposés dans la publication originale de Nicholas (1992)." },
+            { "term": "Pondération par critère", "desc": "permet d'ajuster indépendamment chacun des 13 critères de la méthode, avec une granularité plus fine, sans correspondance directe avec un preset publié." }
+          ]
+        }
+      ],
+      "note": "La sélection d'un mode désactive automatiquement l'autre, évitant des combinaisons de poids sans base méthodologique définie."
+    },
+    "domainPresets": {
+      "sections": [
+        {
+          "items": [
+            { "term": "Par défaut", "desc": "tous les domaines pondérés de façon égale (1,00), sans emphase différenciée." },
+            { "term": "Preset 1", "desc": "augmente de façon égale l'importance du corps minéralisé, du hanging wall et du foot wall (facteur 1,33) par rapport à la géométrie." },
+            { "term": "Preset 2", "desc": "emphase décroissante entre domaines : corps minéralisé 0,75, hanging wall 0,60 et foot wall 0,38." },
+            { "term": "Preset 3", "desc": "emphase intermédiaire : corps minéralisé au poids par défaut (1,00), hanging wall 0,80 et foot wall 0,50." }
+          ]
+        }
+      ],
+      "note": "Les valeurs correspondent à celles présentées dans la publication de Nicholas (1992)."
+    }
   }
 }

@@ -56,10 +56,15 @@ const RSS_COLORS = {
 // ---------------------------------------------------------------------------
 // COMPONENTES AUXILIARES
 // ---------------------------------------------------------------------------
-function Field({ label, hint, children, style }) {
+// `tip` recebe um <Tip id="..." />; quando presente o rótulo vira linha flex
+// para acomodar a bolinha "i" ao lado do texto.
+function Field({ label, hint, tip, children, style }) {
   return (
     <div style={{ ...S.sec, ...style }}>
-      <label style={S.label}>{label}</label>
+      <label style={tip ? { ...S.label, display: "flex", alignItems: "center", gap: "6px" } : S.label}>
+        {label}
+        {tip}
+      </label>
       {children}
       {hint && <p style={S.hint}>{hint}</p>}
     </div>
@@ -134,7 +139,10 @@ function RmrField({ value, onChange }) {
 
       {mode === "gsi" && (
         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <p style={{ ...S.hint, margin: 0 }}>{t("inputs.geotechnical.rmrGsiFormula")}</p>
+          <p style={{ ...S.hint, margin: 0, display: "flex", alignItems: "center", gap: "6px" }}>
+            {t("inputs.geotechnical.rmrGsiFormula")}
+            <Tip id="gsi" />
+          </p>
           <div style={{ display: "flex", gap: "6px", height: "44px" }}>
             <input type="number" min="0" max="100" style={{ ...S.inp }} placeholder={t("common.example", { value: "55" })}
               value={gsi} onChange={(e) => setGsi(e.target.value)} />
@@ -153,7 +161,10 @@ function RmrField({ value, onChange }) {
 
       {mode === "q" && (
         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <p style={{ ...S.hint, margin: 0 }}>{t("inputs.geotechnical.rmrQFormula")}</p>
+          <p style={{ ...S.hint, margin: 0, display: "flex", alignItems: "center", gap: "6px" }}>
+            {t("inputs.geotechnical.rmrQFormula")}
+            <Tip id="q" />
+          </p>
           <div style={{ display: "flex", gap: "6px", height: "44px" }}>
             <input type="number" min="0.001" style={{ ...S.inp }} placeholder={t("common.example", { value: "5.0" })}
               value={q} onChange={(e) => setQ(e.target.value)} />
@@ -183,6 +194,8 @@ function InfoTooltip({ text }) {
   const [hovered, setHovered] = useState(false); // aberto por hover (mouse)
   const [pinned, setPinned]   = useState(false); // aberto por toque/clique
   const [shift, setShift]     = useState(0);
+  const [below, setBelow]     = useState(false); // abre para baixo se não couber acima
+  const [maxH, setMaxH]       = useState(null);
   const anchorRef             = useRef(null);
 
   // Desloca o popup para que fique inteiro dentro do viewport
@@ -196,6 +209,16 @@ function InfoTooltip({ text }) {
       window.innerWidth - 16 - w
     );
     setShift(desired - rect.left);
+
+    // Conteúdo longo (RSS, Q-System, presets de domínio) não cabe acima da
+    // âncora quando o campo está perto do topo da tela — em 360px isso corta o
+    // texto. Escolhe o lado com mais espaço e limita a altura ao que sobra;
+    // o excesso rola dentro do próprio popup.
+    const spaceAbove = rect.top - 16;
+    const spaceBelow = window.innerHeight - rect.bottom - 16;
+    const openBelow  = spaceBelow > spaceAbove;
+    setBelow(openBelow);
+    setMaxH(Math.max(120, (openBelow ? spaceBelow : spaceAbove) - 6));
   };
 
   const visible = hovered || pinned;
@@ -214,11 +237,74 @@ function InfoTooltip({ text }) {
         style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "17px", height: "17px", borderRadius: "50%", backgroundColor: C.primary, color: "#fff", fontSize: "11px", fontWeight: "700", cursor: "help", flexShrink: 0 }}
       >i</span>
       {visible && (
-        <div style={{ position: "absolute", bottom: "calc(100% + 6px)", left: `${shift}px`, backgroundColor: "#1e293b", color: "#f1f5f9", fontSize: "12px", lineHeight: "1.55", padding: "8px 12px", borderRadius: "6px", width: "min(270px, calc(100vw - 32px))", zIndex: 200, boxShadow: "0 4px 12px rgba(0,0,0,0.25)", pointerEvents: "none" }}>
+        <div style={{
+          position: "absolute",
+          ...(below ? { top: "calc(100% + 6px)" } : { bottom: "calc(100% + 6px)" }),
+          left: `${shift}px`, backgroundColor: "#1e293b", color: "#f1f5f9",
+          fontSize: "12px", lineHeight: "1.55", padding: "8px 12px", borderRadius: "6px",
+          width: "min(270px, calc(100vw - 32px))",
+          ...(maxH ? { maxHeight: `${maxH}px`, overflowY: "auto" } : null),
+          zIndex: 200, boxShadow: "0 4px 12px rgba(0,0,0,0.25)",
+          // Fixado por toque: precisa receber o scroll do dedo. No hover segue
+          // transparente ao ponteiro, senão o mouse "entra" no popup e fecha.
+          pointerEvents: pinned ? "auto" : "none",
+          overscrollBehavior: "contain",
+        }}>
           {text}
         </div>
       )}
     </span>
+  );
+}
+
+// Conteúdo estruturado dos tooltips explicativos. Cada tip vem dos locales
+// (tips.*) como objeto com as chaves opcionais:
+//   concept  — parágrafo de definição do conceito
+//   formula  — expressão matemática, destacada em monoespaçada
+//   sections — [{ title?, items: [{ term, desc }] }] para listas de faixas
+//               numéricas ou de opções categóricas
+//   note     — observação final (fonte, referência cruzada, ressalva)
+// Manter o texto nos locales, e não no JSX, é o que permite os 3 idiomas.
+function TipContent({ concept, formula, sections, note }) {
+  return (
+    <>
+      {concept && <p style={{ margin: 0 }}>{concept}</p>}
+      {formula && (
+        <p style={{ margin: concept ? "6px 0 0" : 0, padding: "4px 6px", borderRadius: "4px", backgroundColor: "rgba(241,245,249,0.12)", fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: "11px" }}>
+          {formula}
+        </p>
+      )}
+      {sections?.map((s, si) => (
+        <div key={s.title ?? si} style={{ marginTop: "7px" }}>
+          {s.title && <p style={{ margin: "0 0 3px", fontWeight: "700", color: "#cbd5e1" }}>{s.title}</p>}
+          {s.items?.map((it, ii) => (
+            <div key={it.term} style={{ marginTop: ii > 0 ? "3px" : 0 }}>
+              <strong>{it.term}</strong> — {it.desc}
+            </div>
+          ))}
+        </div>
+      ))}
+      {note && <p style={{ margin: "7px 0 0", color: "#cbd5e1" }}>{note}</p>}
+    </>
+  );
+}
+
+// Bolinha "i" com o conteúdo de tips.<id>. Não renderiza nada se a chave não
+// existir no locale ativo — um idioma incompleto perde o tooltip, não quebra.
+function Tip({ id }) {
+  const { t } = useTranslation();
+  const data = t(`tips.${id}`, { returnObjects: true });
+  if (!data || typeof data !== "object") return null;
+  return <InfoTooltip text={<TipContent {...data} />} />;
+}
+
+// Rótulo de grupo (os <p> que encabeçam trios de zonas) acompanhado de tooltip.
+function GroupLabel({ children, tip }) {
+  return (
+    <p style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap", fontSize: "15px", fontWeight: "600", color: C.text, margin: "0 0 12px" }}>
+      {children}
+      {tip}
+    </p>
   );
 }
 
@@ -241,6 +327,33 @@ function DipTooltipContent({ showUBC, showNich, showSHB }) {
         <div key={m.key} style={{ marginTop: i > 0 ? "6px" : 0, paddingTop: i > 0 ? "6px" : 0, borderTop: i > 0 ? "1px solid rgba(241,245,249,0.2)" : "none" }}>
           <strong>{m.label}:</strong> {t(`dipRanges.${m.key}`)}
         </div>
+      ))}
+    </>
+  );
+}
+
+// Faixas de profundidade — só UBC e SH&B pontuam profundidade; o Nicholas não
+// usa o critério, por isso não entra na lista.
+const DEPTH_RANGES = [
+  { key: "ubc", label: "UBC" },
+  { key: "shb", label: "SH&B" },
+];
+
+// Hint das faixas de profundidade, restrito aos métodos efetivamente
+// selecionados (mesma lógica do DipTooltipContent). Com os dois ativos, cada
+// faixa vem identificada pelo método, que usam cortes diferentes.
+function DepthHint({ showUBC, showSHB }) {
+  const { t } = useTranslation();
+  const shown = { ubc: showUBC, shb: showSHB };
+  const selected = DEPTH_RANGES.filter((m) => shown[m.key]);
+  const list = selected.length ? selected : DEPTH_RANGES;
+  return (
+    <>
+      {list.map((m) => (
+        <span key={m.key} style={{ display: "block" }}>
+          {list.length > 1 && <strong>{m.label}: </strong>}
+          {t(`depthRanges.${m.key}`)}
+        </span>
       ))}
     </>
   );
@@ -520,11 +633,14 @@ function Inputs() {
     <div style={S.card}>
       <SecTitle>{t("inputs.geometry.title")}</SecTitle>
       <div className="mms-grid2">
-        <Field label={t("inputs.geometry.shape")}>
+        <Field label={t("inputs.geometry.shape")} tip={<Tip id="shape" />}>
           <Sel value={fd.geometry.shape} onChange={(v) => set("geometry", "shape", v)}
             options={["Massivo", "Tabular", "Irregular"]} labels={shapeLabels} />
         </Field>
-        <Field label={t("inputs.geometry.thickness")}>
+        {/* TODO: confirmar faixa numérica com a publicação original — o limite
+            em metros de "Muito estreito" (UBC 1995) entra na nota de
+            tips.thickness nos 3 locales, hoje só descrita em texto. */}
+        <Field label={t("inputs.geometry.thickness")} tip={<Tip id="thickness" />}>
           <Sel value={fd.geometry.thickness} onChange={(v) => set("geometry", "thickness", v)}
             options={thicknessOptions} labels={thicknessLabels} />
         </Field>
@@ -535,12 +651,12 @@ function Inputs() {
           </label>
           <Num value={fd.dip} onChange={(v) => set("dip", null, v)} placeholder={t("common.example", { value: "65" })} />
         </div>
-        <Field label={t("inputs.geometry.grade")}>
+        <Field label={t("inputs.geometry.grade")} tip={<Tip id="grade" />}>
           <Sel value={fd.geometry.grade} onChange={(v) => set("geometry", "grade", v)}
             options={["Uniforme", "Gradacional", "Errático"]} labels={gradeLabels} />
         </Field>
         {(showUBC || showSHB) && (
-          <Field label={t("inputs.geometry.depth")} hint={t("inputs.geometry.depthHint")}>
+          <Field label={t("inputs.geometry.depth")} hint={<DepthHint showUBC={showUBC} showSHB={showSHB} />}>
             <Num value={fd.depth.ore} onChange={(v) => set("depth", "ore", v)} placeholder={t("common.example", { value: "400" })} />
           </Field>
         )}
@@ -579,7 +695,10 @@ function Inputs() {
                   {zoneLabel(z)}
                 </span>
                 <div>
-                  <label style={S.label}>{t("inputs.geotechnical.ucs")}</label>
+                  <label style={{ ...S.label, display: "flex", alignItems: "center", gap: "6px" }}>
+                    {t("inputs.geotechnical.ucs")}
+                    <Tip id="ucs" />
+                  </label>
                   <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                     <Num value={fd.ucs[z]} onChange={(v) => set("ucs", z, v)} placeholder={t("common.example", { value: "185" })} />
                     <RockTooltip type="ucs" onSelect={(v) => set("ucs", z, String(v))} />
@@ -588,6 +707,7 @@ function Inputs() {
                 <div>
                   <label style={{ ...S.label, display: "flex", alignItems: "center", gap: "6px" }}>
                     {z === "ore" ? t("inputs.geotechnical.densityOre") : t("inputs.geotechnical.densityOverburden")}
+                    {z === "ore" && <Tip id="densityOre" />}
                     {z === "hangingWall" && (
                       <InfoTooltip text={t("inputs.geotechnical.densityHwTip")} />
                     )}
@@ -595,14 +715,34 @@ function Inputs() {
                       <InfoTooltip text={t("inputs.geotechnical.densityFwTip")} />
                     )}
                   </label>
-                  <Num value={fd.density[z]} onChange={(v) => set("density", z, v)} placeholder={t("common.example", { value: "2600" })} />
+                  {/* A consulta por tipo de rocha só cabe no minério: em HW/FW
+                      o campo pede a densidade MÉDIA do overburden inteiro, que
+                      não corresponde a nenhuma linha da tabela. */}
+                  {z === "ore" ? (
+                    <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                      <Num value={fd.density[z]} onChange={(v) => set("density", z, v)} placeholder={t("common.example", { value: "2600" })} />
+                      <RockTooltip type="density" onSelect={(v) => set("density", z, String(v))} />
+                    </div>
+                  ) : (
+                    <Num value={fd.density[z]} onChange={(v) => set("density", z, v)} placeholder={t("common.example", { value: "2600" })} />
+                  )}
                 </div>
                 <div>
-                  <label style={S.label}>{t("inputs.geotechnical.depth")}</label>
+                  <label style={{ ...S.label, display: "flex", alignItems: "center", gap: "6px" }}>
+                    {t("inputs.geotechnical.depth")}
+                    <Tip id={z === "ore" ? "depthOre" : "depth"} />
+                  </label>
                   <Num value={fd.depth[z]} onChange={(v) => set("depth", z, v)} placeholder={t("common.example", { value: "600" })} />
+                  {/* fd.depth.ore é o mesmo estado editado na etapa Geometria —
+                      ambos os campos aparecem sob a mesma condição (UBC ou
+                      SH&B), então editar aqui reflete lá e vice-versa. */}
+                  {z === "ore" && <p style={S.hint}>{t("inputs.geotechnical.depthOreShared")}</p>}
                 </div>
                 <div>
-                  <label style={S.label}>{t("inputs.geotechnical.rss")}</label>
+                  <label style={{ ...S.label, display: "flex", alignItems: "center", gap: "6px" }}>
+                    {t("inputs.geotechnical.rss")}
+                    <Tip id="rss" />
+                  </label>
                   <RSSBadge value={rssLive[z]} />
                   {showNich && rssNichLive[z] && (
                     <p style={{ ...S.hint, marginTop: "4px" }}>{t("inputs.geotechnical.nicholasPrefix", { value: t(`enums.rss.${rssNichLive[z]}`) })}</p>
@@ -620,7 +760,7 @@ function Inputs() {
           <SecTitle>{t("inputs.geotechnical.rssTitle")}</SecTitle>
           <div style={S.grid3}>
             {ZONE_KEYS.map((z) => (
-              <Field key={z} label={zoneLabel(z)} style={{ flex: "1 1 280px" }}>
+              <Field key={z} label={zoneLabel(z)} tip={<Tip id="rssManual" />} style={{ flex: "1 1 280px" }}>
                 <Sel value={fd.rss[z]} onChange={(v) => set("rss", z, v)}
                   options={["Fraca", "Moderada", "Resistente"]} labels={rssLabels} />
               </Field>
@@ -639,7 +779,10 @@ function Inputs() {
           <div style={S.grid3}>
             {ZONE_KEYS.map((z) => (
               <div key={z} style={{ display: "flex", flexDirection: "column", gap: "6px", flex: "1 1 280px" }}>
-                <label style={S.label}>{zoneLabel(z)}</label>
+                <label style={{ ...S.label, display: "flex", alignItems: "center", gap: "6px" }}>
+                  {zoneLabel(z)}
+                  <Tip id="rmr" />
+                </label>
                 <RmrField value={fd.rmr[z]} onChange={(v) => set("rmr", z, v)} />
               </div>
             ))}
@@ -651,7 +794,10 @@ function Inputs() {
         <>
           <div style={S.div} />
           <SecTitle>{t("inputs.geotechnical.fracturesTitle")}</SecTitle>
-          <p style={{ fontSize: "15px", fontWeight: "600", color: C.text, marginBottom: "12px" }}>{t("inputs.geotechnical.jointSpacing")}</p>
+          {/* TODO: confirmar faixa numérica com a publicação original — as faixas
+              métricas das 4 classes de espaçamento (Nicholas) entram na nota de
+              tips.jointSpacing nos 3 locales, hoje só descritas em texto. */}
+          <GroupLabel tip={<Tip id="jointSpacing" />}>{t("inputs.geotechnical.jointSpacing")}</GroupLabel>
           <div style={S.grid3}>
             {["ore", "hangingWall", "footwall"].map((z) => (
               <Field key={z} label={zoneLabel(z)} style={{ flex: "1 1 280px" }}>
@@ -660,7 +806,9 @@ function Inputs() {
               </Field>
             ))}
           </div>
-          <p style={{ fontSize: "15px", fontWeight: "600", color: C.text, margin: "28px 0 12px" }}>{t("inputs.geotechnical.jointCondition")}</p>
+          <div style={{ marginTop: "28px" }}>
+            <GroupLabel tip={<Tip id="jointCondition" />}>{t("inputs.geotechnical.jointCondition")}</GroupLabel>
+          </div>
           <div style={S.grid3}>
             {ZONE_KEYS.map((z) => (
               <Field key={z} label={zoneLabel(z)} style={{ flex: "1 1 280px" }}>
@@ -683,7 +831,7 @@ function Inputs() {
       <p style={{ ...S.hint, marginBottom: "20px" }}>
         {t("inputs.eesg.subtitle")}
       </p>
-      <Field label={t("inputs.eesg.oreValue")}>
+      <Field label={t("inputs.eesg.oreValue")} tip={<Tip id="oreValue" />}>
         <div style={{ maxWidth: "280px" }}>
           <Sel value={fd.oreValue} onChange={(v) => set("oreValue", null, v)}
             options={["Baixo", "Médio", "Alto"]} labels={oreValueLabels} />
@@ -707,8 +855,9 @@ function Inputs() {
   const Step4 = anyMethod ? (
     <div style={S.card}>
       <SecTitle>{t("inputs.complementary.title")}</SecTitle>
-      <p style={{ ...S.hint, marginBottom: "20px" }}>
+      <p style={{ ...S.hint, marginBottom: "20px", display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
         {t("inputs.complementary.subtitle")}
+        <Tip id="weights" />
       </p>
 
       {showUBC && (
@@ -739,7 +888,7 @@ function Inputs() {
       {showNich && (
         <Collapsible title="Nicholas" open={openBlocks.nicholas} onToggle={() => toggleBlock("nicholas")}>
           {/* Seletor de camada — critério OU domínio, nunca ambos */}
-          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "18px" }}>
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center", marginBottom: "18px" }}>
             {[
               ["domain",   t("inputs.complementary.nicholasModeDomain")],
               ["criteria", t("inputs.complementary.nicholasModeCriteria")],
@@ -753,6 +902,7 @@ function Inputs() {
                 </button>
               );
             })}
+            <Tip id="nicholasMode" />
           </div>
 
           {/* Camada de critério — granular, desativada quando em modo domínio */}
@@ -787,7 +937,7 @@ function Inputs() {
             <p style={{ ...S.hint, marginTop: 0, marginBottom: "14px" }}>
               {t("inputs.complementary.domainLayerHint")}
             </p>
-            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "18px" }}>
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center", marginBottom: "18px" }}>
               {DOMAIN_PRESET_KEYS.map((p) => {
                 const on = nicholasMode === "domain" && activeDomainPreset === p;
                 return (
@@ -798,6 +948,7 @@ function Inputs() {
                   </button>
                 );
               })}
+              <Tip id="domainPresets" />
             </div>
             <div className="mms-grid2">
               {DOMAIN_CRITERIA_KEYS.map((key) => (

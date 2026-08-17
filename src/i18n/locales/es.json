@@ -49,7 +49,6 @@
       "dip": "Buzamiento (°)",
       "grade": "Distribución de ley",
       "depth": "Profundidad de la zona de mineral (m)",
-      "depthHint": "UBC: Somera ≤100m | Interm. 100–600m | Profunda >600m",
       "sketchTitle": "Sección transversal"
     },
     "geotechnical": {
@@ -62,6 +61,7 @@
       "densityHwTip": "Para el cálculo del RSS, considere la densidad media de todos los materiales desde la superficie hasta el techo de la zona de mineral (sobrecarga completa), no solo la roca inmediatamente adyacente.",
       "densityFwTip": "Para el cálculo del RSS, considere la densidad media de todos los materiales desde la superficie hasta la base de la zona de mineral.",
       "depth": "Profundidad (m)",
+      "depthOreShared": "Mismo valor de la etapa Geometría.",
       "rss": "RSS",
       "rssPlaceholder": "complete UCS, densidad y profundidad",
       "nicholasPrefix": "Nicholas: {{value}}",
@@ -300,5 +300,173 @@
     "ubc": "Plano <20° | Intermedio 20–55° | Inclinado >55°",
     "nicholas": "Plano <20° | Intermedio 20–55° | Inclinado >55°",
     "shb": "Plano <15° | Bajo 15–30° | Intermedio 30–45° | Poco inclinado 45–60° | Inclinado >60°"
+  },
+  "depthRanges": {
+    "ubc": "Somera ≤100m | Intermedia 100–600m | Profunda >600m",
+    "shb": "Somera ≤200m | Intermedia 200–500m | Poco profunda 500–800m | Profunda >800m"
+  },
+  "tips": {
+    "shape": {
+      "concept": "Configuración geométrica de la zona de mineral observada en sección transversal.",
+      "sections": [
+        {
+          "items": [
+            { "term": "Masivo", "desc": "el mineral ocupa un volumen extenso y compacto, sin geometría alargada definida." },
+            { "term": "Tabular", "desc": "el mineral constituye una capa delgada y alargada (filón o veta), con longitud y ancho sustancialmente mayores que su espesor." },
+            { "term": "Irregular", "desc": "el mineral no sigue un patrón geométrico definido; los límites del cuerpo varían de forma poco previsible a lo largo del depósito." }
+          ]
+        }
+      ]
+    },
+    "thickness": {
+      "concept": "Distancia entre el techo y la base de la zona de mineral, medida perpendicularmente a las paredes (hanging wall y foot wall).",
+      "sections": [
+        {
+          "title": "Rangos de referencia (Nicholas, 1981/1992)",
+          "items": [
+            { "term": "Estrecho", "desc": "inferior a 10 m" },
+            { "term": "Intermedio", "desc": "10 a 30 m" },
+            { "term": "Espeso", "desc": "30 a 100 m" },
+            { "term": "Muy espeso", "desc": "superior a 100 m" }
+          ]
+        }
+      ],
+      "note": "\"Muy estrecho\" es un rango adicional del UBC (1995), para espesores inferiores al \"Estrecho\" de Nicholas."
+    },
+    "grade": {
+      "concept": "Patrón de variación de la ley del mineral (concentración del material de interés económico) a lo largo de la zona de mineral.",
+      "sections": [
+        {
+          "items": [
+            { "term": "Uniforme", "desc": "la ley se presenta relativamente constante en toda la extensión del depósito." },
+            { "term": "Gradacional", "desc": "la ley varía de forma gradual y previsible entre regiones del depósito." },
+            { "term": "Errática", "desc": "la ley varía de forma irregular, sin un patrón espacial definido." }
+          ]
+        }
+      ]
+    },
+    "ucs": {
+      "concept": "Resistencia a la Compresión Uniaxial — tensión máxima que soporta la roca antes de la ruptura, sometida a compresión en una única dirección. Constituye la medida fundamental de la resistencia mecánica de la roca intacta. Los valores se sitúan usualmente entre algunas decenas y algunos cientos de MPa, según el tipo de roca.",
+      "note": "Consulte valores de referencia por tipo de roca en el botón contiguo."
+    },
+    "densityOre": {
+      "concept": "Masa de roca por unidad de volumen. Utilizada en el cálculo del RSS para determinar la tensión ejercida por el peso de la columna de roca suprayacente en profundidad.",
+      "note": "Los valores típicos se sitúan entre 2.500 y 3.000 kg/m³ para rocas comunes, pudiendo ser superiores para minerales metálicos densos."
+    },
+    "depth": {
+      "concept": "Distancia vertical entre la superficie y el punto considerado del depósito (zona de mineral, hanging wall o foot wall). En conjunto con la densidad, determina la tensión geostática actuante sobre el macizo rocoso."
+    },
+    "depthOre": {
+      "concept": "Distancia vertical entre la superficie y el punto considerado del depósito (zona de mineral, hanging wall o foot wall). En conjunto con la densidad, determina la tensión geostática actuante sobre el macizo rocoso.",
+      "note": "Este valor corresponde al mismo campo completado en la etapa Geometría; modificar uno de los campos actualiza el otro."
+    },
+    "rss": {
+      "concept": "Rock Substance Strength — índice que relaciona la resistencia de la roca (UCS) con la tensión geostática actuante en profundidad. Valores más bajos indican menor resistencia relativa de la roca frente a la tensión actuante.",
+      "formula": "RSS = UCS × 10⁶ / (Densidad × Profundidad × 9,81)",
+      "sections": [
+        {
+          "title": "Clasificación — UBC y SH&B",
+          "items": [
+            { "term": "Muy débil", "desc": "RSS < 5" },
+            { "term": "Débil", "desc": "5 – 10" },
+            { "term": "Moderada", "desc": "10 – 15" },
+            { "term": "Resistente", "desc": "RSS ≥ 15" }
+          ]
+        },
+        {
+          "title": "Clasificación — Nicholas",
+          "items": [
+            { "term": "Débil", "desc": "RSS < 8" },
+            { "term": "Moderada", "desc": "8 – 15" },
+            { "term": "Resistente", "desc": "RSS > 15" }
+          ]
+        }
+      ],
+      "note": "Con Nicholas activo junto a UBC/SH&B aparecen los dos valores: las escalas de clasificación son distintas para el mismo número."
+    },
+    "rmr": {
+      "concept": "Rock Mass Rating — sistema de clasificación de la calidad general del macizo rocoso (estructura, fracturas, agua, orientación, entre otros factores), en escala de 0 a 100. La clase puede seleccionarse directamente o calcularse a partir del GSI o del sistema Q.",
+      "sections": [
+        {
+          "title": "Rangos numéricos (Bieniawski, 1989)",
+          "items": [
+            { "term": "Muy buena", "desc": "81 – 100" },
+            { "term": "Buena", "desc": "61 – 80" },
+            { "term": "Regular", "desc": "41 – 60" },
+            { "term": "Pobre", "desc": "21 – 40" },
+            { "term": "Muy pobre", "desc": "inferior a 21" }
+          ]
+        }
+      ]
+    },
+    "gsi": {
+      "concept": "Geological Strength Index — sistema de clasificación de macizo rocoso, en escala de 0 a 100, basado principalmente en la estructura de las discontinuidades y en la condición de sus superficies. Permite la conversión a RMR cuando se conoce el valor del GSI.",
+      "formula": "RMR = (GSI + 11,63) / 1,13"
+    },
+    "q": {
+      "concept": "Q-System (índice Q, de Barton) — sistema de clasificación de macizo rocoso en escala logarítmica, empleado predominantemente en proyectos de excavaciones subterráneas y túneles. Los valores se sitúan típicamente entre fracciones inferiores a 1 (macizo de calidad muy baja) y algunos cientos (macizo de calidad muy alta). Permite la conversión a RMR cuando se conoce el valor de Q.",
+      "formula": "RMR = 9 × ln(Q) + 44"
+    },
+    "rssManual": {
+      "concept": "Con solo el método Nicholas seleccionado, la clase de resistencia de la roca puede indicarse directamente, sin completar UCS, densidad y profundidad — aplicable cuando esa clasificación ya se conoce por otra fuente, como un informe geotécnico previo.",
+      "formula": "RSS = UCS × 10⁶ / (Densidad × Profundidad × 9,81)",
+      "sections": [
+        {
+          "title": "Rangos (escala de Nicholas)",
+          "items": [
+            { "term": "Débil", "desc": "RSS < 8" },
+            { "term": "Moderada", "desc": "8 – 15" },
+            { "term": "Resistente", "desc": "RSS > 15" }
+          ]
+        }
+      ]
+    },
+    "jointSpacing": {
+      "concept": "Distancia media entre planos de discontinuidad (fracturas) en el macizo rocoso. Un espaciamiento reducido entre fracturas se asocia a una menor resistencia del macizo en su conjunto, independientemente de la resistencia de la roca intacta entre las fracturas.",
+      "note": "Las opciones disponibles — Muy junto, Junto, Separado, Muy separado — corresponden al espaciamiento típico entre planos de fractura consecutivos."
+    },
+    "jointCondition": {
+      "concept": "Condición de las superficies de fractura, incluyendo apertura, presencia de material de relleno y rugosidad. Determina la resistencia al deslizamiento entre bloques de roca adyacentes a las fracturas.",
+      "sections": [
+        {
+          "items": [
+            { "term": "Débil", "desc": "fracturas abiertas, rellenas con material de baja resistencia, o superficies lisas: baja resistencia al deslizamiento." },
+            { "term": "Media", "desc": "condición intermedia." },
+            { "term": "Fuerte", "desc": "fracturas cerradas, con superficies rugosas y sin material de relleno: alta resistencia al deslizamiento." }
+          ]
+        }
+      ]
+    },
+    "oreValue": {
+      "concept": "Clasificación cualitativa del valor económico del mineral, considerando su precio de mercado y la viabilidad financiera general del proyecto. No corresponde a un valor monetario específico, sino a una categorización relativa utilizada por el método SH&B en la ponderación de los criterios."
+    },
+    "weights": {
+      "concept": "Cada criterio (forma, espesor, RSS, RMR, entre otros) contribuye a la puntuación final de cada método de explotación candidato. El valor predeterminado de cada peso es 1,00, correspondiente a una importancia equivalente entre criterios. Valores superiores a 1,00 aumentan la influencia del criterio correspondiente; valores inferiores a 1,00 la reducen."
+    },
+    "nicholasMode": {
+      "concept": "El método Nicholas admite dos formas de ajuste de peso, mutuamente excluyentes:",
+      "sections": [
+        {
+          "items": [
+            { "term": "Presets de dominio", "desc": "ajusta el peso de bloques completos de criterios (geometría, zona de mineral, hanging wall, foot wall) simultáneamente, según los multiplicadores propuestos en la publicación original de Nicholas (1992)." },
+            { "term": "Individualización por criterio", "desc": "permite el ajuste independiente de cada uno de los 13 criterios del método, con mayor granularidad, sin correspondencia directa con un preset publicado." }
+          ]
+        }
+      ],
+      "note": "La selección de un modo desactiva automáticamente el otro, evitando la combinación de pesos sin correspondencia metodológica definida."
+    },
+    "domainPresets": {
+      "sections": [
+        {
+          "items": [
+            { "term": "Predeterminado", "desc": "todos los dominios con peso igual (1,00), sin énfasis diferenciado." },
+            { "term": "Preset 1", "desc": "amplía por igual la importancia de la zona de mineral, hanging wall y foot wall (factor 1,33) respecto de la geometría." },
+            { "term": "Preset 2", "desc": "énfasis decreciente entre dominios: zona de mineral 0,75, hanging wall 0,60 y foot wall 0,38." },
+            { "term": "Preset 3", "desc": "énfasis intermedio: zona de mineral en el peso predeterminado (1,00), hanging wall 0,80 y foot wall 0,50." }
+          ]
+        }
+      ],
+      "note": "Los valores corresponden a los presentados en la publicación de Nicholas (1992)."
+    }
   }
 }

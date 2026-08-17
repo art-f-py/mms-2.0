@@ -48,7 +48,6 @@
       "dip": "Dip (°)",
       "grade": "Grade distribution",
       "depth": "Ore body depth (m)",
-      "depthHint": "UBC: Shallow ≤100m | Interm. 100–600m | Deep >600m",
       "sketchTitle": "Cross section"
     },
     "geotechnical": {
@@ -61,6 +60,7 @@
       "densityHwTip": "For the RSS calculation, consider the average density of all materials from the surface down to the top of the ore body (full overburden), not just the immediately adjacent rock.",
       "densityFwTip": "For the RSS calculation, consider the average density of all materials from the surface down to the base of the ore body.",
       "depth": "Depth (m)",
+      "depthOreShared": "Same value as in the Geometry step.",
       "rss": "RSS",
       "rssPlaceholder": "fill in UCS, density and depth",
       "nicholasPrefix": "Nicholas: {{value}}",
@@ -299,5 +299,173 @@
     "ubc": "Flat <20° | Intermediate 20–55° | Steep >55°",
     "nicholas": "Flat <20° | Intermediate 20–55° | Steep >55°",
     "shb": "Flat <15° | Low 15–30° | Intermediate 30–45° | Slightly steep 45–60° | Steep >60°"
+  },
+  "depthRanges": {
+    "ubc": "Shallow ≤100m | Intermediate 100–600m | Deep >600m",
+    "shb": "Shallow ≤200m | Intermediate 200–500m | Moderately deep 500–800m | Deep >800m"
+  },
+  "tips": {
+    "shape": {
+      "concept": "Geometric configuration of the ore body as seen in cross section.",
+      "sections": [
+        {
+          "items": [
+            { "term": "Massive", "desc": "the ore occupies a large, compact volume with no defined elongated geometry." },
+            { "term": "Tabular", "desc": "the ore forms a thin, elongated layer (lode or vein), with length and width substantially greater than its thickness." },
+            { "term": "Irregular", "desc": "the ore follows no defined geometric pattern; the body's boundaries vary unpredictably across the deposit." }
+          ]
+        }
+      ]
+    },
+    "thickness": {
+      "concept": "Distance between the top and the base of the ore body, measured perpendicular to the walls (hanging wall and foot wall).",
+      "sections": [
+        {
+          "title": "Reference ranges (Nicholas, 1981/1992)",
+          "items": [
+            { "term": "Narrow", "desc": "less than 10 m" },
+            { "term": "Intermediate", "desc": "10 to 30 m" },
+            { "term": "Thick", "desc": "30 to 100 m" },
+            { "term": "Very thick", "desc": "over 100 m" }
+          ]
+        }
+      ],
+      "note": "\"Very narrow\" is an additional UBC (1995) range, for thicknesses below Nicholas's \"Narrow\"."
+    },
+    "grade": {
+      "concept": "Pattern of variation in ore grade (concentration of the economically valuable material) across the mineralized body.",
+      "sections": [
+        {
+          "items": [
+            { "term": "Uniform", "desc": "grade is relatively constant throughout the deposit." },
+            { "term": "Gradational", "desc": "grade varies gradually and predictably between regions of the deposit." },
+            { "term": "Erratic", "desc": "grade varies irregularly, with no defined spatial pattern." }
+          ]
+        }
+      ]
+    },
+    "ucs": {
+      "concept": "Uniaxial Compressive Strength — the maximum stress the rock withstands before failure under compression in a single direction. It is the fundamental measure of intact rock strength. Values typically range from a few tens to a few hundred MPa, depending on rock type.",
+      "note": "Use the button alongside to consult reference values by rock type."
+    },
+    "densityOre": {
+      "concept": "Mass of rock per unit volume. Used in the RSS calculation to determine the stress exerted by the weight of the overlying rock column at depth.",
+      "note": "Typical values range from 2,500 to 3,000 kg/m³ for common rocks, and may be higher for dense metallic ores."
+    },
+    "depth": {
+      "concept": "Vertical distance between the surface and the point of the deposit under consideration (ore body, hanging wall or foot wall). Together with density, it determines the geostatic stress acting on the rock mass."
+    },
+    "depthOre": {
+      "concept": "Vertical distance between the surface and the point of the deposit under consideration (ore body, hanging wall or foot wall). Together with density, it determines the geostatic stress acting on the rock mass.",
+      "note": "This value is the same field filled in on the Geometry step; changing either field updates the other."
+    },
+    "rss": {
+      "concept": "Rock Substance Strength — an index relating rock strength (UCS) to the geostatic stress acting at depth. Lower values indicate lower rock strength relative to the acting stress.",
+      "formula": "RSS = UCS × 10⁶ / (Density × Depth × 9.81)",
+      "sections": [
+        {
+          "title": "Classification — UBC and SH&B",
+          "items": [
+            { "term": "Very weak", "desc": "RSS < 5" },
+            { "term": "Weak", "desc": "5 – 10" },
+            { "term": "Moderate", "desc": "10 – 15" },
+            { "term": "Strong", "desc": "RSS ≥ 15" }
+          ]
+        },
+        {
+          "title": "Classification — Nicholas",
+          "items": [
+            { "term": "Weak", "desc": "RSS < 8" },
+            { "term": "Moderate", "desc": "8 – 15" },
+            { "term": "Strong", "desc": "RSS > 15" }
+          ]
+        }
+      ],
+      "note": "With Nicholas active alongside UBC/SH&B, both values are shown: the classification scales differ for the same number."
+    },
+    "rmr": {
+      "concept": "Rock Mass Rating — a classification system for the overall quality of the rock mass (structure, joints, water, orientation, among other factors), on a scale of 0 to 100. The class can be selected directly or derived from GSI or the Q-System.",
+      "sections": [
+        {
+          "title": "Numeric ranges (Bieniawski, 1989)",
+          "items": [
+            { "term": "Very good", "desc": "81 – 100" },
+            { "term": "Good", "desc": "61 – 80" },
+            { "term": "Fair", "desc": "41 – 60" },
+            { "term": "Poor", "desc": "21 – 40" },
+            { "term": "Very poor", "desc": "below 21" }
+          ]
+        }
+      ]
+    },
+    "gsi": {
+      "concept": "Geological Strength Index — a rock mass classification system on a scale of 0 to 100, based mainly on the structure of discontinuities and the condition of their surfaces. Allows conversion to RMR when the GSI value is known.",
+      "formula": "RMR = (GSI + 11.63) / 1.13"
+    },
+    "q": {
+      "concept": "Q-System (Barton's Q index) — a rock mass classification system on a logarithmic scale, used predominantly in underground excavation and tunnelling projects. Values typically range from fractions below 1 (very poor quality rock mass) to a few hundred (very high quality rock mass). Allows conversion to RMR when the Q value is known.",
+      "formula": "RMR = 9 × ln(Q) + 44"
+    },
+    "rssManual": {
+      "concept": "With only the Nicholas method selected, the rock strength class can be entered directly, without filling in UCS, density and depth — useful when the classification is already known from another source, such as a previous geotechnical report.",
+      "formula": "RSS = UCS × 10⁶ / (Density × Depth × 9.81)",
+      "sections": [
+        {
+          "title": "Ranges (Nicholas scale)",
+          "items": [
+            { "term": "Weak", "desc": "RSS < 8" },
+            { "term": "Moderate", "desc": "8 – 15" },
+            { "term": "Strong", "desc": "RSS > 15" }
+          ]
+        }
+      ]
+    },
+    "jointSpacing": {
+      "concept": "Average distance between discontinuity planes (joints) in the rock mass. Closer joint spacing is associated with lower strength of the rock mass as a whole, regardless of the strength of the intact rock between joints.",
+      "note": "The available options — Very close, Close, Wide, Very wide — correspond to the typical spacing between consecutive joint planes."
+    },
+    "jointCondition": {
+      "concept": "Condition of the joint surfaces, including aperture, presence of infill material and roughness. It determines the shear resistance between rock blocks adjacent to the joints.",
+      "sections": [
+        {
+          "items": [
+            { "term": "Weak", "desc": "open joints, filled with low-strength material, or smooth surfaces: low shear resistance." },
+            { "term": "Medium", "desc": "intermediate condition." },
+            { "term": "Strong", "desc": "closed joints, with rough surfaces and no infill material: high shear resistance." }
+          ]
+        }
+      ]
+    },
+    "oreValue": {
+      "concept": "Qualitative classification of the economic value of the ore, considering its market price and the overall financial viability of the project. It does not correspond to a specific monetary value, but to a relative categorization used by the SH&B method when weighting criteria."
+    },
+    "weights": {
+      "concept": "Each criterion (shape, thickness, RSS, RMR, among others) contributes to the final score of each candidate mining method. The default value of each weight is 1.00, meaning equal importance across criteria. Values above 1.00 increase the influence of the corresponding criterion; values below 1.00 reduce it."
+    },
+    "nicholasMode": {
+      "concept": "The Nicholas method supports two mutually exclusive ways of adjusting weights:",
+      "sections": [
+        {
+          "items": [
+            { "term": "Domain presets", "desc": "adjusts the weight of complete blocks of criteria (geometry, ore body, hanging wall, foot wall) simultaneously, following the multipliers proposed in Nicholas's original publication (1992)." },
+            { "term": "Per-criterion weighting", "desc": "allows each of the method's 13 criteria to be adjusted independently, with finer granularity, without direct correspondence to a published preset." }
+          ]
+        }
+      ],
+      "note": "Selecting one mode automatically disables the other, preventing weight combinations with no defined methodological basis."
+    },
+    "domainPresets": {
+      "sections": [
+        {
+          "items": [
+            { "term": "Default", "desc": "all domains weighted equally (1.00), with no differentiated emphasis." },
+            { "term": "Preset 1", "desc": "equally increases the importance of ore body, hanging wall and foot wall (factor 1.33) relative to geometry." },
+            { "term": "Preset 2", "desc": "decreasing emphasis across domains: ore body 0.75, hanging wall 0.60 and foot wall 0.38." },
+            { "term": "Preset 3", "desc": "intermediate emphasis: ore body at the default weight (1.00), hanging wall 0.80 and foot wall 0.50." }
+          ]
+        }
+      ],
+      "note": "The values correspond to those presented in Nicholas's publication (1992)."
+    }
   }
 }

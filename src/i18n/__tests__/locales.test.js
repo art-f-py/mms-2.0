@@ -20,12 +20,19 @@ const isMetaKey = (key) => key.startsWith("_");
 const isPlainObject = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
 
 // Achata em { "caminho.pontilhado": valor da folha }. Só folhas entram aqui.
+// Arrays são percorridos por índice (ex.: "tips.shape.sections[0].items[1].desc").
+// O conteúdo dos tooltips vive dentro de sections[]/items[]: sem descer nos arrays,
+// esses textos ficariam fora da paridade e o array cru chegaria aqui como "folha" —
+// quebrando tanto a checagem de folha-string quanto a de placeholders.
 function leaves(node, prefix = "") {
   const out = {};
-  for (const [key, value] of Object.entries(node)) {
-    if (isMetaKey(key)) continue;
-    const path = prefix ? `${prefix}.${key}` : key;
-    if (isPlainObject(value)) Object.assign(out, leaves(value, path));
+  const entries = Array.isArray(node)
+    ? node.map((value, index) => [`${prefix}[${index}]`, value])
+    : Object.entries(node)
+        .filter(([key]) => !isMetaKey(key))
+        .map(([key, value]) => [prefix ? `${prefix}.${key}` : key, value]);
+  for (const [path, value] of entries) {
+    if (isPlainObject(value) || Array.isArray(value)) Object.assign(out, leaves(value, path));
     else out[path] = value;
   }
   return out;
