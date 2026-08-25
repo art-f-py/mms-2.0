@@ -29,10 +29,42 @@ export const DIRECTION = Object.freeze({
   MAX: "max",
 });
 
-/** Grupos aos quais os critérios fixos pertencem (usados também pelo Enfoque). */
+/**
+ * Os quatro grupos do Enfoque.
+ *
+ * Cobrem as DUAS fontes de critérios da matriz estendida: TECHNICAL e ECONOMIC
+ * agrupam os seis critérios fixos declarados neste arquivo; GEOMETRY e
+ * GEOMECHANICS agrupam os treze critérios clássicos do Nicholas, cujos
+ * descritores vivem em classicCriteria.js (tabela paralela, porque as chaves
+ * das tabelas de peso não são únicas — ver o cabeçalho de lá).
+ *
+ * Os ids internos de TECHNICAL e ECONOMIC são deliberadamente estáveis: os
+ * critérios fixos referenciam esses valores no campo `group` logo abaixo, e o
+ * redesenho do Enfoque para quatro grupos mudou só o RÓTULO de exibição deles.
+ * Trocar o id obrigaria a mexer em FIXED_CRITERIA sem nenhum ganho.
+ */
 export const CRITERION_GROUPS = Object.freeze({
-  TECHNICAL: "technical",
-  ECONOMIC:  "economic",
+  GEOMETRY:     "geometry",
+  GEOMECHANICS: "geomechanics",
+  TECHNICAL:    "technical",
+  ECONOMIC:     "economic",
+});
+
+/**
+ * Rótulos de exibição dos grupos.
+ *
+ * Em português, ao contrário dos rótulos de CRITÉRIO deste arquivo e de
+ * EXPORT_CRITERION_LABELS, que são em inglês por irem para um arquivo de dados
+ * lido por outro software. A diferença é proposital: nome de grupo do Enfoque
+ * não vai para a planilha — é controle de interface, e foi nomeado pelo usuário
+ * nestes termos. Fora do i18n como todo o resto deste módulo; se um dia o
+ * Enfoque virar tela traduzida, estes rótulos são o ponto de entrada.
+ */
+export const CRITERION_GROUP_LABELS = Object.freeze({
+  [CRITERION_GROUPS.GEOMETRY]:     "Geometria",
+  [CRITERION_GROUPS.GEOMECHANICS]: "Geomecânica",
+  [CRITERION_GROUPS.TECHNICAL]:    "Técnico-Operacional",
+  [CRITERION_GROUPS.ECONOMIC]:     "Economia",
 });
 
 /**
@@ -107,7 +139,14 @@ export const FIXED_CRITERIA_BY_ID = Object.freeze(
   Object.fromEntries(FIXED_CRITERIA.map((c) => [c.id, c])),
 );
 
-/** Ids dos critérios fixos de um grupo, na ordem de FIXED_CRITERIA. */
+/**
+ * Ids dos critérios FIXOS de um grupo, na ordem de FIXED_CRITERIA.
+ *
+ * Cobre só este arquivo. Para GEOMETRY e GEOMECHANICS devolve array vazio —
+ * esses grupos são compostos de critérios clássicos, que vivem em
+ * classicCriteria.js. Quem precisa da composição completa de um grupo usa
+ * ENFOQUE_GROUPS (enfoque.js), que junta as duas fontes.
+ */
 export function criteriaOfGroup(groupId) {
   return FIXED_CRITERIA.filter((c) => c.group === groupId).map((c) => c.id);
 }

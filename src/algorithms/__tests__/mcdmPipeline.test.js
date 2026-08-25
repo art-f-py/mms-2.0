@@ -14,14 +14,15 @@ import {
   createWeightingState,
   setWeightingMode,
   WEIGHTING_MODES,
-  DEFAULT_BOOST,
+  ENFOQUE_GROUPS_BY_ID,
+  equalGroupWeights,
+  groupOfCriterion,
 } from "../enfoque";
 import {
   CRITERION_GROUPS,
   DIRECTION,
   FIXED_CRITERIA,
   FIXED_CRITERION_SCORES,
-  criteriaOfGroup,
 } from "../mcdmCriteria";
 import { SAATY_ELIMINATION_VALUE } from "../saatyScale";
 import { METHODS } from "../ubcWeights";
@@ -50,8 +51,16 @@ const FULL_SCENARIO = {
 
 const nicholasMatrix = () => buildDecisionMatrix(FULL_SCENARIO, { nicholas: true });
 
-const enfoque = (groupId) =>
-  setWeightingMode(createWeightingState(), WEIGHTING_MODES.ENFOQUE, { groupId });
+const enfoque = (groupWeights) =>
+  setWeightingMode(createWeightingState(), WEIGHTING_MODES.ENFOQUE, { groupWeights });
+
+// Vetor de pesos que concentra 0.7 num grupo e reparte 0.1 entre os outros
+// tres. Uma forma compacta de escrever "enfase neste grupo" sem repetir o
+// objeto de quatro chaves em cada teste.
+const enfaseEm = (groupId) =>
+  Object.fromEntries(
+    Object.values(CRITERION_GROUPS).map((id) => [id, id === groupId ? 0.7 : 0.1]),
+  );
 
 const ordem = (resultado) => resultado.ranking.map((r) => r.code);
 
@@ -228,7 +237,7 @@ describe("runMcdmPipeline — Nicholas ponta a ponta", () => {
   it("a matriz recebida nao e alterada pelo pipeline", () => {
     const matrix = nicholasMatrix();
     const antes  = JSON.parse(JSON.stringify(matrix));
-    runMcdmPipeline(matrix, { weighting: enfoque(CRITERION_GROUPS.TECHNICAL) });
+    runMcdmPipeline(matrix, { weighting: enfoque(enfaseEm(CRITERION_GROUPS.TECHNICAL)) });
     expect(matrix).toEqual(antes);
   });
 
@@ -324,52 +333,83 @@ describe("Enfoque dentro do pipeline", () => {
       .toEqual(runMcdmPipeline(nicholasMatrix()));
   });
 
-  it("Enfoque tecnico multiplica so os quatro criterios do grupo", () => {
-    const r        = runMcdmPipeline(nicholasMatrix(), { weighting: enfoque(CRITERION_GROUPS.TECHNICAL) });
-    const doGrupo  = new Set(criteriaOfGroup(CRITERION_GROUPS.TECHNICAL));
+  it("cada peso e o peso do grupo dividido pelo tamanho do grupo", () => {
+    const gw = enfaseEm(CRITERION_GROUPS.GEOMETRY);
+    const r  = runMcdmPipeline(nicholasMatrix(), { weighting: enfoque(gw) });
 
-    expect(doGrupo.size).toBe(4);
     r.criterionIds.forEach((id, j) => {
-      expect(r.weights[j]).toBe(doGrupo.has(id) ? DEFAULT_BOOST : 1);
+      const grupo   = groupOfCriterion(id);
+      const tamanho = ENFOQUE_GROUPS_BY_ID[grupo].criterionIds.length;
+      expect(r.weights[j]).toBeCloseTo(gw[grupo] / tamanho, 12);
     });
   });
 
-  it("Enfoque economico multiplica so os dois criterios do grupo", () => {
-    const r       = runMcdmPipeline(nicholasMatrix(), { weighting: enfoque(CRITERION_GROUPS.ECONOMIC) });
-    const doGrupo = new Set(criteriaOfGroup(CRITERION_GROUPS.ECONOMIC));
-
-    expect(doGrupo.size).toBe(2);
-    r.criterionIds.forEach((id, j) => {
-      expect(r.weights[j]).toBe(doGrupo.has(id) ? DEFAULT_BOOST : 1);
+  it("INVARIANTE: com as 19 colunas presentes, os pesos somam 1", () => {
+    // A invariante do modelo, verificada no pipeline real e nao so na unidade.
+    const cenarios = [
+      equalGroupWeights(),
+      enfaseEm(CRITERION_GROUPS.GEOMETRY),
+      enfaseEm(CRITERION_GROUPS.GEOMECHANICS),
+      enfaseEm(CRITERION_GROUPS.TECHNICAL),
+      enfaseEm(CRITERION_GROUPS.ECONOMIC),
+    ];
+    cenarios.forEach((gw) => {
+      const r = runMcdmPipeline(nicholasMatrix(), { weighting: enfoque(gw) });
+      expect(r.criterionIds).toHaveLength(19);
+      expect(r.weights.reduce((a, b) => a + b, 0)).toBeCloseTo(1, 12);
     });
   });
 
-  it("Enfoque tecnico produz um ranking DIFERENTE do sem Enfoque", () => {
+  it("os 19 criterios da matriz caem todos em algum grupo — nenhum orfao", () => {
+    // Se o pipeline produzir uma coluna que ninguem declarou, o Enfoque lanca.
+    // Este teste confirma que hoje isso nao acontece para o Nicholas completo.
+    const r = runMcdmPipeline(nicholasMatrix());
+    r.criterionIds.forEach((id) => {
+      expect(groupOfCriterion(id)).toBeTruthy();
+    });
+    expect(() => runMcdmPipeline(nicholasMatrix(), { weighting: enfoque(equalGroupWeights()) }))
+      .not.toThrow();
+  });
+
+  it("enfase em Geometria produz um ranking DIFERENTE do sem Enfoque", () => {
     const sem = runMcdmPipeline(nicholasMatrix());
-    const com = runMcdmPipeline(nicholasMatrix(), { weighting: enfoque(CRITERION_GROUPS.TECHNICAL) });
+    const com = runMcdmPipeline(nicholasMatrix(), { weighting: enfoque(enfaseEm(CRITERION_GROUPS.GEOMETRY)) });
 
     expect(ordem(com)).not.toEqual(ordem(sem));
     // Trava de regressao dos dois lados, para que "diferente" nao vire
     // "diferente de qualquer jeito".
     expect(ordem(sem)).toEqual(["OP", "C&F", "SQS", "SKS", "R&P", "SLS", "BC", "LW", "SLC", "TS"]);
-    expect(ordem(com)).toEqual(["OP", "C&F", "SKS", "SQS", "R&P", "LW", "SLS", "SLC", "BC", "TS"]);
+    expect(ordem(com)).toEqual(["C&F", "SQS", "OP", "R&P", "SKS", "SLS", "BC", "SLC", "LW", "TS"]);
   });
 
-  it("Enfoque economico produz um ranking DIFERENTE do sem Enfoque e do tecnico", () => {
-    const sem = runMcdmPipeline(nicholasMatrix());
-    const tec = runMcdmPipeline(nicholasMatrix(), { weighting: enfoque(CRITERION_GROUPS.TECHNICAL) });
-    const eco = runMcdmPipeline(nicholasMatrix(), { weighting: enfoque(CRITERION_GROUPS.ECONOMIC) });
+  it("enfase em Economia produz um ranking DIFERENTE do sem Enfoque e do de Geometria", () => {
+    const sem  = runMcdmPipeline(nicholasMatrix());
+    const geo  = runMcdmPipeline(nicholasMatrix(), { weighting: enfoque(enfaseEm(CRITERION_GROUPS.GEOMETRY)) });
+    const econ = runMcdmPipeline(nicholasMatrix(), { weighting: enfoque(enfaseEm(CRITERION_GROUPS.ECONOMIC)) });
 
-    expect(ordem(eco)).not.toEqual(ordem(sem));
-    expect(ordem(eco)).not.toEqual(ordem(tec));
-    expect(ordem(eco)).toEqual(["OP", "C&F", "SKS", "R&P", "SQS", "SLS", "BC", "LW", "SLC", "TS"]);
+    expect(ordem(econ)).not.toEqual(ordem(sem));
+    expect(ordem(econ)).not.toEqual(ordem(geo));
+    expect(ordem(econ)).toEqual(["SLS", "SKS", "BC", "R&P", "SLC", "OP", "LW", "C&F", "TS", "SQS"]);
   });
 
-  it("o boost muda a proximidade de quem trocou de posicao", () => {
-    // Guarda contra teste vacuo: se o Enfoque nao mexesse nas contas, os
-    // rankings acima poderiam divergir por acaso de desempate.
+  it("os quatro grupos, mais o uniforme e o modo 'none', dao seis ordens distintas", () => {
+    // Guarda contra teste vacuo em escala: se a ponderacao por grupo nao
+    // mexesse de fato nas contas, alguma dessas ordens colidiria.
+    const rotulos = ["none", "uniforme", "geometry", "geomechanics", "technical", "economic"];
+    const ordens = [
+      ordem(runMcdmPipeline(nicholasMatrix())),
+      ordem(runMcdmPipeline(nicholasMatrix(), { weighting: enfoque(equalGroupWeights()) })),
+      ...Object.values(CRITERION_GROUPS).map((id) =>
+        ordem(runMcdmPipeline(nicholasMatrix(), { weighting: enfoque(enfaseEm(id)) })),
+      ),
+    ];
+    const unicas = new Set(ordens.map((o) => o.join(">")));
+    expect(unicas.size).toBe(rotulos.length);
+  });
+
+  it("a ponderacao muda a proximidade, nao so a ordem de desempate", () => {
     const sem = runMcdmPipeline(nicholasMatrix());
-    const com = runMcdmPipeline(nicholasMatrix(), { weighting: enfoque(CRITERION_GROUPS.TECHNICAL) });
+    const com = runMcdmPipeline(nicholasMatrix(), { weighting: enfoque(enfaseEm(CRITERION_GROUPS.TECHNICAL)) });
     expect(com.topsis.closeness).not.toEqual(sem.topsis.closeness);
   });
 
@@ -381,14 +421,25 @@ describe("Enfoque dentro do pipeline", () => {
       .toThrow(/Entropy ainda não implementada/);
   });
 
-  it("aceita pesos-base do chamador, e o Enfoque multiplica em cima deles", () => {
+  it("groupWeights invalidos sao barrados na entrada do pipeline", () => {
+    const somaErrada = Object.fromEntries(Object.values(CRITERION_GROUPS).map((id) => [id, 0.1]));
+    expect(() => enfoque(somaErrada)).toThrow(/precisam somar 1, mas somam 0\.4/);
+  });
+
+  it("baseWeights vale no modo 'none' e e recusado no modo 'enfoque'", () => {
+    // No modelo de peso por grupo os pesos sao absolutos — nao ha sobre o que
+    // um peso-base multiplicar. Recusar e melhor que ignorar em silencio.
     const matrix = nicholasMatrix();
     const ids    = runMcdmPipeline(matrix).criterionIds;
     const base   = ids.map((_, j) => (j === 0 ? 3 : 1));
-    const r      = runMcdmPipeline(matrix, { weighting: enfoque(CRITERION_GROUPS.TECHNICAL), baseWeights: base });
 
-    expect(r.weights[0]).toBe(3);                                    // classico, sem boost
-    expect(r.weights[ids.indexOf("recovery")]).toBe(DEFAULT_BOOST);  // tecnico, com boost
+    const semEnfoque = runMcdmPipeline(matrix, { baseWeights: base });
+    expect(semEnfoque.weights).toEqual(base);
+
+    expect(() => runMcdmPipeline(matrix, {
+      weighting: enfoque(equalGroupWeights()),
+      baseWeights: base,
+    })).toThrow(/baseWeights não se aplica ao modo 'enfoque'/);
   });
 });
 

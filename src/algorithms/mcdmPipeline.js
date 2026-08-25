@@ -156,7 +156,9 @@ function assertNoEmptyCells(sheet) {
  * @param {object}   [options]
  * @param {string}   [options.method="nicholas"]  método de seleção; ver a guarda
  * @param {object}   [options.weighting]          estado de enfoque.js; default = modo 'none'
- * @param {number[]} [options.baseWeights]        pesos-base, um por coluna da aba ESTENDIDA
+ * @param {number[]} [options.baseWeights]        pesos-base, um por coluna da aba ESTENDIDA;
+ *                                                só vale com o modo 'none' — combiná-lo com
+ *                                                'enfoque' lança (ver resolveWeights)
  * @returns {{
  *   selectionMethod: string,
  *   sheet: object,
@@ -169,7 +171,8 @@ function assertNoEmptyCells(sheet) {
  *   `sheet` é a aba estendida e já convertida — é o que o motor de fato leu, e
  *   está no retorno para inspeção e para a futura exibição na tela.
  *   `weights` são os pesos ANTES da normalização do TOPSIS (os normalizados
- *   ficam em `topsis.weights`), porque é neles que o boost do Enfoque aparece.
+ *   ficam em `topsis.weights`), porque é neles que a repartição do Enfoque
+ *   aparece — peso do grupo ÷ tamanho do grupo, somando 1 sobre as 19 colunas.
  */
 export function runMcdmPipeline(matrix, options = {}) {
   const {
@@ -192,7 +195,8 @@ export function runMcdmPipeline(matrix, options = {}) {
 
   // Passo 4 — pesos. Em modo 'none' resolveWeights devolve os pesos-base
   // intactos, e o default de pesos-base é 1 para cada critério; depois da
-  // normalização do TOPSIS isso é exatamente o equalWeights do motor.
+  // normalização do TOPSIS isso é exatamente o equalWeights do motor. Em modo
+  // 'enfoque' devolve peso-de-grupo ÷ tamanho-do-grupo para cada critério.
   const weights = resolveWeights(weighting, criterionIds, baseWeights);
 
   // Passo 5 — motor.

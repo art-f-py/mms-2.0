@@ -51,8 +51,11 @@ import { DIRECTION } from "./mcdmCriteria";
  * as alternativas empatadas, QUALQUER constante produz exatamente a mesma
  * ordenação. Trocar 0.5 por outro número não mudaria nenhuma decisão do app —
  * mudaria só o número exibido num cenário em que ele não distingue ninguém.
- * A constante que de fato merece validação externa é o DEFAULT_BOOST do
- * Enfoque (ver enfoque.js): essa é parâmetro livre e mexe no ranking.
+ *
+ * (Este comentário já apontou o DEFAULT_BOOST do Enfoque como a constante que
+ * de fato merecia validação externa. Ela deixou de existir: o Enfoque trocou o
+ * boost multiplicativo por peso de grupo declarado pelo usuário, então não há
+ * mais fator arbitrário embutido naquele módulo.)
  */
 export const DEGENERATE_CLOSENESS = 0.5;
 
@@ -70,7 +73,8 @@ export function equalWeights(count) {
  * Escalar todos os pesos por uma constante multiplica d⁺ e d⁻ pela mesma
  * constante e deixa C_i intacto, então isto não muda ranking nenhum. Serve para
  * que a proximidade seja comparável entre execuções com pesos de magnitudes
- * diferentes (o Enfoque, por exemplo, devolve pesos já multiplicados por boost).
+ * diferentes — o modo 'none' do Enfoque devolve 1 para cada critério (soma = n),
+ * e o modo 'enfoque' devolve pesos que já somam 1.
  */
 export function normalizeWeights(weights) {
   const total = weights.reduce((sum, w) => sum + w, 0);
