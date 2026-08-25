@@ -177,9 +177,27 @@ describe("runMcdmPipeline — Nicholas ponta a ponta", () => {
     const primeiro = r.ranking[0];
 
     expect(METHODS).toContain(primeiro.code);
-    expect(primeiro.method).toBe("Open Pit");
+    expect(primeiro.label).toBe("Open Pit");
     expect(primeiro.closeness).toBeGreaterThan(0);
     expect(primeiro.closeness).toBeLessThan(1);
+  });
+
+  it("o rotulo do metodo de lavra chama-se `label`, nunca `method`", () => {
+    // Trava do desambiguamento: `method` no topo do retorno seria o metodo de
+    // SELECAO, e dentro da entrada seria o de LAVRA. Uma palavra so para dois
+    // sentidos no mesmo objeto foi o que este rename desfez — que nao volte.
+    const r = runMcdmPipeline(nicholasMatrix());
+
+    expect(r.selectionMethod).toBe("nicholas");
+    r.ranking.forEach((entry) => {
+      expect(entry).not.toHaveProperty("method");
+      expect(typeof entry.label).toBe("string");
+      expect(entry.label.length).toBeGreaterThan(0);
+    });
+    // E o rotulo continua casando com a linha de origem da aba.
+    r.ranking.forEach((entry) => {
+      expect(entry.label).toBe(r.sheet.rows[entry.index].method);
+    });
   });
 
   it("ranking do cenario completo — trava de regressao", () => {

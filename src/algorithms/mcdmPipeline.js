@@ -164,7 +164,7 @@ function assertNoEmptyCells(sheet) {
  *   criteria: Array<{id: string, direction: string}>,
  *   weights: number[],
  *   topsis: object,
- *   ranking: Array<{code: string, method: string, rank: number, closeness: number}>
+ *   ranking: Array<{code: string, label: string, rank: number, closeness: number}>
  * }}
  *   `sheet` é a aba estendida e já convertida — é o que o motor de fato leu, e
  *   está no retorno para inspeção e para a futura exibição na tela.
@@ -212,10 +212,17 @@ export function runMcdmPipeline(matrix, options = {}) {
     topsis:          result,
     // `id` do motor é o código do método de lavra; o rótulo legível vem da
     // linha correspondente da aba, pelo índice original.
+    //
+    // O campo é `label`, e não `method`, de propósito: `selectionMethod` no
+    // topo deste mesmo objeto é o método de SELEÇÃO (nicholas/ubc/shb), e um
+    // `method` aqui dentro valendo método de LAVRA ("Open Pit") daria dois
+    // sentidos à mesma palavra num único retorno. A linha de origem na aba
+    // continua chamando o campo de `method` — é o formato de decisionMatrix.js
+    // e não muda por causa disto.
     ranking: result.ranking.map((entry) => ({
       ...entry,
-      code:   entry.id,
-      method: converted.rows[entry.index].method,
+      code:  entry.id,
+      label: converted.rows[entry.index].method,
     })),
   };
 }

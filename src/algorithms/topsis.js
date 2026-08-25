@@ -23,12 +23,36 @@
 import { DIRECTION } from "./mcdmCriteria";
 
 /**
- * Proximidade atribuída quando todas as alternativas são idênticas.
+ * Proximidade atribuída no empate degenerado.
  *
- * Nesse caso ideal e anti-ideal coincidem, d⁺ e d⁻ são ambos zero e C_i seria
- * 0/0. Cada alternativa está exatamente tão perto da ideal quanto da anti-ideal,
- * então 0.5 é a leitura honesta do empate. Não afeta ordenação — com todo mundo
- * empatado, qualquer constante produz o mesmo ranking.
+ * QUANDO DISPARA — e quando NÃO dispara. A condição é uma só: d⁺ + d⁻ = 0 para
+ * a alternativa, o que só acontece quando ideal e anti-ideal coincidem em todas
+ * as colunas, isto é, quando TODAS as alternativas são idênticas na matriz
+ * ponderada. Aí C_i = d⁻/(d⁺+d⁻) seria 0/0.
+ *
+ * Não é o caminho de célula vazia nem o de direção ausente: os dois são
+ * recusados por validate() com RangeError, antes de qualquer conta. Célula
+ * vazia virando 0.5 seria justamente o silêncio que aquela validação existe
+ * para impedir. Vale registrar porque a confusão é fácil de fazer.
+ *
+ * POR QUE 0.5. O valor não é uma escolha de calibragem — é o único ponto que a
+ * própria definição de C_i admite aqui. C_i vive em [0, 1] por construção: 0 é
+ * "coincide com a anti-ideal", 1 é "coincide com a ideal". No empate total cada
+ * alternativa está exatamente à mesma distância das duas (zero de ambas), e o
+ * ponto médio é a única leitura que não inventa preferência por nenhum extremo.
+ * 0 diria que todas são péssimas, 1 que todas são ótimas — as duas afirmações
+ * seriam sobre os dados, e os dados não dizem nada além de "todas iguais".
+ *
+ * NÃO PRECISA DE CONFIRMAÇÃO EXTERNA — e é por isso que não entra em
+ * PENDING_CONFIRMATION junto do TS_PERFORMANCE_ESTIMATED. Os dois casos são de
+ * naturezas diferentes: o do Top Slicing é um dado que existe no mundo e falta
+ * na planilha, então só o Francisco pode fechar. Este é uma convenção interna
+ * sobre uma indeterminação matemática, e é inerte quanto a ranking: com todas
+ * as alternativas empatadas, QUALQUER constante produz exatamente a mesma
+ * ordenação. Trocar 0.5 por outro número não mudaria nenhuma decisão do app —
+ * mudaria só o número exibido num cenário em que ele não distingue ninguém.
+ * A constante que de fato merece validação externa é o DEFAULT_BOOST do
+ * Enfoque (ver enfoque.js): essa é parâmetro livre e mexe no ranking.
  */
 export const DEGENERATE_CLOSENESS = 0.5;
 

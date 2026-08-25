@@ -31,7 +31,31 @@ export const WEIGHTING_MODES = Object.freeze({
   ENTROPY: "entropy",
 });
 
-/** Fator aplicado ao peso dos critérios do grupo enfocado, quando o grupo não define o seu. */
+/**
+ * Fator aplicado ao peso dos critérios do grupo enfocado, quando o grupo não
+ * define o seu.
+ *
+ * !!! VALOR ARBITRÁRIO DE PARTIDA — SEM FUNDAMENTAÇÃO EXTERNA !!!
+ *
+ * O 2 não veio do Francisco, não veio da bibliografia de MCDM e não foi
+ * calibrado contra nenhum estudo de caso. É "o dobro", a leitura mais óbvia de
+ * "este grupo pesa mais que os outros", escolhida para o modo Enfoque existir
+ * com um número concreto enquanto a intensidade certa não é decidida. Qualquer
+ * afirmação mais forte do que isso seria invenção.
+ *
+ * O que se sabe sobre o efeito dele, medido e fixado em teste
+ * (mcdmPipeline.test.js): com 2, o Enfoque técnico e o econômico produzem
+ * rankings diferentes entre si e diferentes do modo 'none' no cenário completo
+ * do Nicholas. Ou seja, o valor é suficiente para o modo ter efeito visível —
+ * o que ele NÃO é é justificado como a intensidade correta.
+ *
+ * A PENDÊNCIA REAL DO MÓDULO É ESTA CONSTANTE, e não o 0.5 do empate
+ * degenerado do TOPSIS (esse é matematicamente forçado; ver
+ * DEGENERATE_CLOSENESS em topsis.js). O boost é um parâmetro livre: mudá-lo
+ * muda ranking. Vale confirmar com o Francisco antes de produção — inclusive
+ * se o fator deve ser o mesmo para todos os grupos, já que a estrutura
+ * (`boost` por grupo em ENFOQUE_GROUPS) já permite um valor por grupo.
+ */
 export const DEFAULT_BOOST = 2;
 
 /**
