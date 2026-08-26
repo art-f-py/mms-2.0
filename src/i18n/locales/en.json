@@ -179,6 +179,42 @@
       "jointCondition_ob": "Joint Cond. — Ore",
       "jointCondition_hw": "Joint Cond. — HW",
       "jointCondition_fw": "Joint Cond. — FW"
+    },
+    "mcdm": {
+      "_comment": "PLACEHOLDER — the strings in this block are deliberately still in Portuguese, copied verbatim from pt-BR.json. This is a conscious decision for the current phase, NOT a forgotten translation: the MCDM block shipped before its wording was settled. The parity test requires every key to exist in all four locales, hence the copy. Keys starting with '_' are metadata and are excluded from the parity check.",
+      "title": "Enfoque + TOPSIS — Nicholas",
+      "subtitle": "Ranking multicritério sobre a matriz de decisão do Nicholas: 13 critérios clássicos + 6 critérios fixos, ponderados por grupo.",
+      "weightsTitle": "Pesos por grupo",
+      "weightsHint": "Os quatro pesos somam 1. Ajustar um redistribui os outros três proporcionalmente.",
+      "proportionTitle": "Proporção",
+      "closenessHint": "Proximidade relativa à solução ideal, de 0 a 1 — quanto maior, melhor.",
+      "unavailable": "Ranking multicritério indisponível para os dados atuais.",
+      "pendingTitle": "Ainda fora do multicritério",
+      "pendingReason": "As tabelas destes métodos contêm valores que a escala de Saaty ainda não cobre. A regra de conversão está pendente de definição.",
+      "tabs": {
+        "classic": "Resultados clássicos",
+        "mcdm": "Decisão multicritério (Nicholas)"
+      },
+      "matrix": {
+        "title": "Ver matriz de decisão",
+        "criterion": "Critério",
+        "weight": "Peso",
+        "hint": "O peso muda ao vivo conforme os sliders. Os valores das células não — eles vêm das tabelas do Nicholas e dos critérios fixos, e só mudam se o formulário mudar."
+      },
+      "fixedCriteria": {
+        "performance": "Desempenho",
+        "productivity": "Produtividade",
+        "recovery": "Recuperação",
+        "dilution": "Diluição",
+        "capitalInvestment": "Investimento de capital",
+        "comparativeCosts": "Custos comparativos"
+      },
+      "groups": {
+        "geometry": "Geometria",
+        "geomechanics": "Geomecânica",
+        "technical": "Técnico-Operacional",
+        "economic": "Economia"
+      }
     }
   },
   "deposit": {

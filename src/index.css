@@ -20,6 +20,25 @@
   --color-danger:     #b91c1c;
   --color-danger-50:  #fef2f2;
 
+  /* Cores dos quatro grupos de critérios do Enfoque (MCDM).
+
+     Tokens PRÓPRIOS, e não variações da primária. A primeira versão do bloco
+     MCDM usava --color-primary em quatro opacidades, para não introduzir
+     paleta nova; na prática os quatro grupos precisam ser distinguíveis à
+     primeira vista em três lugares ao mesmo tempo (segmento da barra de
+     proporção, quadradinho do slider e borda da linha na matriz de decisão), e
+     quatro intensidades do mesmo azul não sustentam essa leitura — sobretudo
+     quando um peso cai perto de zero e o segmento fica fino. Decisão explícita
+     do usuário: matizes distintos.
+
+     São quatro MATIZES diferentes, não quatro passos de uma escala: os grupos
+     são categorias sem ordem entre si, e uma escala sequencial sugeriria uma
+     hierarquia que não existe. */
+  --color-mcdm-geometry:     #3B7A9E;
+  --color-mcdm-geomechanics: #7A5C99;
+  --color-mcdm-technical:    #C98A3B;
+  --color-mcdm-economic:     #B25353;
+
   /* Aliases legados usados por modais e ações flutuantes.
      Nota: --bg era #ffffff (fundo de input) e --bg-card era #f8fafc (cartão),
      portanto mapeiam de forma cruzada para preservar a aparência original. */

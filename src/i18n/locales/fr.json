@@ -180,6 +180,42 @@
       "jointCondition_ob": "Cond. Discont. — Ore",
       "jointCondition_hw": "Cond. Discont. — HW",
       "jointCondition_fw": "Cond. Discont. — FW"
+    },
+    "mcdm": {
+      "_comment": "ESPACE RESERVE — les textes de ce bloc sont volontairement encore en portugais, copies tels quels depuis pt-BR.json. C'est un choix assume pour cette phase, et NON une traduction oubliee : le bloc MCDM est arrive avant que sa formulation soit arretee. Le test de parite exige que chaque cle existe dans les quatre langues, d'ou la copie. Les cles commencant par '_' sont des metadonnees et sont exclues de la verification.",
+      "title": "Enfoque + TOPSIS — Nicholas",
+      "subtitle": "Ranking multicritério sobre a matriz de decisão do Nicholas: 13 critérios clássicos + 6 critérios fixos, ponderados por grupo.",
+      "weightsTitle": "Pesos por grupo",
+      "weightsHint": "Os quatro pesos somam 1. Ajustar um redistribui os outros três proporcionalmente.",
+      "proportionTitle": "Proporção",
+      "closenessHint": "Proximidade relativa à solução ideal, de 0 a 1 — quanto maior, melhor.",
+      "unavailable": "Ranking multicritério indisponível para os dados atuais.",
+      "pendingTitle": "Ainda fora do multicritério",
+      "pendingReason": "As tabelas destes métodos contêm valores que a escala de Saaty ainda não cobre. A regra de conversão está pendente de definição.",
+      "tabs": {
+        "classic": "Resultados clássicos",
+        "mcdm": "Decisão multicritério (Nicholas)"
+      },
+      "matrix": {
+        "title": "Ver matriz de decisão",
+        "criterion": "Critério",
+        "weight": "Peso",
+        "hint": "O peso muda ao vivo conforme os sliders. Os valores das células não — eles vêm das tabelas do Nicholas e dos critérios fixos, e só mudam se o formulário mudar."
+      },
+      "fixedCriteria": {
+        "performance": "Desempenho",
+        "productivity": "Produtividade",
+        "recovery": "Recuperação",
+        "dilution": "Diluição",
+        "capitalInvestment": "Investimento de capital",
+        "comparativeCosts": "Custos comparativos"
+      },
+      "groups": {
+        "geometry": "Geometria",
+        "geomechanics": "Geomecânica",
+        "technical": "Técnico-Operacional",
+        "economic": "Economia"
+      }
     }
   },
   "deposit": {

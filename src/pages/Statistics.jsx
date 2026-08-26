@@ -4,6 +4,8 @@ import { useTranslation } from "react-i18next";
 import { useMms } from "../context/MmsContext";
 import { METHODS, METHOD_LABELS } from "../algorithms/ubcWeights";
 import { normalizeScores } from "../algorithms/algorithms";
+import McdmBlock from "../components/McdmBlock";
+import { MCDM_SELECTION_METHOD } from "../utils/mcdmRanking";
 import {
   BarChart, Bar, Cell, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer,
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
@@ -168,6 +170,30 @@ function MethodBlock({ sm, result }) {
 }
 
 // ---------------------------------------------------------------------------
+// ABAS — CLÁSSICO x MULTICRITÉRIO
+// ---------------------------------------------------------------------------
+// Duas visões alternáveis, não duas seções empilhadas: os blocos clássicos e o
+// bloco MCDM respondem à mesma pergunta por caminhos diferentes, e vê-los
+// juntos numa rolagem só convida a comparar ranking com ranking como se fossem
+// a mesma escala (score de tabela x proximidade de TOPSIS, que não são).
+const VIEWS = { CLASSIC: "classic", MCDM: "mcdm" };
+
+// Mesmo botão-aba do seletor domínio/critério do Nicholas (Inputs.jsx), com o
+// S.btnGhost de lá reescrito aqui — aquele objeto de estilo é local do Inputs e
+// não é exportado.
+const tabButtonStyle = (on) => ({
+  padding:         "6px 14px",
+  minHeight:       "44px",
+  borderRadius:    "6px",
+  fontSize:        "13px",
+  cursor:          "pointer",
+  backgroundColor: on ? colors.primary : "transparent",
+  color:           on ? "var(--color-white)" : colors.muted,
+  border:          `1px solid ${on ? colors.primary : colors.border}`,
+  fontWeight:      on ? "700" : "400",
+});
+
+// ---------------------------------------------------------------------------
 // COMPONENTE PRINCIPAL
 // ---------------------------------------------------------------------------
 function Statistics() {
@@ -176,6 +202,7 @@ function Statistics() {
   const navigate  = useNavigate();
 
   const [filters, setFilters] = useState({ ubc: true, nicholas: true, shb: true });
+  const [view, setView]       = useState(VIEWS.CLASSIC);
 
   const toggleFilter = (key) => setFilters((prev) => ({ ...prev, [key]: !prev[key] }));
 
@@ -198,6 +225,18 @@ function Statistics() {
   const activeMethods = SELECTION_METHODS.filter(
     (m) => filters[m.key] && state.results[m.key]
   );
+
+  // A aba MCDM SOME quando o Nicholas não está ativo — não fica desabilitada.
+  // Aba morta que o usuário não tem como usar só ocupa espaço explicando uma
+  // indisponibilidade que a pill logo acima já explica.
+  const showMcdmTab = activeMethods.some((sm) => sm.key === MCDM_SELECTION_METHOD);
+
+  // Desligar a pill do Nicholas enquanto a aba MCDM está aberta tiraria a aba
+  // debaixo da visão atual. Clampa em vez de corrigir por efeito colateral —
+  // mesma solução do `safeStep` do stepper em Inputs.jsx, pelo mesmo motivo:
+  // um useState que só se conserta depois do render mostraria um quadro vazio
+  // no meio do caminho.
+  const safeView = view === VIEWS.MCDM && !showMcdmTab ? VIEWS.CLASSIC : view;
 
   return (
     <div style={{ backgroundColor: "var(--color-bg)", minHeight: "100vh", padding: "32px clamp(12px, 4vw, 24px) 180px" }}>
@@ -227,10 +266,47 @@ function Statistics() {
         </div>
       )}
 
-      {/* BLOCOS POR MÉTODO */}
-      {activeMethods.map((sm) => (
-        <MethodBlock key={sm.key} sm={sm} result={state.results[sm.key]} />
-      ))}
+      {/* ABAS — só aparecem quando há uma segunda visão para onde ir.
+          A do MCDM depende do Nicholas estar entre os métodos ativos: o
+          pipeline multicritério só suporta ele nesta fase (ver
+          MCDM_SUPPORTED_METHODS em algorithms/mcdmPipeline.js). */}
+      {showMcdmTab && activeMethods.length > 0 && (
+        <div style={{ marginTop: "20px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          {[
+            [VIEWS.CLASSIC, t("results.mcdm.tabs.classic")],
+            [VIEWS.MCDM,    t("results.mcdm.tabs.mcdm")],
+          ].map(([id, label]) => (
+            <button
+              key={id}
+              onClick={() => setView(id)}
+              aria-pressed={safeView === id}
+              style={tabButtonStyle(safeView === id)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* CONTEÚDO DA ABA ATIVA.
+          A visão inativa é DESMONTADA, não esmaecida. O Inputs.jsx usa os dois
+          padrões: esmaecer no seletor domínio/critério do Nicholas, onde os
+          dois lados são controles irmãos que vale a pena continuar vendo, e
+          desmontar no stepper, onde cada etapa é uma tela inteira. Aqui são
+          telas inteiras — três gráficos esmaecidos ao lado da matriz MCDM não
+          informariam nada. Desmontar também evita o problema conhecido do
+          ResponsiveContainer do recharts, que mede zero dentro de um contêiner
+          escondido e volta desenhado errado.
+
+          Efeito colateral aceito: o método destacado dentro de um MethodBlock
+          (o breakdown do radar) volta ao estado neutro ao trocar de aba e
+          voltar. Dentro da aba clássica nada mudou. */}
+      {safeView === VIEWS.CLASSIC &&
+        activeMethods.map((sm) => (
+          <MethodBlock key={sm.key} sm={sm} result={state.results[sm.key]} />
+        ))}
+
+      {safeView === VIEWS.MCDM && <McdmBlock />}
 
       {/* BOTÃO VOLTAR — fixo na tela */}
       <button
