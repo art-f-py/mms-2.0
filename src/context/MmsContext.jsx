@@ -1,6 +1,6 @@
 import { createContext, useContext, useReducer, useEffect } from "react";
 import { normalizeThickness, normalizeRss } from "../data/formRules";
-import { equalGroupWeights, validateGroupWeights } from "../algorithms/enfoque";
+import { ENFOQUE_GROUP_IDS, equalGroupWeights, validateGroupWeights } from "../algorithms/enfoque";
 import { rebalanceGroupWeights } from "../algorithms/enfoqueRebalance";
 
 const STORAGE_KEY = "mms2-state";
@@ -81,6 +81,50 @@ const neutralNicholasCriteria = () => ({
   fw:  { rss: 1, jointSpacing: 1, jointCondition: 1 },
 });
 
+// ---------------------------------------------------------------------------
+// CENÁRIOS DO MCDM
+// ---------------------------------------------------------------------------
+// Um cenário é uma REPARTIÇÃO DE PESOS COM NOME — {id, name, groupWeights} — e
+// nada mais. Deliberadamente NÃO guarda cópia congelada de ranking nem de
+// formData.
+//
+// O motivo é o que a comparação precisa responder: "com os dados que tenho
+// AGORA, o que muda se eu privilegiar economia em vez de geometria?". Um
+// ranking congelado responderia outra pergunta — o que teria acontecido com os
+// dados de ontem — e as duas dariam a mesma cara na tela, o que é a pior forma
+// de errar. Guardando só os pesos, cada cenário recalcula contra o formData
+// atual a cada render, e corrigir um RMR na etapa de geotecnia atualiza todas
+// as colunas da comparação de uma vez.
+//
+// Fica na RAIZ do estado, irmão de formData e results, e não dentro de
+// criteriaWeights.mcdm: aquilo é a repartição em uso, uma só; isto é uma lista
+// de repartições guardadas, com ciclo de vida próprio.
+const emptyScenarios = () => [];
+
+/**
+ * Id de cenário. Só precisa ser único dentro da lista do usuário — não é chave
+ * de banco nem trafega para lugar nenhum. `crypto.randomUUID` quando existe (é
+ * o caso de todo navegador que roda este app e do Node dos testes); o fallback
+ * cobre contextos não seguros, onde a API não é exposta.
+ */
+function makeScenarioId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `s-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+/**
+ * Cópia dos quatro pesos nomeados, e só deles.
+ *
+ * Copiar chave a chave em vez de espalhar o objeto recebido é o que impede um
+ * cenário de carregar lixo: chave desconhecida vinda de estado adulterado não
+ * entra, e o objeto guardado não compartilha referência com o do formulário —
+ * um cenário salvo não pode mudar sozinho quando o slider se mexe depois.
+ */
+const pickGroupWeights = (weights) =>
+  Object.fromEntries(ENFOQUE_GROUP_IDS.map((id) => [id, weights?.[id] ?? 0]));
+
 const initialState = {
   formData: initialFormData,
   results: {
@@ -88,6 +132,7 @@ const initialState = {
     nicholas: null,
     shb:      null,
   },
+  mcdmScenarios: emptyScenarios(),
 };
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -236,6 +281,21 @@ export function mmsReducer(state, action) {
         },
       };
     }
+    case "ADD_MCDM_SCENARIO": {
+      // O id nasce AQUI, e não no componente, para que a tela não precise
+      // conhecer a regra de unicidade da lista. É a única coisa não
+      // determinística do reducer, e é assumida: a alternativa seria o
+      // componente gerar o id e passá-lo na ação, o que só move o mesmo efeito
+      // para um lugar onde ele fica mais fácil de esquecer.
+      const scenario = {
+        id:           makeScenarioId(),
+        name:         action.name,
+        groupWeights: pickGroupWeights(action.groupWeights),
+      };
+      return { ...state, mcdmScenarios: [...state.mcdmScenarios, scenario] };
+    }
+    case "REMOVE_MCDM_SCENARIO":
+      return { ...state, mcdmScenarios: state.mcdmScenarios.filter((s) => s.id !== action.id) };
     case "RESET_CRITERIA_WEIGHTS":
       return { ...state, formData: { ...state.formData, criteriaWeights: makeDefaultCriteriaWeights() } };
     case "SET_RESULT":
@@ -243,10 +303,17 @@ export function mmsReducer(state, action) {
     case "CLEAR_RESULTS":
       return { ...state, results: initialState.results };
     case "RESET_ALL":
-      // Volta ao estado inicial com objetos frescos (formData + resultados limpos)
+      // Volta ao estado inicial com objetos frescos (formData + resultados limpos).
+      //
+      // Os cenários salvos vão junto. Eles são pesos guardados PARA COMPARAR
+      // contra um depósito; sobrevivendo a um "limpar tudo", reapareceriam na
+      // comparação do próximo depósito com nomes que se referem ao anterior —
+      // e a comparação recalcula ao vivo, então eles nem estariam errados, só
+      // sem sentido. Além disso, omitir a chave aqui a apagaria do estado.
       return {
-        formData: { ...initialFormData, criteriaWeights: makeDefaultCriteriaWeights() },
-        results:  { ubc: null, nicholas: null, shb: null },
+        formData:      { ...initialFormData, criteriaWeights: makeDefaultCriteriaWeights() },
+        results:       { ubc: null, nicholas: null, shb: null },
+        mcdmScenarios: emptyScenarios(),
       };
     default:
       return state;
@@ -293,8 +360,47 @@ export function normalizeMcdmWeights(formData) {
   };
 }
 
-// Carrega apenas o formData persistido; os resultados NÃO são restaurados —
-// ao reabrir, o usuário revê os inputs mas precisa recalcular.
+/**
+ * Sanea a lista de cenários vinda do localStorage.
+ *
+ * Mesmo espírito de normalizeMcdmWeights, e pela mesma razão: o que está
+ * gravado veio de uma versão anterior do app ou de um JSON que alguém editou
+ * na mão, e um cenário torto não pode deixar a aba de comparação
+ * permanentemente quebrada — a tela não oferece jeito de apagá-lo se ela nem
+ * chega a renderizar.
+ *
+ * Cenário sem id ou sem pesos válidos é DESCARTADO, não consertado: um peso
+ * inventado no lugar do que estava gravado seria uma comparação silenciosamente
+ * falsa, pior que um cenário a menos. Os pesos passam por pickGroupWeights e
+ * por validateGroupWeights — as mesmas regras da entrada pela tela.
+ */
+// eslint-disable-next-line react-refresh/only-export-components
+export function normalizeScenarios(saved) {
+  if (!Array.isArray(saved)) return emptyScenarios();
+
+  return saved.flatMap((scenario) => {
+    if (!scenario || typeof scenario.id !== "string") return [];
+    const groupWeights = pickGroupWeights(scenario.groupWeights);
+    try {
+      validateGroupWeights(groupWeights);
+    } catch {
+      return [];
+    }
+    return [{
+      id:   scenario.id,
+      name: typeof scenario.name === "string" ? scenario.name : "",
+      groupWeights,
+    }];
+  });
+}
+
+// Carrega o formData e os cenários persistidos; os resultados NÃO são
+// restaurados — ao reabrir, o usuário revê os inputs mas precisa recalcular.
+//
+// Os cenários entram no grupo do que É restaurado, e não no dos resultados, por
+// serem entrada do usuário e não saída de cálculo: são quatro números que
+// alguém escolheu e batizou. Restaurá-los não congela conclusão nenhuma, já que
+// o ranking de cada um é recalculado ao vivo contra o formData do momento.
 function loadInitialState() {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -308,6 +414,8 @@ function loadInitialState() {
       formData: normalizeMcdmWeights(
         normalizeRss(normalizeThickness({ ...initialFormData, ...(parsed.formData || {}) })),
       ),
+      // Ausente no estado gravado por versões anteriores a esta — vira lista vazia.
+      mcdmScenarios: normalizeScenarios(parsed.mcdmScenarios),
     };
   } catch {
     return initialState;
@@ -317,14 +425,20 @@ function loadInitialState() {
 export function MmsProvider({ children }) {
   const [state, dispatch] = useReducer(mmsReducer, undefined, loadInitialState);
 
-  // Persiste só o formData a cada mudança (resultados ficam de fora de propósito)
+  // Persiste formData e cenários a cada mudança (resultados ficam de fora de
+  // propósito). As duas dependências são separadas porque mudam em ritmos bem
+  // diferentes: o formulário a cada tecla, os cenários só quando o usuário
+  // salva ou remove um.
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ formData: state.formData }));
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ formData: state.formData, mcdmScenarios: state.mcdmScenarios }),
+      );
     } catch {
       // localStorage indisponível ou cota excedida — ignora
     }
-  }, [state.formData]);
+  }, [state.formData, state.mcdmScenarios]);
 
   return (
     <MmsContext.Provider value={{ state, dispatch }}>

@@ -194,11 +194,22 @@
       "pendingReason": "As tabelas destes métodos contêm valores que a escala de Saaty ainda não cobre. A regra de conversão está pendente de definição.",
       "tabs": {
         "classic": "Resultados clássicos",
-        "mcdm": "Decisão multicritério (Nicholas)"
+        "mcdm": "Decisão multicritério (Nicholas)",
+        "scenarios": "Comparar cenários"
+      },
+      "scenarios": {
+        "title": "Comparar cenários",
+        "subtitle": "Cada cenário guarda uma repartição de pesos com nome. O ranking de cada um é recalculado com os dados atuais do formulário.",
+        "save": "Salvar cenário atual",
+        "namePlaceholder": "Nome do cenário",
+        "emptyTitle": "Nenhum cenário salvo",
+        "empty": "Ajuste os pesos por grupo na aba de decisão multicritério e use \"Salvar cenário atual\" para guardar aquela repartição com um nome. Cada cenário salvo vira uma coluna aqui.",
+        "hint": "A cor vai do verde (melhor colocação) ao vermelho (pior). As linhas seguem a ordem canônica dos métodos, e não a colocação: assim uma linha não muda de lugar quando você salva ou remove um cenário.",
+        "remove": "Remover o cenário {{name}}"
       },
       "matrix": {
         "title": "Ver matriz de decisão",
-        "criterion": "Critério",
+        "method": "Método",
         "weight": "Peso",
         "hint": "O peso muda ao vivo conforme os sliders. Os valores das células não — eles vêm das tabelas do Nicholas e dos critérios fixos, e só mudam se o formulário mudar."
       },

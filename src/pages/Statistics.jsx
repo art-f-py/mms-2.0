@@ -5,6 +5,7 @@ import { useMms } from "../context/MmsContext";
 import { METHODS, METHOD_LABELS } from "../algorithms/ubcWeights";
 import { normalizeScores } from "../algorithms/algorithms";
 import McdmBlock from "../components/McdmBlock";
+import ScenarioComparison from "../components/ScenarioComparison";
 import { MCDM_SELECTION_METHOD } from "../utils/mcdmRanking";
 import {
   BarChart, Bar, Cell, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer,
@@ -176,7 +177,7 @@ function MethodBlock({ sm, result }) {
 // bloco MCDM respondem à mesma pergunta por caminhos diferentes, e vê-los
 // juntos numa rolagem só convida a comparar ranking com ranking como se fossem
 // a mesma escala (score de tabela x proximidade de TOPSIS, que não são).
-const VIEWS = { CLASSIC: "classic", MCDM: "mcdm" };
+const VIEWS = { CLASSIC: "classic", MCDM: "mcdm", SCENARIOS: "scenarios" };
 
 // Mesmo botão-aba do seletor domínio/critério do Nicholas (Inputs.jsx), com o
 // S.btnGhost de lá reescrito aqui — aquele objeto de estilo é local do Inputs e
@@ -236,7 +237,11 @@ function Statistics() {
   // mesma solução do `safeStep` do stepper em Inputs.jsx, pelo mesmo motivo:
   // um useState que só se conserta depois do render mostraria um quadro vazio
   // no meio do caminho.
-  const safeView = view === VIEWS.MCDM && !showMcdmTab ? VIEWS.CLASSIC : view;
+  // As duas visões que dependem do pipeline MCDM. "Comparar cenários" entra
+  // junto: os cenários são repartições de peso do Enfoque, e sem o Nicholas
+  // ativo não há ranking para nenhuma coluna recalcular.
+  const MCDM_VIEWS = [VIEWS.MCDM, VIEWS.SCENARIOS];
+  const safeView   = MCDM_VIEWS.includes(view) && !showMcdmTab ? VIEWS.CLASSIC : view;
 
   return (
     <div style={{ backgroundColor: "var(--color-bg)", minHeight: "100vh", padding: "32px clamp(12px, 4vw, 24px) 180px" }}>
@@ -273,8 +278,9 @@ function Statistics() {
       {showMcdmTab && activeMethods.length > 0 && (
         <div style={{ marginTop: "20px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
           {[
-            [VIEWS.CLASSIC, t("results.mcdm.tabs.classic")],
-            [VIEWS.MCDM,    t("results.mcdm.tabs.mcdm")],
+            [VIEWS.CLASSIC,   t("results.mcdm.tabs.classic")],
+            [VIEWS.MCDM,      t("results.mcdm.tabs.mcdm")],
+            [VIEWS.SCENARIOS, t("results.mcdm.tabs.scenarios")],
           ].map(([id, label]) => (
             <button
               key={id}
@@ -307,6 +313,8 @@ function Statistics() {
         ))}
 
       {safeView === VIEWS.MCDM && <McdmBlock />}
+
+      {safeView === VIEWS.SCENARIOS && <ScenarioComparison />}
 
       {/* BOTÃO VOLTAR — fixo na tela */}
       <button

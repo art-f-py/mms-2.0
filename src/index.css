@@ -98,6 +98,26 @@ input[type="range"] {
   }
 }
 
+/* Bloco MCDM com a matriz de decisão aberta: painel de pesos vira uma coluna
+   estreita à esquerda e a matriz ocupa o resto. É o MESMO painel de pesos do
+   estado fechado, só reposicionado — não há um segundo conjunto de sliders.
+
+   O minmax(0, 1fr) da coluna da direita não é decorativo: sem ele a coluna
+   assume min-width auto (a largura do conteúdo), a tabela de 19 colunas empurra
+   o grid inteiro e o overflow-x do contêiner da tabela nunca chega a agir — a
+   rolagem horizontal vaza para a página. */
+.mms-mcdm-split {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+@media (max-width: 640px) {
+  .mms-mcdm-split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .mms-stepper-current {
   display: none;
 }
