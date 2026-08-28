@@ -22,11 +22,13 @@
 // ela existir). Dentro de um grupo, o peso se divide IGUALMENTE entre os
 // critérios:
 //
-//     peso(critério) = pesoDoGrupo / quantidadeDeCritériosNoGrupo
+//     peso(critério) = pesoDoGrupo / críteriosDoGrupoPresentesNaMatriz
 //
-// Somando sobre os 19 critérios da matriz estendida (13 clássicos + 6 fixos), o
-// total volta a ser exatamente 1 — cada grupo devolve o próprio peso inteiro,
-// só que repartido. Isso é invariante e está fixado em teste.
+// Somando sobre as colunas da matriz estendida — 19 no Nicholas (13 clássicos
+// + 6 fixos) e 17 no UBC (11 + 6) — o total volta a ser exatamente 1: cada
+// grupo devolve o próprio peso inteiro, só que repartido. Isso é invariante,
+// vale para qualquer método, e está fixado em teste. Ver applyEnfoque sobre por
+// que a contagem é por matriz e não pelo total declarado.
 //
 // SUBSTITUIU o modelo anterior de "boost multiplicativo num único grupo
 // escolhido" (um `enfoqueGroupId` e um fator DEFAULT_BOOST = 2). Aquele modelo
@@ -236,17 +238,34 @@ export function setWeightingMode(state, mode, options = {}) {
 /**
  * Aplica os pesos de grupo sobre uma lista de critérios.
  *
- * peso(critério) = pesoDoGrupo / quantidadeDeCritériosNoGrupo, onde a
- * quantidade é o TAMANHO DECLARADO do grupo (o que está nas tabelas de
- * descritores), e não quantos critérios daquele grupo aparecem em
- * `criterionIds`.
+ * peso(critério) = pesoDoGrupo / quantidadeDeCritériosDoGrupo PRESENTES em
+ * `criterionIds` — a matriz que está sendo ponderada, e não o total declarado
+ * nas tabelas de descritores.
  *
- * A distinção importa num formulário parcialmente preenchido: com menos colunas
- * clássicas, a soma dos pesos devolvidos fica abaixo de 1. Isso é correto e
- * proposital — o peso do grupo é uma declaração sobre o grupo inteiro, e não
- * deve inflar porque metade dos critérios não foi preenchida. O TOPSIS
- * normaliza os pesos antes de usar, então a escala absoluta não afeta ranking;
- * o que afetaria, e seria errado, é a proporção ENTRE grupos mudar sozinha.
+ * POR QUE POR MATRIZ, E NÃO PELO TOTAL DECLARADO. Enquanto o pipeline suportava
+ * só o Nicholas, os dois eram o mesmo número e a distinção era teórica. Com o
+ * UBC liberado deixaram de ser: CLASSIC_CRITERIA passou a declarar 5 critérios
+ * de Geometria e 12 de Geomecânica somando os dois métodos, mas o Nicholas traz
+ * 4 e 9 e o UBC traz 5 e 6. Dividir pelo total declarado daria a cada critério
+ * do Nicholas uma fatia menor do que o grupo dele realmente recebe, e a soma
+ * dos pesos cairia para 0.8875 no Nicholas e 0.875 no UBC — com encolhimento
+ * DIFERENTE por grupo (Geometria ×0.8, Geomecânica ×0.75, os outros dois
+ * intactos). Não é uma questão de escala: o TOPSIS normaliza o vetor e absorve
+ * um fator comum, mas fatores diferentes por grupo distorcem exatamente a
+ * proporção ENTRE grupos que o usuário acabou de repartir nos sliders.
+ *
+ * Contando os presentes, cada grupo devolve o próprio peso inteiro e a soma
+ * volta a ser 1 — para qualquer método, sem o módulo precisar saber qual é.
+ *
+ * O efeito colateral é num conjunto PARCIAL de critérios: os presentes passam a
+ * repartir o peso inteiro do grupo, em vez de deixá-lo incompleto. É o
+ * comportamento desejado pelo mesmo motivo — é o que mantém a proporção entre
+ * grupos igual à que foi declarada, em vez de deixá-la depender de quantas
+ * colunas cada grupo trouxe.
+ *
+ * Grupo sem nenhum critério presente simplesmente não aparece na saída: o peso
+ * dele não é distribuído a ninguém, e a soma fica abaixo de 1. Não há divisão
+ * por zero — a conta só roda para grupos que têm ao menos um critério na lista.
  *
  * @param {string[]} criterionIds  ids na ordem das colunas da matriz
  * @param {object}   groupWeights  { [groupId]: peso }, validado antes
@@ -255,6 +274,14 @@ export function setWeightingMode(state, mode, options = {}) {
  */
 export function applyEnfoque(criterionIds, groupWeights) {
   validateGroupWeights(groupWeights);
+
+  // Quantos critérios de cada grupo esta matriz traz. Contado uma vez, antes do
+  // map, para não varrer a lista inteira a cada coluna.
+  const presentes = {};
+  for (const id of criterionIds) {
+    const groupId = groupOfCriterion(id);
+    if (groupId) presentes[groupId] = (presentes[groupId] ?? 0) + 1;
+  }
 
   return criterionIds.map((id) => {
     const groupId = groupOfCriterion(id);
@@ -273,8 +300,7 @@ export function applyEnfoque(criterionIds, groupWeights) {
       );
     }
 
-    const tamanho = ENFOQUE_GROUPS_BY_ID[groupId].criterionIds.length;
-    return groupWeights[groupId] / tamanho;
+    return groupWeights[groupId] / presentes[groupId];
   });
 }
 

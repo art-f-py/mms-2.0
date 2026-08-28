@@ -8,29 +8,48 @@
 // Sequência:
 //   1. escolhe a aba do método de seleção pedido, dentro da matriz recebida
 //   2. estende com os seis critérios fixos     → extendSheetWithFixedCriteria
-//   3. converte SÓ as colunas clássicas        → toSaaty
+//   3. converte SÓ as colunas clássicas        → toSaaty / toUbcScale
 //   4. resolve os pesos conforme o modo        → resolveWeights
 //   5. roda o motor                            → topsis
 //
-// SÓ NICHOLAS, POR ENQUANTO. As tabelas do Nicholas pontuam exclusivamente em
-// {−49, 0, 1, 2, 3, 4} — inteiramente dentro do domínio que o toSaaty cobre.
-// UBC e SH&B ficam de fora deliberadamente: as tabelas deles contêm valores
-// que a especificação da escala não cobre (−10, 5 e 6 no UBC; −7, −10, −25 e
-// os fracionários acima de 4 no SH&B, que já embute multiplicadores nas
-// próprias tabelas). A regra de conversão para esses valores é decisão do
-// Francisco e ainda não chegou. Ver a guarda em assertMcdmMethodSupported.
+// UMA ESCALA POR MÉTODO DE SELEÇÃO. O passo 3 não tem uma conversão só: o
+// Nicholas pontua em {−49, 0, 1, 2, 3, 4} e usa a fórmula linear de
+// saatyScale.js; o UBC pontua em {−49, −10, 0, 1, 2, 3, 4, 5, 6} e usa a tabela
+// categórica de ubcScale.js, que NÃO é aquela fórmula estendida — diverge dela
+// em 3 e em 4, 42% das células. A escolha é uma tabela (CLASSIC_SCALE_BY_METHOD)
+// e não um if, pelo mesmo motivo que MCDM_PENDING_METHODS é tabela: quem
+// acrescentar o SH&B acrescenta uma linha, e esquecer de acrescentá-la falha na
+// guarda em vez de converter pela escala do método errado.
+//
+// SH&B AINDA DE FORA. As tabelas dele contêm valores que nenhuma das duas
+// escalas cobre (−7 e os fracionários 4.2, 4.38 e 5.25, resultado de a tabela
+// já embutir multiplicadores). Ver a guarda em assertMcdmMethodSupported.
 //
 // Puro: não lê estado global, não toca no DOM, não muta o que recebe.
 
 import { extendSheetWithFixedCriteria, sheetCriteriaDirections } from "./decisionMatrix";
 import { FIXED_CRITERIA_BY_ID } from "./mcdmCriteria";
 import { toSaaty } from "./saatyScale";
+import { toUbcScale } from "./ubcScale";
 import { createWeightingState, resolveWeights, WEIGHTING_MODES } from "./enfoque";
 import { calculateEntropyWeights } from "./entropyWeights";
 import { topsis } from "./topsis";
 
 /** Métodos de seleção cujo pipeline MCDM já está liberado. */
-export const MCDM_SUPPORTED_METHODS = Object.freeze(["nicholas"]);
+export const MCDM_SUPPORTED_METHODS = Object.freeze(["nicholas", "ubc"]);
+
+/**
+ * A conversão de escala de cada método liberado.
+ *
+ * FONTE ÚNICA da decisão do passo 3, e é ela que torna "liberado" e "tem escala
+ * definida" a mesma coisa: um método em MCDM_SUPPORTED_METHODS sem entrada aqui
+ * cairia em `undefined` na hora de converter. A guarda logo abaixo fecha isso
+ * verificando as duas listas juntas.
+ */
+export const CLASSIC_SCALE_BY_METHOD = Object.freeze({
+  nicholas: toSaaty,
+  ubc:      toUbcScale,
+});
 
 /**
  * Métodos bloqueados e o motivo, em formato legível por máquina.
@@ -40,29 +59,36 @@ export const MCDM_SUPPORTED_METHODS = Object.freeze(["nicholas"]);
  * ninguém precisar duplicar o texto.
  */
 export const MCDM_PENDING_METHODS = Object.freeze({
-  ubc: Object.freeze({
-    label:  "UBC",
-    reason: "aguardando regra de conversão Saaty do Francisco para os valores fora do domínio 0–4/−49 (−10, 5, 6)",
-  }),
   shb: Object.freeze({
     label:  "SH&B",
-    reason: "aguardando regra de conversão Saaty do Francisco para os valores fora do domínio 0–4/−50 (−7, −10, −25, e os fracionários acima de 4: 4.2, 4.38, 5.25)",
+    reason: "a Tabela 25 do Francisco cobre parte do domínio, mas ainda faltam −7 e os fracionários acima de 4 (4.2, 4.38, 5.25), que vêm de a tabela já embutir multiplicadores",
   }),
 });
 
 /**
  * Barra os métodos ainda não suportados, com mensagem que diz o que falta.
  *
- * A guarda existe porque, sem ela, o UBC e o SH&B falhariam mesmo assim — só
- * que lá dentro do toSaaty, com um "score X fora do domínio especificado" que
- * não diz nem qual método de seleção foi pedido nem que a pendência é externa.
- * A falha aqui é PROPOSITAL e esperada nesta fase do projeto: não é bug.
+ * A guarda existe porque, sem ela, o SH&B falharia mesmo assim — só que lá
+ * dentro da conversão de escala, com um "score X fora do domínio especificado"
+ * que não diz nem qual método de seleção foi pedido nem que a pendência é
+ * externa. A falha aqui é PROPOSITAL e esperada nesta fase do projeto: não é bug.
+ *
+ * Confere TAMBÉM que o método liberado tem escala declarada. As duas listas
+ * podem divergir por descuido — liberar um método e esquecer a linha em
+ * CLASSIC_SCALE_BY_METHOD —, e o sintoma disso seria um `undefined` chamado
+ * como função lá adiante, sem relação visível com a causa.
  *
  * @param {string} methodKey  "ubc" | "nicholas" | "shb"
  * @throws {Error} se o método não estiver em MCDM_SUPPORTED_METHODS
  */
 export function assertMcdmMethodSupported(methodKey) {
-  if (MCDM_SUPPORTED_METHODS.includes(methodKey)) return;
+  if (MCDM_SUPPORTED_METHODS.includes(methodKey)) {
+    if (typeof CLASSIC_SCALE_BY_METHOD[methodKey] === "function") return;
+    throw new Error(
+      `[MMS] Pipeline MCDM: "${methodKey}" está em MCDM_SUPPORTED_METHODS mas não tem ` +
+      `conversão de escala em CLASSIC_SCALE_BY_METHOD. As duas listas precisam andar juntas.`,
+    );
+  }
 
   const pending = MCDM_PENDING_METHODS[methodKey];
   if (pending) {
@@ -90,21 +116,34 @@ function isFixedCriterion(criterionKey) {
  * tabela do Francisco (1–5 nos técnicos, 10–100 no índice de custo). Não é
  * descuido: a normalização vetorial do TOPSIS divide cada coluna pela própria
  * norma euclidiana, então colunas de escalas diferentes já entram na conta em
- * pé de igualdade. Passar os fixos pelo toSaaty, além de estourar (o índice de
- * custo vai até 100), destruiria a informação de proporção entre eles.
+ * pé de igualdade. Passar os fixos pela conversão, além de estourar (o índice
+ * de custo vai até 100), destruiria a informação de proporção entre eles.
+ *
+ * A escala das colunas clássicas depende do MÉTODO DE SELEÇÃO — ver
+ * CLASSIC_SCALE_BY_METHOD e o cabeçalho do arquivo. O default é "nicholas"
+ * para não quebrar quem já chamava esta função com um argumento só.
  *
  * Puro: devolve uma aba nova.
  *
- * @param {object} sheet  aba de buildDecisionMatrix, tipicamente já estendida
+ * @param {object} sheet       aba de buildDecisionMatrix, tipicamente já estendida
+ * @param {string} [methodKey] método de seleção; decide a escala das colunas clássicas
  */
-export function convertClassicColumnsToSaaty(sheet) {
+export function convertClassicColumnsToSaaty(sheet, methodKey = "nicholas") {
+  const toScale = CLASSIC_SCALE_BY_METHOD[methodKey];
+  if (typeof toScale !== "function") {
+    throw new RangeError(
+      `[MMS] Pipeline MCDM: não há conversão de escala para "${String(methodKey)}". ` +
+      `Métodos com escala definida: ${Object.keys(CLASSIC_SCALE_BY_METHOD).join(", ")}.`,
+    );
+  }
+
   const classicColumn = sheet.criterionKeys.map((key) => !isFixedCriterion(key));
 
   return {
     ...sheet,
     rows: sheet.rows.map((row) => ({
       ...row,
-      values: row.values.map((value, j) => (classicColumn[j] ? toSaaty(value) : value)),
+      values: row.values.map((value, j) => (classicColumn[j] ? toScale(value) : value)),
     })),
   };
 }
@@ -173,7 +212,8 @@ function assertNoEmptyCells(sheet) {
  *   está no retorno para inspeção e para a futura exibição na tela.
  *   `weights` são os pesos ANTES da normalização do TOPSIS (os normalizados
  *   ficam em `topsis.weights`), porque é neles que a repartição do Enfoque
- *   aparece — peso do grupo ÷ tamanho do grupo, somando 1 sobre as 19 colunas.
+ *   aparece — peso do grupo ÷ critérios do grupo na matriz, somando 1 sobre as
+ *   colunas da aba (19 no Nicholas, 17 no UBC).
  */
 export function runMcdmPipeline(matrix, options = {}) {
   const {
@@ -182,13 +222,13 @@ export function runMcdmPipeline(matrix, options = {}) {
     baseWeights,
   } = options;
 
-  // Passo 0 — a guarda, antes de qualquer conta. Chegar ao toSaaty com um
+  // Passo 0 — a guarda, antes de qualquer conta. Chegar à conversão com um
   // método bloqueado é exatamente o que ela existe para impedir.
   assertMcdmMethodSupported(method);
 
-  // Passos 1 a 3 — aba, extensão, conversão.
+  // Passos 1 a 3 — aba, extensão, conversão na escala do método.
   const extended  = extendSheetWithFixedCriteria(requireSheet(matrix, method));
-  const converted = convertClassicColumnsToSaaty(extended);
+  const converted = convertClassicColumnsToSaaty(extended, method);
   assertNoEmptyCells(converted);
 
   const criteria     = sheetCriteriaDirections(converted);

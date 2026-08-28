@@ -28,10 +28,31 @@ import { CLASSIC_CRITERIA, PENDING_DOMAIN_SUBMODE } from "../classicCriteria";
 // O contrato central, e o que mais importa manter vivo: NENHUM criterio da
 // matriz pode ficar sem grupo em silencio.
 
-// Os 19 criterios da matriz estendida, na ordem em que o pipeline os produz.
-const IDS_CLASSICOS = CLASSIC_CRITERIA.map((c) => c.id);
-const IDS_FIXOS     = FIXED_CRITERIA.map((c) => c.id);
-const IDS_19        = [...IDS_CLASSICOS, ...IDS_FIXOS];
+// Os descritores declarados: 17 classicos (13 do Nicholas + 4 exclusivos do
+// UBC) e os 6 fixos. NAO e a matriz de nenhum metodo — e a uniao dos dois.
+const IDS_CLASSICOS  = CLASSIC_CRITERIA.map((c) => c.id);
+const IDS_FIXOS      = FIXED_CRITERIA.map((c) => c.id);
+const IDS_DECLARADOS = [...IDS_CLASSICOS, ...IDS_FIXOS];
+
+// As colunas de cada metodo, na ordem em que o pipeline as produz. Sao dois
+// conjuntos DIFERENTES com 11 ids em comum, e essa e a razao de applyEnfoque
+// contar os criterios presentes na matriz em vez do total declarado.
+const IDS_19 = [
+  "shape", "thickness", "dip", "grade",
+  "rss_ob", "jointSpacing_ob", "jointCondition_ob",
+  "rss_hw", "jointSpacing_hw", "jointCondition_hw",
+  "rss_fw", "jointSpacing_fw", "jointCondition_fw",
+  ...IDS_FIXOS,
+];
+const IDS_17_UBC = [
+  "shape", "thickness", "dip", "grade", "depth",
+  "rss_ob", "rmr_ob", "rss_hw", "rmr_hw", "rss_fw", "rmr_fw",
+  ...IDS_FIXOS,
+];
+
+// Tamanho de um grupo DENTRO de uma matriz — a conta que applyEnfoque faz.
+const presentesNoGrupo = (ids, groupId) =>
+  ids.filter((id) => groupOfCriterion(id) === groupId).length;
 
 const enfoqueState = (groupWeights) =>
   setWeightingMode(createWeightingState(), WEIGHTING_MODES.ENFOQUE, { groupWeights });
@@ -56,7 +77,7 @@ const somaDe = (pesos) => pesos.reduce((a, b) => a + b, 0);
 // COBERTURA DE GRUPO — o ponto mais importante da suite
 // ---------------------------------------------------------------------------
 
-describe("cobertura de grupo — os 19 criterios", () => {
+describe("cobertura de grupo — os criterios declarados", () => {
   it("os quatro grupos sao Geometria, Geomecanica, Tecnico-Operacional e Economia", () => {
     expect(ENFOQUE_GROUP_IDS).toEqual([
       CRITERION_GROUPS.GEOMETRY,
@@ -69,15 +90,64 @@ describe("cobertura de grupo — os 19 criterios", () => {
     ]);
   });
 
-  it("cada grupo tem a contagem esperada de criterios", () => {
+  it("cada grupo tem a contagem DECLARADA esperada", () => {
+    // O total declarado e a uniao Nicholas + UBC, e nao a matriz de nenhum dos
+    // dois: Geometria tem os 4 comuns mais `depth`, Geomecanica tem os 9 do
+    // Nicholas mais os 3 `rmr_*`.
     const tamanho = (id) => ENFOQUE_GROUPS_BY_ID[id].criterionIds.length;
-    expect(tamanho(CRITERION_GROUPS.GEOMETRY)).toBe(4);
-    expect(tamanho(CRITERION_GROUPS.GEOMECHANICS)).toBe(9);
+    expect(tamanho(CRITERION_GROUPS.GEOMETRY)).toBe(5);
+    expect(tamanho(CRITERION_GROUPS.GEOMECHANICS)).toBe(12);
     expect(tamanho(CRITERION_GROUPS.TECHNICAL)).toBe(4);
     expect(tamanho(CRITERION_GROUPS.ECONOMIC)).toBe(2);
-    // 4 + 9 + 4 + 2 = 19, o total de colunas da matriz estendida.
-    expect(ENFOQUE_GROUPS.reduce((n, g) => n + g.criterionIds.length, 0)).toBe(19);
+    expect(ENFOQUE_GROUPS.reduce((n, g) => n + g.criterionIds.length, 0)).toBe(23);
+    expect(IDS_DECLARADOS).toHaveLength(23);
+  });
+
+  it("cada grupo tem a contagem esperada DENTRO de cada matriz", () => {
+    // O numero que applyEnfoque de fato usa. Nicholas 4/9/4/2 = 19 colunas;
+    // UBC 5/6/4/2 = 17.
+    const { GEOMETRY, GEOMECHANICS, TECHNICAL, ECONOMIC } = CRITERION_GROUPS;
     expect(IDS_19).toHaveLength(19);
+    expect(presentesNoGrupo(IDS_19, GEOMETRY)).toBe(4);
+    expect(presentesNoGrupo(IDS_19, GEOMECHANICS)).toBe(9);
+    expect(presentesNoGrupo(IDS_19, TECHNICAL)).toBe(4);
+    expect(presentesNoGrupo(IDS_19, ECONOMIC)).toBe(2);
+
+    expect(IDS_17_UBC).toHaveLength(17);
+    expect(presentesNoGrupo(IDS_17_UBC, GEOMETRY)).toBe(5);
+    expect(presentesNoGrupo(IDS_17_UBC, GEOMECHANICS)).toBe(6);
+    expect(presentesNoGrupo(IDS_17_UBC, TECHNICAL)).toBe(4);
+    expect(presentesNoGrupo(IDS_17_UBC, ECONOMIC)).toBe(2);
+  });
+
+  it("os 11 criterionIds do UBC caem em exatamente um grupo cada, sem orfao", () => {
+    const { GEOMETRY, GEOMECHANICS } = CRITERION_GROUPS;
+    const classicosDoUbc = IDS_17_UBC.filter((id) => !IDS_FIXOS.includes(id));
+    expect(classicosDoUbc).toHaveLength(11);
+
+    classicosDoUbc.forEach((id) => {
+      const grupo = groupOfCriterion(id);
+      expect(ENFOQUE_GROUP_IDS).toContain(grupo);
+      const ocorrencias = ENFOQUE_GROUPS.filter((g) => g.criterionIds.includes(id));
+      expect(ocorrencias).toHaveLength(1);          // sem sobreposicao
+      expect(ocorrencias[0].id).toBe(grupo);
+    });
+
+    expect(classicosDoUbc.filter((id) => groupOfCriterion(id) === GEOMETRY))
+      .toEqual(["shape", "thickness", "dip", "grade", "depth"]);
+    expect(classicosDoUbc.filter((id) => groupOfCriterion(id) === GEOMECHANICS))
+      .toEqual(["rss_ob", "rmr_ob", "rss_hw", "rmr_hw", "rss_fw", "rmr_fw"]);
+  });
+
+  it("os 7 ids que UBC e Nicholas compartilham resolvem para o MESMO grupo", () => {
+    // Verificado, nao presumido: o UBC so pode reaproveitar as entradas do
+    // Nicholas se elas ja apontarem para o grupo que ele precisa.
+    const { GEOMETRY, GEOMECHANICS } = CRITERION_GROUPS;
+    const compartilhados = IDS_19.filter((id) => IDS_17_UBC.includes(id) && !IDS_FIXOS.includes(id));
+    expect(compartilhados).toEqual(["shape", "thickness", "dip", "grade", "rss_ob", "rss_hw", "rss_fw"]);
+    expect(compartilhados.map(groupOfCriterion)).toEqual([
+      GEOMETRY, GEOMETRY, GEOMETRY, GEOMETRY, GEOMECHANICS, GEOMECHANICS, GEOMECHANICS,
+    ]);
   });
 
   it("todo criterio das 19 colunas cai em exatamente um grupo", () => {
@@ -91,23 +161,24 @@ describe("cobertura de grupo — os 19 criterios", () => {
     });
   });
 
-  it("nao ha orfao nem sobreposicao — a uniao dos grupos e exatamente os 19", () => {
+  it("nao ha orfao nem sobreposicao — a uniao dos grupos e exatamente os declarados", () => {
     const uniao = ENFOQUE_GROUPS.flatMap((g) => [...g.criterionIds]);
-    expect(uniao).toHaveLength(19);              // sem sobreposicao
-    expect(new Set(uniao).size).toBe(19);        // sem duplicata
-    expect([...uniao].sort()).toEqual([...IDS_19].sort()); // sem orfao
+    expect(uniao).toHaveLength(23);              // sem sobreposicao
+    expect(new Set(uniao).size).toBe(23);        // sem duplicata
+    expect([...uniao].sort()).toEqual([...IDS_DECLARADOS].sort()); // sem orfao
   });
 
-  it("a Geometria sao os 4 classicos do bucket geo", () => {
+  it("a Geometria sao os 4 comuns mais o `depth` do UBC", () => {
     expect(ENFOQUE_GROUPS_BY_ID[CRITERION_GROUPS.GEOMETRY].criterionIds)
-      .toEqual(["shape", "thickness", "dip", "grade"]);
+      .toEqual(["shape", "thickness", "dip", "grade", "depth"]);
   });
 
-  it("a Geomecanica sao os 9 classicos dos buckets ob/hw/fw", () => {
+  it("a Geomecanica sao os 9 do Nicholas mais os 3 `rmr_*` do UBC", () => {
     expect(ENFOQUE_GROUPS_BY_ID[CRITERION_GROUPS.GEOMECHANICS].criterionIds).toEqual([
       "rss_ob", "jointSpacing_ob", "jointCondition_ob",
       "rss_hw", "jointSpacing_hw", "jointCondition_hw",
       "rss_fw", "jointSpacing_fw", "jointCondition_fw",
+      "rmr_ob", "rmr_hw", "rmr_fw",
     ]);
   });
 
@@ -136,9 +207,8 @@ describe("cobertura de grupo — os 19 criterios", () => {
 
   it("criterio desconhecido nao tem grupo", () => {
     expect(groupOfCriterion("naoExiste")).toBeUndefined();
-    // Criterios de UBC/SH&B ainda nao entram: o pipeline so suporta Nicholas.
-    expect(groupOfCriterion("depth")).toBeUndefined();
-    expect(groupOfCriterion("rmr_ob")).toBeUndefined();
+    // `oreValue` e do SH&B, o unico metodo ainda bloqueado — segue sem grupo.
+    expect(groupOfCriterion("oreValue")).toBeUndefined();
   });
 });
 
@@ -168,11 +238,12 @@ describe("criterio sem grupo — falha alto, nomeando o id", () => {
       .toThrow(/FIXED_CRITERIA .*ou.* CLASSIC_CRITERIA/s);
   });
 
-  it("um criterio de UBC/SH&B numa matriz de Enfoque seria pego como orfao", () => {
-    // Guarda concreta para quando o pipeline liberar os outros dois metodos:
-    // esquecer de declarar os criterios novos vira erro, nao ranking torto.
-    expect(() => applyEnfoque(["shape", "rmr_ob"], equalGroupWeights()))
-      .toThrow(/critério "rmr_ob" não pertence a nenhum grupo/);
+  it("um criterio do SH&B numa matriz de Enfoque seria pego como orfao", () => {
+    // Guarda concreta para quando o pipeline liberar o ultimo metodo: esquecer
+    // de declarar os criterios novos vira erro, nao ranking torto. O UBC ja
+    // passou por aqui — `rmr_ob` era orfao e hoje e Geomecanica.
+    expect(() => applyEnfoque(["shape", "oreValue"], equalGroupWeights()))
+      .toThrow(/critério "oreValue" não pertence a nenhum grupo/);
   });
 });
 
@@ -297,9 +368,8 @@ describe("applyEnfoque — peso do grupo dividido igualmente", () => {
   it("cenario 1 — peso concentrado em Geometria, celula por celula", () => {
     const pesos = applyEnfoque(IDS_19, PESO_GEOMETRIA);
     IDS_19.forEach((id, i) => {
-      const grupo   = groupOfCriterion(id);
-      const tamanho = ENFOQUE_GROUPS_BY_ID[grupo].criterionIds.length;
-      expect(pesos[i]).toBeCloseTo(PESO_GEOMETRIA[grupo] / tamanho, 12);
+      const grupo = groupOfCriterion(id);
+      expect(pesos[i]).toBeCloseTo(PESO_GEOMETRIA[grupo] / presentesNoGrupo(IDS_19, grupo), 12);
     });
     // E o efeito e visivel: um criterio de geometria pesa muito mais que um de
     // geomecanica.
@@ -310,9 +380,8 @@ describe("applyEnfoque — peso do grupo dividido igualmente", () => {
   it("cenario 2 — peso concentrado em Economia, celula por celula", () => {
     const pesos = applyEnfoque(IDS_19, PESO_ECONOMIA);
     IDS_19.forEach((id, i) => {
-      const grupo   = groupOfCriterion(id);
-      const tamanho = ENFOQUE_GROUPS_BY_ID[grupo].criterionIds.length;
-      expect(pesos[i]).toBeCloseTo(PESO_ECONOMIA[grupo] / tamanho, 12);
+      const grupo = groupOfCriterion(id);
+      expect(pesos[i]).toBeCloseTo(PESO_ECONOMIA[grupo] / presentesNoGrupo(IDS_19, grupo), 12);
     });
     expect(pesos[IDS_19.indexOf("comparativeCosts")]).toBeCloseTo(0.7 / 2, 12);
     expect(pesos[IDS_19.indexOf("shape")]).toBeCloseTo(0.1 / 4, 12);
@@ -344,13 +413,36 @@ describe("applyEnfoque — peso do grupo dividido igualmente", () => {
     expect(somaDe(pesos)).toBeCloseTo(1, 12);
   });
 
-  it("usa o tamanho DECLARADO do grupo, nao quantos criterios foram passados", () => {
-    // Formulario parcial: so dois dos quatro criterios de Geometria. Cada um
-    // continua valendo pesoDoGrupo / 4, e a soma fica abaixo de 1 — proposital,
-    // para a proporcao ENTRE grupos nao mudar sozinha.
+  it("usa os criterios PRESENTES na matriz, nao o total declarado", () => {
+    // O comportamento que substituiu o "tamanho declarado". Com so dois dos
+    // criterios de Geometria presentes, os dois repartem o peso INTEIRO do
+    // grupo — e nao pesoDoGrupo / 5, que deixaria a Geometria valendo menos do
+    // que foi declarado nos sliders. A soma continua abaixo de 1 porque os
+    // outros tres grupos nao tem nenhum criterio nesta lista.
     const parcial = applyEnfoque(["shape", "thickness"], equalGroupWeights());
-    expect(parcial).toEqual([0.25 / 4, 0.25 / 4]);
-    expect(somaDe(parcial)).toBeLessThan(1);
+    expect(parcial).toEqual([0.25 / 2, 0.25 / 2]);
+    expect(somaDe(parcial)).toBeCloseTo(0.25, 12);
+  });
+
+  it("a mesma repartição vale 1 nas DUAS matrizes, apesar dos tamanhos diferentes", () => {
+    // O ponto do modelo com dois metodos liberados: Geometria tem 4 criterios
+    // no Nicholas e 5 no UBC, Geomecanica tem 9 e 6, e mesmo assim cada grupo
+    // devolve o proprio peso inteiro nos dois casos.
+    [equalGroupWeights(), PESO_GEOMETRIA, PESO_ECONOMIA].forEach((gw) => {
+      expect(somaDe(applyEnfoque(IDS_19, gw))).toBeCloseTo(1, 12);
+      expect(somaDe(applyEnfoque(IDS_17_UBC, gw))).toBeCloseTo(1, 12);
+    });
+  });
+
+  it("no UBC, cada criterio de Geomecanica vale pesoDoGrupo / 6", () => {
+    const pesos = applyEnfoque(IDS_17_UBC, equalGroupWeights());
+    expect(pesos[IDS_17_UBC.indexOf("rmr_ob")]).toBeCloseTo(0.25 / 6, 12);
+    expect(pesos[IDS_17_UBC.indexOf("depth")]).toBeCloseTo(0.25 / 5, 12);
+    // O MESMO id pesa diferente nas duas matrizes, e e isso que mantem a
+    // proporcao entre grupos igual nos dois metodos.
+    const doNicholas = applyEnfoque(IDS_19, equalGroupWeights());
+    expect(doNicholas[IDS_19.indexOf("rss_ob")]).toBeCloseTo(0.25 / 9, 12);
+    expect(pesos[IDS_17_UBC.indexOf("rss_ob")]).toBeCloseTo(0.25 / 6, 12);
   });
 
   it("e pura — nao altera o objeto de pesos recebido", () => {
@@ -460,12 +552,20 @@ describe("PENDING_DOMAIN_SUBMODE", () => {
     expect(PENDING_DOMAIN_SUBMODE.reason).toMatch(/não implementado/);
   });
 
-  it("os tres dominios cobrem exatamente os 9 criterios de Geomecanica", () => {
+  it("os tres dominios cobrem os 9 criterios de Geomecanica DO NICHOLAS", () => {
+    // So os do Nicholas: os `rmr_*` do UBC pertencem aos mesmos tres dominios,
+    // mas ficam de fora enquanto o sub-modo nao existir — ver o comentario em
+    // classicCriteria.js. Todos os listados sao, ainda assim, de Geomecanica.
     const { ob, hw, fw } = PENDING_DOMAIN_SUBMODE.domains;
     const todos = [...ob, ...hw, ...fw];
     expect(todos).toHaveLength(9);
-    expect([...todos].sort())
-      .toEqual([...ENFOQUE_GROUPS_BY_ID[CRITERION_GROUPS.GEOMECHANICS].criterionIds].sort());
+    expect([...todos].sort()).toEqual([
+      "rss_ob", "jointSpacing_ob", "jointCondition_ob",
+      "rss_hw", "jointSpacing_hw", "jointCondition_hw",
+      "rss_fw", "jointSpacing_fw", "jointCondition_fw",
+    ].sort());
+    const daGeomecanica = ENFOQUE_GROUPS_BY_ID[CRITERION_GROUPS.GEOMECHANICS].criterionIds;
+    todos.forEach((id) => expect(daGeomecanica).toContain(id));
   });
 
   it("nesta fase a Geomecanica divide igualmente — o sub-modo nao esta ativo", () => {

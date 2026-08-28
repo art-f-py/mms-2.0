@@ -5,6 +5,7 @@ import {
   assertMcdmMethodSupported,
   MCDM_SUPPORTED_METHODS,
   MCDM_PENDING_METHODS,
+  CLASSIC_SCALE_BY_METHOD,
 } from "../mcdmPipeline";
 import {
   buildDecisionMatrix,
@@ -26,6 +27,7 @@ import {
   FIXED_CRITERION_SCORES,
 } from "../mcdmCriteria";
 import { SAATY_ELIMINATION_VALUE } from "../saatyScale";
+import { toUbcScale } from "../ubcScale";
 import { METHODS } from "../ubcWeights";
 
 // ---------------------------------------------------------------------------
@@ -33,8 +35,13 @@ import { METHODS } from "../ubcWeights";
 // ---------------------------------------------------------------------------
 // Ate aqui as quatro pecas do MCDM so tinham teste isolado. O que estes testes
 // fixam e a COMPOSICAO: a ordem dos passos, o que cada passo NAO deve tocar, e
-// a guarda que impede UBC e SH&B de entrarem no pipeline antes de o Francisco
-// definir a conversao dos valores fora do dominio.
+// a guarda que impede o SH&B de entrar no pipeline antes de o Francisco definir
+// a conversao dos valores fora do dominio.
+//
+// COM O UBC LIBERADO, boa parte destes testes ganhou um par: o mesmo contrato
+// verificado nas duas matrizes, que tem numeros de coluna diferentes (19 no
+// Nicholas, 17 no UBC). E o que impede um "19" implicito de voltar a se
+// esconder na logica geral.
 
 // Mesmo cenario completo de decisionMatrix.test.js — reaproveitado de proposito
 // para que o teste ponta-a-ponta parta de uma entrada ja conhecida no projeto.
@@ -51,6 +58,7 @@ const FULL_SCENARIO = {
 };
 
 const nicholasMatrix = () => buildDecisionMatrix(FULL_SCENARIO, { nicholas: true });
+const ubcMatrix      = () => buildDecisionMatrix(FULL_SCENARIO, { ubc: true });
 
 const enfoque = (groupWeights) =>
   setWeightingMode(createWeightingState(), WEIGHTING_MODES.ENFOQUE, { groupWeights });
@@ -85,25 +93,33 @@ const IDS_FIXOS = FIXED_CRITERIA.map((c) => c.id);
 // testes nao e so "lanca", e "lanca dizendo o que falta e de quem depende".
 
 describe("guarda de metodo nao suportado", () => {
-  it("so o Nicholas esta liberado por enquanto", () => {
-    expect(MCDM_SUPPORTED_METHODS).toEqual(["nicholas"]);
-    expect(Object.keys(MCDM_PENDING_METHODS).sort()).toEqual(["shb", "ubc"]);
+  it("Nicholas e UBC liberados; so o SH&B segue pendente", () => {
+    expect([...MCDM_SUPPORTED_METHODS].sort()).toEqual(["nicholas", "ubc"]);
+    expect(Object.keys(MCDM_PENDING_METHODS)).toEqual(["shb"]);
   });
 
-  it("assertMcdmMethodSupported passa para nicholas e lanca para ubc/shb", () => {
+  it("todo metodo liberado tem escala declarada — as duas listas andam juntas", () => {
+    // Liberar um metodo e esquecer a linha em CLASSIC_SCALE_BY_METHOD daria um
+    // `undefined` chamado como funcao la adiante, sem relacao visivel com a
+    // causa. A guarda cobre isso, e este teste cobre a guarda.
+    MCDM_SUPPORTED_METHODS.forEach((m) => {
+      expect(typeof CLASSIC_SCALE_BY_METHOD[m]).toBe("function");
+    });
+    expect(Object.keys(CLASSIC_SCALE_BY_METHOD).sort()).toEqual([...MCDM_SUPPORTED_METHODS].sort());
+  });
+
+  it("cada metodo usa a SUA escala — o UBC nao passa pelo toSaaty", () => {
+    expect(CLASSIC_SCALE_BY_METHOD.ubc).toBe(toUbcScale);
+    // A divergencia que motivou o modulo separado: score 3 vira 5 no UBC e 7 no
+    // Nicholas. Se alguem trocar as escalas de lugar, quebra aqui.
+    expect(CLASSIC_SCALE_BY_METHOD.ubc(3)).toBe(5);
+    expect(CLASSIC_SCALE_BY_METHOD.nicholas(3)).toBe(7);
+  });
+
+  it("assertMcdmMethodSupported passa para nicholas e ubc, lanca para shb", () => {
     expect(() => assertMcdmMethodSupported("nicholas")).not.toThrow();
-    expect(() => assertMcdmMethodSupported("ubc")).toThrow(/ainda não suportado para UBC/);
+    expect(() => assertMcdmMethodSupported("ubc")).not.toThrow();
     expect(() => assertMcdmMethodSupported("shb")).toThrow(/ainda não suportado para SH&B/);
-  });
-
-  it("runMcdmPipeline para UBC lanca a mensagem explicita, citando a pendencia externa", () => {
-    // A matriz TEM a aba de UBC — o que barra e a guarda, nao a falta de dados.
-    const matrix = buildDecisionMatrix(FULL_SCENARIO, { ubc: true, nicholas: true });
-
-    expect(() => runMcdmPipeline(matrix, { method: "ubc" }))
-      .toThrow(/Pipeline MCDM ainda não suportado para UBC/);
-    expect(() => runMcdmPipeline(matrix, { method: "ubc" }))
-      .toThrow(/regra de conversão Saaty do Francisco/);
   });
 
   it("runMcdmPipeline para SH&B lanca a mensagem explicita, citando a pendencia externa", () => {
@@ -111,43 +127,41 @@ describe("guarda de metodo nao suportado", () => {
 
     expect(() => runMcdmPipeline(matrix, { method: "shb" }))
       .toThrow(/Pipeline MCDM ainda não suportado para SH&B/);
+    // O reason atualizado: a Tabela 25 cobre parte do dominio, e o que falta
+    // sao os quatro valores nomeados.
     expect(() => runMcdmPipeline(matrix, { method: "shb" }))
-      .toThrow(/regra de conversão Saaty do Francisco/);
+      .toThrow(/Tabela 25 do Francisco cobre parte do domínio/);
+    expect(() => runMcdmPipeline(matrix, { method: "shb" }))
+      .toThrow(/4\.2, 4\.38, 5\.25/);
   });
 
-  it("a guarda nao deixa o erro generico do toSaaty ser a unica pista", () => {
-    // Sem a guarda, o UBC quebraria mesmo assim — mas com "score -10 fora do
-    // dominio especificado", que nao diz qual metodo de selecao foi pedido nem
-    // que a decisao e do Francisco. Este teste prova as DUAS coisas: que a
-    // mensagem generica realmente aconteceria, e que nao e ela que sai.
+  it("converter a aba do UBC pela escala do Nicholas ainda quebraria", () => {
+    // O que a ramificacao por metodo impede. A aba do UBC tem -10 (espessura
+    // "Muito estreito"), que o toSaaty nao cobre: passar essa aba pela escala
+    // errada continua sendo um RangeError, e nao um numero plausivel.
     const matrix = buildDecisionMatrix({ geometry: { thickness: "Muito estreito" } }, { ubc: true });
     const abaUbc = extendSheetWithFixedCriteria(matrix.sheets[0]);
 
-    // O caminho sem guarda: RangeError do toSaaty, sem contexto de metodo.
-    expect(() => convertClassicColumnsToSaaty(abaUbc)).toThrow(RangeError);
-    expect(() => convertClassicColumnsToSaaty(abaUbc)).toThrow(/toSaaty: score -10 fora do domínio/);
-
-    // O caminho com guarda: erro nomeando o metodo e a pendencia. A mensagem
-    // tambem fala em dominio, mas como EXPLICACAO — nao e o erro cru do
-    // toSaaty, e nao e um RangeError de conversao.
-    let capturado;
-    try { runMcdmPipeline(matrix, { method: "ubc" }); } catch (e) { capturado = e; }
-    expect(capturado).toBeInstanceOf(Error);
-    expect(capturado).not.toBeInstanceOf(RangeError);
-    expect(capturado.message).toMatch(/não suportado para UBC/);
-    expect(capturado.message).not.toMatch(/toSaaty/);
+    expect(() => convertClassicColumnsToSaaty(abaUbc, "nicholas"))
+      .toThrow(/toSaaty: score -10 fora do domínio/);
+    // Pela escala certa, converte sem reclamar.
+    expect(() => convertClassicColumnsToSaaty(abaUbc, "ubc")).not.toThrow();
   });
 
-  it("nao retorna resultado nenhum para UBC/SH&B — lanca, nao devolve ranking errado", () => {
+  it("metodo sem escala declarada e recusado na conversao, nomeando o que existe", () => {
+    const aba = extendSheetWithFixedCriteria(nicholasMatrix().sheets[0]);
+    expect(() => convertClassicColumnsToSaaty(aba, "shb"))
+      .toThrow(/não há conversão de escala para "shb"/);
+  });
+
+  it("nao retorna resultado nenhum para SH&B — lanca, nao devolve ranking errado", () => {
     // O risco que este teste cobre e o pior dos dois: um pipeline que ignorasse
     // silenciosamente as colunas problematicas devolveria um ranking plausivel
     // e sem sentido.
     const matrix = buildDecisionMatrix(FULL_SCENARIO, { ubc: true, shb: true });
-    for (const method of ["ubc", "shb"]) {
-      let resultado = "nao atribuido";
-      expect(() => { resultado = runMcdmPipeline(matrix, { method }); }).toThrow();
-      expect(resultado).toBe("nao atribuido");
-    }
+    let resultado = "nao atribuido";
+    expect(() => { resultado = runMcdmPipeline(matrix, { method: "shb" }); }).toThrow();
+    expect(resultado).toBe("nao atribuido");
   });
 
   it("metodo desconhecido tem mensagem propria, diferente da de pendencia", () => {
@@ -334,15 +348,37 @@ describe("Enfoque dentro do pipeline", () => {
       .toEqual(runMcdmPipeline(nicholasMatrix()));
   });
 
-  it("cada peso e o peso do grupo dividido pelo tamanho do grupo", () => {
+  it("cada peso e o peso do grupo dividido pelos criterios do grupo NA MATRIZ", () => {
     const gw = enfaseEm(CRITERION_GROUPS.GEOMETRY);
-    const r  = runMcdmPipeline(nicholasMatrix(), { weighting: enfoque(gw) });
 
-    r.criterionIds.forEach((id, j) => {
-      const grupo   = groupOfCriterion(id);
-      const tamanho = ENFOQUE_GROUPS_BY_ID[grupo].criterionIds.length;
-      expect(r.weights[j]).toBeCloseTo(gw[grupo] / tamanho, 12);
-    });
+    for (const [method, matrix] of [["nicholas", nicholasMatrix()], ["ubc", ubcMatrix()]]) {
+      const r = runMcdmPipeline(matrix, { method, weighting: enfoque(gw) });
+      const presentes = (grupo) =>
+        r.criterionIds.filter((id) => groupOfCriterion(id) === grupo).length;
+
+      r.criterionIds.forEach((id, j) => {
+        const grupo = groupOfCriterion(id);
+        expect(r.weights[j]).toBeCloseTo(gw[grupo] / presentes(grupo), 12);
+      });
+    }
+  });
+
+  it("o tamanho DECLARADO do grupo nao e o divisor — os dois numeros diferem", () => {
+    // Guarda contra a regressao que motivou a mudanca: enquanto so o Nicholas
+    // existia, o total declarado e o total na matriz coincidiam. Hoje nao mais
+    // (Geomecanica declara 12 e o Nicholas traz 9), e dividir pelo declarado
+    // faria os pesos somarem 0.8875 em vez de 1.
+    const declarado = ENFOQUE_GROUPS_BY_ID[CRITERION_GROUPS.GEOMECHANICS].criterionIds.length;
+    expect(declarado).toBe(12);
+
+    const r = runMcdmPipeline(nicholasMatrix(), { weighting: enfoque(equalGroupWeights()) });
+    const naMatriz = r.criterionIds
+      .filter((id) => groupOfCriterion(id) === CRITERION_GROUPS.GEOMECHANICS).length;
+    expect(naMatriz).toBe(9);
+
+    const umDaGeomecanica = r.weights[r.criterionIds.indexOf("rss_ob")];
+    expect(umDaGeomecanica).toBeCloseTo(0.25 / 9, 12);
+    expect(umDaGeomecanica).not.toBeCloseTo(0.25 / declarado, 6);
   });
 
   it("INVARIANTE: com as 19 colunas presentes, os pesos somam 1", () => {
