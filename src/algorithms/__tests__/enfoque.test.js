@@ -91,16 +91,17 @@ describe("cobertura de grupo — os criterios declarados", () => {
   });
 
   it("cada grupo tem a contagem DECLARADA esperada", () => {
-    // O total declarado e a uniao Nicholas + UBC, e nao a matriz de nenhum dos
-    // dois: Geometria tem os 4 comuns mais `depth`, Geomecanica tem os 9 do
-    // Nicholas mais os 3 `rmr_*`.
+    // O total declarado e a uniao dos TRES metodos, e nao a matriz de nenhum
+    // deles: Geometria tem os 4 comuns mais `depth`, Geomecanica tem os 9 do
+    // Nicholas mais os 3 `rmr_*`, e Economia ganhou `oreValue` do SH&B ao lado
+    // dos 2 fixos do Francisco.
     const tamanho = (id) => ENFOQUE_GROUPS_BY_ID[id].criterionIds.length;
     expect(tamanho(CRITERION_GROUPS.GEOMETRY)).toBe(5);
     expect(tamanho(CRITERION_GROUPS.GEOMECHANICS)).toBe(12);
     expect(tamanho(CRITERION_GROUPS.TECHNICAL)).toBe(4);
-    expect(tamanho(CRITERION_GROUPS.ECONOMIC)).toBe(2);
-    expect(ENFOQUE_GROUPS.reduce((n, g) => n + g.criterionIds.length, 0)).toBe(23);
-    expect(IDS_DECLARADOS).toHaveLength(23);
+    expect(tamanho(CRITERION_GROUPS.ECONOMIC)).toBe(3);
+    expect(ENFOQUE_GROUPS.reduce((n, g) => n + g.criterionIds.length, 0)).toBe(24);
+    expect(IDS_DECLARADOS).toHaveLength(24);
   });
 
   it("cada grupo tem a contagem esperada DENTRO de cada matriz", () => {
@@ -163,8 +164,8 @@ describe("cobertura de grupo — os criterios declarados", () => {
 
   it("nao ha orfao nem sobreposicao — a uniao dos grupos e exatamente os declarados", () => {
     const uniao = ENFOQUE_GROUPS.flatMap((g) => [...g.criterionIds]);
-    expect(uniao).toHaveLength(23);              // sem sobreposicao
-    expect(new Set(uniao).size).toBe(23);        // sem duplicata
+    expect(uniao).toHaveLength(24);              // sem sobreposicao
+    expect(new Set(uniao).size).toBe(24);        // sem duplicata
     expect([...uniao].sort()).toEqual([...IDS_DECLARADOS].sort()); // sem orfao
   });
 
@@ -182,13 +183,20 @@ describe("cobertura de grupo — os criterios declarados", () => {
     ]);
   });
 
-  it("Tecnico-Operacional e Economia seguem sendo os 6 criterios fixos do Francisco", () => {
-    // Os ids internos nao mudaram — so o rotulo de exibicao.
+  it("Tecnico-Operacional e Economia contem os 6 fixos, e Economia mais o oreValue", () => {
+    // MUDOU COM O SH&B: ate aqui os dois grupos eram EXATAMENTE os 6 criterios
+    // fixos do Francisco, sem nenhum criterio classico. `oreValue` e o primeiro
+    // criterio de um METODO DE SELECAO a cair num deles, e entra em Economia ao
+    // lado dos dois fixos. Vem ANTES deles na ordem porque ENFOQUE_GROUPS le
+    // CLASSIC_CRITERIA primeiro e FIXED_CRITERIA depois (ver o teste de
+    // derivacao logo abaixo).
     const tecnicos = ENFOQUE_GROUPS_BY_ID[CRITERION_GROUPS.TECHNICAL].criterionIds;
     const economicos = ENFOQUE_GROUPS_BY_ID[CRITERION_GROUPS.ECONOMIC].criterionIds;
     expect(tecnicos).toEqual(["performance", "productivity", "recovery", "dilution"]);
-    expect(economicos).toEqual(["capitalInvestment", "comparativeCosts"]);
-    expect([...tecnicos, ...economicos].sort()).toEqual([...IDS_FIXOS].sort());
+    expect(economicos).toEqual(["oreValue", "capitalInvestment", "comparativeCosts"]);
+    // Os 6 fixos continuam todos ali; o que mudou e que Economia tem um a mais.
+    expect([...tecnicos, ...economicos].filter((id) => IDS_FIXOS.includes(id)).sort())
+      .toEqual([...IDS_FIXOS].sort());
     expect(CRITERION_GROUP_LABELS[CRITERION_GROUPS.TECHNICAL]).toBe("Técnico-Operacional");
     expect(CRITERION_GROUP_LABELS[CRITERION_GROUPS.ECONOMIC]).toBe("Economia");
   });
@@ -207,8 +215,9 @@ describe("cobertura de grupo — os criterios declarados", () => {
 
   it("criterio desconhecido nao tem grupo", () => {
     expect(groupOfCriterion("naoExiste")).toBeUndefined();
-    // `oreValue` e do SH&B, o unico metodo ainda bloqueado — segue sem grupo.
-    expect(groupOfCriterion("oreValue")).toBeUndefined();
+    // `oreValue` DEIXOU de ser orfao quando o SH&B entrou no pipeline: hoje e
+    // declarado em CLASSIC_CRITERIA como Economia.
+    expect(groupOfCriterion("oreValue")).toBe(CRITERION_GROUPS.ECONOMIC);
   });
 });
 
@@ -238,12 +247,15 @@ describe("criterio sem grupo — falha alto, nomeando o id", () => {
       .toThrow(/FIXED_CRITERIA .*ou.* CLASSIC_CRITERIA/s);
   });
 
-  it("um criterio do SH&B numa matriz de Enfoque seria pego como orfao", () => {
-    // Guarda concreta para quando o pipeline liberar o ultimo metodo: esquecer
-    // de declarar os criterios novos vira erro, nao ranking torto. O UBC ja
-    // passou por aqui — `rmr_ob` era orfao e hoje e Geomecanica.
-    expect(() => applyEnfoque(["shape", "oreValue"], equalGroupWeights()))
-      .toThrow(/critério "oreValue" não pertence a nenhum grupo/);
+  it("criterio nao declarado numa matriz de Enfoque e pego como orfao", () => {
+    // A guarda que protegeu a entrada de cada metodo novo: esquecer de declarar
+    // os criterios vira erro, nao ranking torto. Ja passaram por aqui `rmr_ob`
+    // (UBC) e `oreValue` (SH&B), os dois hoje declarados — por isso o caso usa
+    // um id que nao existe em metodo nenhum.
+    expect(() => applyEnfoque(["shape", "criterioInexistente"], equalGroupWeights()))
+      .toThrow(/critério "criterioInexistente" não pertence a nenhum grupo/);
+    // E `oreValue`, que era o exemplo antigo, hoje passa sem orfao.
+    expect(() => applyEnfoque(["shape", "oreValue"], equalGroupWeights())).not.toThrow();
   });
 });
 

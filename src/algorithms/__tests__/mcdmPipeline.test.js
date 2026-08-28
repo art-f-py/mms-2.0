@@ -88,14 +88,18 @@ const IDS_FIXOS = FIXED_CRITERIA.map((c) => c.id);
 // ---------------------------------------------------------------------------
 // GUARDA — METODO NAO SUPORTADO
 // ---------------------------------------------------------------------------
-// Esta e a falha PROPOSITAL da fase atual: UBC e SH&B tem, nas proprias
-// tabelas, valores que a escala de Saaty ainda nao sabe converter. O ponto dos
-// testes nao e so "lanca", e "lanca dizendo o que falta e de quem depende".
+// OS TRES METODOS ESTAO LIBERADOS. A guarda deixou de barrar algum metodo real
+// e passou a cobrir dois outros papeis, que continuam valendo: distinguir
+// "metodo desconhecido" de "metodo conhecido mas bloqueado" (mensagens
+// diferentes), e garantir que liberar um metodo sem declarar a escala dele
+// falhe alto em vez de chamar `undefined` como funcao la adiante.
 
 describe("guarda de metodo nao suportado", () => {
-  it("Nicholas e UBC liberados; so o SH&B segue pendente", () => {
-    expect([...MCDM_SUPPORTED_METHODS].sort()).toEqual(["nicholas", "ubc"]);
-    expect(Object.keys(MCDM_PENDING_METHODS)).toEqual(["shb"]);
+  it("os tres metodos liberados; nenhum pendente", () => {
+    expect([...MCDM_SUPPORTED_METHODS].sort()).toEqual(["nicholas", "shb", "ubc"]);
+    // A estrutura FICA vazia em vez de sumir — ver o comentario dela em
+    // mcdmPipeline.js. Um quarto metodo, se vier, chega por aqui.
+    expect(Object.keys(MCDM_PENDING_METHODS)).toEqual([]);
   });
 
   it("todo metodo liberado tem escala declarada — as duas listas andam juntas", () => {
@@ -116,23 +120,15 @@ describe("guarda de metodo nao suportado", () => {
     expect(CLASSIC_SCALE_BY_METHOD.nicholas(3)).toBe(7);
   });
 
-  it("assertMcdmMethodSupported passa para nicholas e ubc, lanca para shb", () => {
+  it("assertMcdmMethodSupported passa para os tres metodos", () => {
     expect(() => assertMcdmMethodSupported("nicholas")).not.toThrow();
     expect(() => assertMcdmMethodSupported("ubc")).not.toThrow();
-    expect(() => assertMcdmMethodSupported("shb")).toThrow(/ainda não suportado para SH&B/);
+    expect(() => assertMcdmMethodSupported("shb")).not.toThrow();
   });
 
-  it("runMcdmPipeline para SH&B lanca a mensagem explicita, citando a pendencia externa", () => {
+  it("runMcdmPipeline para SH&B roda — o que antes era pendencia hoje e caminho feliz", () => {
     const matrix = buildDecisionMatrix(FULL_SCENARIO, { shb: true, nicholas: true });
-
-    expect(() => runMcdmPipeline(matrix, { method: "shb" }))
-      .toThrow(/Pipeline MCDM ainda não suportado para SH&B/);
-    // O reason atualizado: a Tabela 25 cobre parte do dominio, e o que falta
-    // sao os quatro valores nomeados.
-    expect(() => runMcdmPipeline(matrix, { method: "shb" }))
-      .toThrow(/Tabela 25 do Francisco cobre parte do domínio/);
-    expect(() => runMcdmPipeline(matrix, { method: "shb" }))
-      .toThrow(/4\.2, 4\.38, 5\.25/);
+    expect(() => runMcdmPipeline(matrix, { method: "shb" })).not.toThrow();
   });
 
   it("converter a aba do UBC pela escala do Nicholas ainda quebraria", () => {
@@ -149,18 +145,21 @@ describe("guarda de metodo nao suportado", () => {
   });
 
   it("metodo sem escala declarada e recusado na conversao, nomeando o que existe", () => {
+    // Nao ha mais metodo real sem escala, entao o caso usa um inventado — o que
+    // se cobre aqui e a guarda, nao a pendencia de nenhum metodo especifico.
     const aba = extendSheetWithFixedCriteria(nicholasMatrix().sheets[0]);
-    expect(() => convertClassicColumnsToSaaty(aba, "shb"))
-      .toThrow(/não há conversão de escala para "shb"/);
+    expect(() => convertClassicColumnsToSaaty(aba, "metodoSemEscala"))
+      .toThrow(/não há conversão de escala para "metodoSemEscala"/);
   });
 
-  it("nao retorna resultado nenhum para SH&B — lanca, nao devolve ranking errado", () => {
+  it("metodo bloqueado nao retorna resultado nenhum — lanca, nao devolve ranking errado", () => {
     // O risco que este teste cobre e o pior dos dois: um pipeline que ignorasse
     // silenciosamente as colunas problematicas devolveria um ranking plausivel
-    // e sem sentido.
+    // e sem sentido. Com os tres metodos liberados, o caso passa a ser o metodo
+    // desconhecido — a mesma garantia, sobre a entrada que ainda falha.
     const matrix = buildDecisionMatrix(FULL_SCENARIO, { ubc: true, shb: true });
     let resultado = "nao atribuido";
-    expect(() => { resultado = runMcdmPipeline(matrix, { method: "shb" }); }).toThrow();
+    expect(() => { resultado = runMcdmPipeline(matrix, { method: "inexistente" }); }).toThrow();
     expect(resultado).toBe("nao atribuido");
   });
 

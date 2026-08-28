@@ -18,32 +18,32 @@
 // por default em decisionMatrix.js. Declarar aqui criaria uma segunda fonte de
 // verdade para a mesma informação.
 //
-// ESCOPO: Nicholas e UBC. Falta só o SH&B, que segue bloqueado enquanto a
-// conversão de escala dele não estiver definida (ver MCDM_PENDING_METHODS em
-// mcdmPipeline.js); quando entrar, o critério exclusivo dele (`oreValue`) vai
-// precisar de entrada aqui — hoje não aparece em nenhuma coluna que o pipeline
-// produza.
+// ESCOPO: os TRÊS métodos. O SH&B entrou por último, junto de shbScale.js, e
+// trouxe um único id novo — `oreValue`, no fim da lista. Os outros onze dele já
+// estavam aqui por causa do Nicholas e do UBC.
 //
-// A TABELA É UMA SÓ PARA OS DOIS MÉTODOS, e não uma por método, porque a
+// A TABELA É UMA SÓ PARA OS TRÊS MÉTODOS, e não uma por método, porque a
 // pergunta que ela responde — "a que grupo de Enfoque este critério pertence?"
-// — não depende de quem montou a coluna. `shape` é Geometria no Nicholas e no
-// UBC; `rss_ob` é Geomecânica nos dois. Sete dos onze ids do UBC já estavam
-// aqui por causa do Nicholas e resolvem para o grupo certo sem nenhuma
-// adaptação — os quatro exclusivos do UBC entram no fim da lista.
+// — não depende de quem montou a coluna. `shape` é Geometria nos três;
+// `rss_ob` é Geomecânica nos três. Sete dos onze ids do UBC já estavam aqui por
+// causa do Nicholas, e onze dos doze do SH&B já estavam por causa dos dois
+// anteriores — todos resolvem para o grupo certo sem nenhuma adaptação. Só os
+// exclusivos entram no fim da lista.
 //
 // O QUE DEPENDE DO MÉTODO É O TAMANHO DO GRUPO, não a pertinência: o Nicholas
-// traz 4 critérios de Geometria e 9 de Geomecânica, o UBC traz 5 e 6. Isso é
-// resolvido em applyEnfoque (enfoque.js), contando os critérios presentes na
-// matriz que está sendo ponderada — ver o comentário lá.
+// traz 4 critérios de Geometria e 9 de Geomecânica, o UBC traz 5 e 6, o SH&B
+// traz 5 e 6 mais 1 de Economia. Isso é resolvido em applyEnfoque (enfoque.js),
+// contando os critérios presentes na matriz que está sendo ponderada — ver o
+// comentário lá.
 
 import { CRITERION_GROUPS } from "./mcdmCriteria";
 
 /**
  * Os critérios clássicos, com o grupo de Enfoque de cada um.
  *
- * 13 do Nicholas seguidos dos 4 exclusivos do UBC — 17 entradas para 24
- * colunas de matriz (19 do Nicholas e 17 do UBC, com 11 ids em comum e os 6
- * fixos vindo de FIXED_CRITERIA). A ordem dentro de cada bloco é a mesma em que
+ * 13 do Nicholas, os 4 exclusivos do UBC e 1 exclusivo do SH&B — 18 entradas
+ * para as três matrizes (19 colunas no Nicholas, 17 no UBC e 18 no SH&B, com os
+ * 6 fixos vindo de FIXED_CRITERIA). A ordem dentro de cada bloco é a mesma em que
  * o `calculate*` correspondente monta as colunas. Não é obrigatório que seja —
  * nada depende de posição aqui —, mas ler a tabela lado a lado com a matriz é
  * bem mais fácil assim.
@@ -78,6 +78,18 @@ export const CLASSIC_CRITERIA = Object.freeze([
   Object.freeze({ id: "rmr_ob",             group: CRITERION_GROUPS.GEOMECHANICS }),
   Object.freeze({ id: "rmr_hw",             group: CRITERION_GROUPS.GEOMECHANICS }),
   Object.freeze({ id: "rmr_fw",             group: CRITERION_GROUPS.GEOMECHANICS }),
+
+  // Exclusivo do SH&B. Os outros ONZE critérios dele já estavam acima, vindos
+  // do Nicholas e do UBC: shape/thickness/dip/grade/depth em Geometria e
+  // rss_*/rmr_* em Geomecânica — verificado, não presumido (ver o teste de
+  // cobertura dos 12 ids em classicCriteria.test.js).
+  //
+  // ECONOMIA, junto de capitalInvestment e comparativeCosts. O grupo existia
+  // desde o começo com os dois critérios fixos do Francisco e nenhum clássico;
+  // `oreValue` é o primeiro critério de um MÉTODO DE SELEÇÃO a cair nele. Não é
+  // um caso especial: o grupo responde "a que família de decisão o critério
+  // pertence?", e o valor do minério é econômico venha de onde vier.
+  Object.freeze({ id: "oreValue",           group: CRITERION_GROUPS.ECONOMIC }),
 ]);
 
 // ---------------------------------------------------------------------------

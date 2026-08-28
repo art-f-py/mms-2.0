@@ -332,16 +332,15 @@ describe("método de seleção como parâmetro", () => {
     expect(result.weights.reduce((a, b) => a + b, 0)).toBeCloseTo(1, 9);
   });
 
-  it("o SH&B, ainda bloqueado, vira indisponível — não exceção", () => {
-    const espiao = silenciarConsole();
+  it("o SH&B roda e produz ranking — era o último método bloqueado", () => {
     const saida = deriveMcdmRanking(FULL_SCENARIO, equalGroupWeights(), { method: "shb" });
 
-    expect(saida.status).toBe(MCDM_STATUS.UNAVAILABLE);
-    expect(saida.error).toBeInstanceOf(Error);
-    // A mensagem precisa nomear a pendência, não só falhar: é ela que aparece
-    // no console de quem for descobrir por que a aba não mostra o SH&B.
-    expect(saida.error.message).toContain("SH&B");
-    expect(espiao).toHaveBeenCalled();
+    expect(saida.status).toBe(MCDM_STATUS.OK);
+    expect(saida.result.selectionMethod).toBe("shb");
+    expect(saida.result.ranking).toHaveLength(METHODS.length);
+    // 12 clássicos + 6 fixos. Número diferente do Nicholas (19) e do UBC (17),
+    // que é o que prova que a aba lida foi mesmo a do SH&B.
+    expect(saida.result.criterionIds).toHaveLength(18);
   });
 
   it("método desconhecido vira indisponível — não exceção", () => {

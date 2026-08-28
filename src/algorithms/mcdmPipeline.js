@@ -16,14 +16,16 @@
 // Nicholas pontua em {−49, 0, 1, 2, 3, 4} e usa a fórmula linear de
 // saatyScale.js; o UBC pontua em {−49, −10, 0, 1, 2, 3, 4, 5, 6} e usa a tabela
 // categórica de ubcScale.js, que NÃO é aquela fórmula estendida — diverge dela
-// em 3 e em 4, 42% das células. A escolha é uma tabela (CLASSIC_SCALE_BY_METHOD)
-// e não um if, pelo mesmo motivo que MCDM_PENDING_METHODS é tabela: quem
-// acrescentar o SH&B acrescenta uma linha, e esquecer de acrescentá-la falha na
-// guarda em vez de converter pela escala do método errado.
+// em 3 e em 4, 42% das células; o SH&B guarda a base JÁ MULTIPLICADA por um
+// fator por critério e usa shbScale.js, que desfaz a multiplicação antes de
+// converter. A escolha é uma tabela (CLASSIC_SCALE_BY_METHOD) e não um if:
+// método sem linha lá falha na guarda em vez de ser convertido pela escala do
+// método errado.
 //
-// SH&B AINDA DE FORA. As tabelas dele contêm valores que nenhuma das duas
-// escalas cobre (−7 e os fracionários 4.2, 4.38 e 5.25, resultado de a tabela
-// já embutir multiplicadores). Ver a guarda em assertMcdmMethodSupported.
+// OS TRÊS MÉTODOS ESTÃO LIBERADOS. O SH&B foi o último a entrar; o que o
+// bloqueava eram os valores que nenhuma das outras escalas cobria (−7 e os
+// fracionários 4.2, 4.38 e 5.25), todos explicados pelo fator embutido e
+// resolvidos em shbScale.js. MCDM_PENDING_METHODS ficou VAZIO — ver lá.
 //
 // Puro: não lê estado global, não toca no DOM, não muta o que recebe.
 
@@ -31,12 +33,13 @@ import { extendSheetWithFixedCriteria, sheetCriteriaDirections } from "./decisio
 import { FIXED_CRITERIA_BY_ID } from "./mcdmCriteria";
 import { toSaaty } from "./saatyScale";
 import { toUbcScale } from "./ubcScale";
+import { toShbScale } from "./shbScale";
 import { createWeightingState, resolveWeights, WEIGHTING_MODES } from "./enfoque";
 import { calculateEntropyWeights } from "./entropyWeights";
 import { topsis } from "./topsis";
 
 /** Métodos de seleção cujo pipeline MCDM já está liberado. */
-export const MCDM_SUPPORTED_METHODS = Object.freeze(["nicholas", "ubc"]);
+export const MCDM_SUPPORTED_METHODS = Object.freeze(["nicholas", "ubc", "shb"]);
 
 /**
  * A conversão de escala de cada método liberado.
@@ -49,21 +52,24 @@ export const MCDM_SUPPORTED_METHODS = Object.freeze(["nicholas", "ubc"]);
 export const CLASSIC_SCALE_BY_METHOD = Object.freeze({
   nicholas: toSaaty,
   ubc:      toUbcScale,
+  shb:      toShbScale,
 });
 
 /**
  * Métodos bloqueados e o motivo, em formato legível por máquina.
  *
+ * VAZIO desde que o SH&B entrou: os três métodos de seleção do app têm escala
+ * definida e rodam no pipeline. A estrutura FICA, e não é apagada junto com a
+ * última entrada, por duas razões. A guarda abaixo continua consultando-a para
+ * distinguir "método conhecido mas bloqueado" de "método desconhecido", que são
+ * erros diferentes e merecem mensagens diferentes; e um quarto método de
+ * seleção, se vier, chega bloqueado antes de chegar liberado.
+ *
  * Existe como tabela — e não como string solta dentro do throw — para que a UI
  * possa desabilitar o botão com a mesma justificativa que o erro carrega, sem
  * ninguém precisar duplicar o texto.
  */
-export const MCDM_PENDING_METHODS = Object.freeze({
-  shb: Object.freeze({
-    label:  "SH&B",
-    reason: "a Tabela 25 do Francisco cobre parte do domínio, mas ainda faltam −7 e os fracionários acima de 4 (4.2, 4.38, 5.25), que vêm de a tabela já embutir multiplicadores",
-  }),
-});
+export const MCDM_PENDING_METHODS = Object.freeze({});
 
 /**
  * Barra os métodos ainda não suportados, com mensagem que diz o que falta.
@@ -141,9 +147,18 @@ export function convertClassicColumnsToSaaty(sheet, methodKey = "nicholas") {
 
   return {
     ...sheet,
+    // TRÊS ARGUMENTOS PARA AS TRÊS CONVERSÕES, sempre. toSaaty e toUbcScale
+    // declaram um só e ignoram o resto; toShbScale precisa dos três — do
+    // criterionId para achar o fator embutido na tabela do SH&B, e do código do
+    // método de lavra para a exceção pontual do SQS (ver shbScale.js). Passar
+    // sempre os três evita uma ramificação de aridade aqui, que teria de saber
+    // qual conversão é qual — exatamente o que CLASSIC_SCALE_BY_METHOD existe
+    // para esconder.
     rows: sheet.rows.map((row) => ({
       ...row,
-      values: row.values.map((value, j) => (classicColumn[j] ? toScale(value) : value)),
+      values: row.values.map((value, j) =>
+        classicColumn[j] ? toScale(value, sheet.criterionKeys[j], row.code) : value,
+      ),
     })),
   };
 }

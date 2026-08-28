@@ -310,9 +310,16 @@ describe("método de seleção", () => {
     expect(Object.keys(CENARIO_UNIFORME).sort()).toEqual(["groupWeights", "id", "name"]);
   });
 
-  it("método bloqueado ou desconhecido derruba a tabela inteira, sem lançar", () => {
+  it("o SH&B também reaplica os cenários, como os outros dois", () => {
+    const tabela = buildScenarioComparisonTable([CENARIO_UNIFORME], FULL_SCENARIO, "shb");
+    expect(tabela.status).toBe(MCDM_STATUS.OK);
+    expect(tabela.rows).toHaveLength(METHODS.length);
+  });
+
+  it("método desconhecido derruba a tabela inteira, sem lançar", () => {
     silenciarConsole();
-    for (const metodo of ["shb", "topsis-9000", undefined]) {
+    // "shb" saiu desta lista quando entrou no pipeline — hoje é caminho feliz.
+    for (const metodo of ["topsis-9000", undefined]) {
       const tabela = buildScenarioComparisonTable([CENARIO_UNIFORME], FULL_SCENARIO, metodo);
       expect(tabela.status).toBe(MCDM_STATUS.UNAVAILABLE);
       expect(tabela.rows).toEqual([]);

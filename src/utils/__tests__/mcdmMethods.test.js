@@ -18,20 +18,29 @@ const SHB      = { key: "shb",      label: "SH&B 2007",           color: "#5bc0d
 
 describe("availableMcdmMethods", () => {
   it("mantém os métodos suportados e descarta o resto", () => {
-    expect(availableMcdmMethods([UBC, NICHOLAS, SHB])).toEqual([UBC, NICHOLAS]);
+    // OS TRÊS ESTÃO LIBERADOS desde que o SH&B entrou no pipeline, então hoje
+    // nada é descartado. O descarte em si continua coberto pelo caso do método
+    // não suportado logo abaixo.
+    expect(availableMcdmMethods([UBC, NICHOLAS, SHB])).toEqual([UBC, NICHOLAS, SHB]);
   });
 
-  it("descarta o SH&B, que segue fora do pipeline", () => {
-    // Amarrado à fonte única: quando o SH&B for liberado, MCDM_SUPPORTED_METHODS
-    // ganha a entrada e ESTE teste passa a falhar — que é o lembrete certo, na
-    // hora certa, de que a expectativa aqui precisa mudar junto.
-    expect(MCDM_SUPPORTED_METHODS).not.toContain("shb");
-    expect(availableMcdmMethods([SHB])).toEqual([]);
+  it("o SH&B entrou — e o teste que guardava a entrada dele mudou de lado", () => {
+    // Este caso afirmava o contrário até o SH&B ser liberado, amarrado à fonte
+    // única de propósito, para falhar exatamente quando a expectativa mudasse.
+    // Falhou, e é esta a nova verdade.
+    expect(MCDM_SUPPORTED_METHODS).toContain("shb");
+    expect(availableMcdmMethods([SHB])).toEqual([SHB]);
+  });
+
+  it("descarta método que o pipeline não conhece", () => {
+    const INVENTADO = { key: "outro", label: "Outro", color: "#000" };
+    expect(availableMcdmMethods([NICHOLAS, INVENTADO])).toEqual([NICHOLAS]);
   });
 
   it("com um método suportado só, devolve só ele — é o caso do seletor sumir", () => {
-    expect(availableMcdmMethods([NICHOLAS, SHB])).toEqual([NICHOLAS]);
-    expect(availableMcdmMethods([NICHOLAS, SHB])).toHaveLength(1);
+    const INVENTADO = { key: "outro", label: "Outro", color: "#000" };
+    expect(availableMcdmMethods([NICHOLAS, INVENTADO])).toEqual([NICHOLAS]);
+    expect(availableMcdmMethods([NICHOLAS, INVENTADO])).toHaveLength(1);
   });
 
   it("preserva a ordem de entrada, e não a de MCDM_SUPPORTED_METHODS", () => {
@@ -82,8 +91,10 @@ describe("safeMcdmMethod", () => {
   });
 
   it("clampa também um método que o pipeline nunca aceitou", () => {
-    expect(safeMcdmMethod("shb", disponiveis)).toBe("ubc");
     expect(safeMcdmMethod("topsis-9000", disponiveis)).toBe("ubc");
+    // `shb` hoje É suportado, mas segue clampado quando não está DISPONÍVEL
+    // (isto é, quando não está entre os métodos ativos na tela).
+    expect(safeMcdmMethod("shb", disponiveis)).toBe("ubc");
   });
 
   it("sem nenhum método disponível devolve null, e não uma chave inventada", () => {
@@ -101,20 +112,29 @@ describe("safeMcdmMethod", () => {
 
 describe("as duas juntas — o caminho que Statistics.jsx percorre", () => {
   it("Nicholas sozinho: um disponível, seletor não aparece, e é ele que roda", () => {
-    const disponiveis = availableMcdmMethods([NICHOLAS, SHB]);
+    const disponiveis = availableMcdmMethods([NICHOLAS]);
     expect(disponiveis).toHaveLength(1);          // length > 1 é o que mostra o seletor
     expect(safeMcdmMethod(null, disponiveis)).toBe("nicholas");
   });
 
-  it("Nicholas e UBC ativos: dois disponíveis, seletor aparece", () => {
+  it("os TRÊS ativos: três disponíveis, seletor aparece com três opções", () => {
+    // O caso novo do SH&B: a interseção é genérica, então o terceiro método
+    // entra no seletor sem nenhuma mudança na regra.
     const disponiveis = availableMcdmMethods([UBC, NICHOLAS, SHB]);
-    expect(disponiveis).toHaveLength(2);
+    expect(disponiveis).toHaveLength(3);
+    expect(disponiveis.map((m) => m.key)).toEqual(["ubc", "nicholas", "shb"]);
     expect(safeMcdmMethod(null, disponiveis)).toBe("ubc");
-    expect(safeMcdmMethod("nicholas", disponiveis)).toBe("nicholas");
+    expect(safeMcdmMethod("shb", disponiveis)).toBe("shb");
   });
 
-  it("só SH&B ativo: nada disponível, e a aba não deve aparecer", () => {
+  it("só SH&B ativo: ele é o disponível, e a aba aparece com ele", () => {
     const disponiveis = availableMcdmMethods([SHB]);
+    expect(disponiveis).toHaveLength(1);
+    expect(safeMcdmMethod(null, disponiveis)).toBe("shb");
+  });
+
+  it("nenhum método reconhecido ativo: nada disponível, e a aba não aparece", () => {
+    const disponiveis = availableMcdmMethods([{ key: "outro", label: "Outro", color: "#000" }]);
     expect(disponiveis).toHaveLength(0);
     expect(safeMcdmMethod(null, disponiveis)).toBeNull();
   });

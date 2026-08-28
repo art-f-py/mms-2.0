@@ -142,13 +142,44 @@ describe("casos de borda", () => {
 describe("buildOriginSpans", () => {
   const colunasDe = (ids) => buildMatrixColumns(ids).columns;
 
-  it("separa as colunas em duas faixas: clássicas primeiro, fixas depois", () => {
-    // Os spans saem de CLASSIC_CRITERIA/FIXED_CRITERIA, e não de números
-    // escritos à mão: CLASSIC_CRITERIA já cresceu de 13 para 17 quando o UBC
-    // entrou, e um literal aqui teria virado dívida na mesma hora.
+  it("as faixas ALTERNAM quando um clássico cai num grupo de fixos", () => {
+    // ISTO MUDOU COM O SH&B, e é a razão de buildOriginSpans CALCULAR as faixas
+    // em vez de assumir "clássicos primeiro, fixos depois". `oreValue` é um
+    // critério clássico (do SH&B) declarado em ECONOMIC, o grupo dos dois fixos
+    // econômicos — e como as colunas saem agrupadas por grupo de Enfoque, ele
+    // aterrissa ENTRE os fixos técnicos e os fixos econômicos.
+    //
+    // Um colSpan chumbado em "os dois últimos grupos são os fixos" cobriria a
+    // coluna errada aqui, em silêncio. Ver o comentário da função.
     expect(buildOriginSpans(colunasDe(IDS_19))).toEqual([
-      { fixed: false, span: CLASSIC_CRITERIA.length },
-      { fixed: true,  span: FIXED_CRITERIA.length },
+      { fixed: false, span: 17 },  // 5 Geometria + 12 Geomecânica
+      { fixed: true,  span: 4 },   // os 4 técnicos fixos
+      { fixed: false, span: 1 },   // oreValue, clássico dentro de Economia
+      { fixed: true,  span: 2 },   // capitalInvestment + comparativeCosts
+    ]);
+  });
+
+  it("a matriz real do SH&B tem quatro faixas, somando 18 colunas", () => {
+    // 12 clássicos + 6 fixos, na ordem em que a tela os mostra.
+    const idsShb = ["shape", "thickness", "dip", "grade", "depth", "oreValue",
+                    "rss_ob", "rmr_ob", "rss_hw", "rmr_hw", "rss_fw", "rmr_fw",
+                    ...FIXED_CRITERIA.map((c) => c.id)];
+    const colunas = colunasDe(idsShb);
+    expect(colunas).toHaveLength(18);
+    expect(buildOriginSpans(colunas)).toEqual([
+      { fixed: false, span: 11 },  // 5 Geometria + 6 Geomecânica
+      { fixed: true,  span: 4 },
+      { fixed: false, span: 1 },   // oreValue
+      { fixed: true,  span: 2 },
+    ]);
+  });
+
+  it("Nicholas e UBC seguem com duas faixas — nenhum clássico deles é econômico", () => {
+    const idsNicholas = [...CLASSIC_CRITERIA.map((c) => c.id).filter((id) => id !== "oreValue"
+      && !["depth", "rmr_ob", "rmr_hw", "rmr_fw"].includes(id)), ...FIXED_CRITERIA.map((c) => c.id)];
+    expect(buildOriginSpans(colunasDe(idsNicholas))).toEqual([
+      { fixed: false, span: 13 },
+      { fixed: true,  span: 6 },
     ]);
   });
 
