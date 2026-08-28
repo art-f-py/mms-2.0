@@ -182,10 +182,10 @@
     },
     "mcdm": {
       "_comment": "PLACEHOLDER — the strings in this block are deliberately still in Portuguese, copied verbatim from pt-BR.json. This is a conscious decision for the current phase, NOT a forgotten translation: the MCDM block shipped before its wording was settled. The parity test requires every key to exist in all four locales, hence the copy. Keys starting with '_' are metadata and are excluded from the parity check.",
-      "title": "Enfoque + TOPSIS — Nicholas",
+      "title": "Enfoque + TOPSIS",
       "subtitle": "Ranking multicritério sobre a matriz de decisão do Nicholas: 13 critérios clássicos + 6 critérios fixos, ponderados por grupo.",
       "weightsTitle": "Pesos por grupo",
-      "weightsHint": "Os quatro pesos somam 1. Ajustar um redistribui os outros três proporcionalmente.",
+      "weightsHint": "Os quatro pesos somam 1. Ajustar um redistribui os outros três conforme o modo de redistribuição escolhido.",
       "proportionTitle": "Proporção",
       "closenessHint": "Proximidade relativa à solução ideal, de 0 a 1 — quanto maior, melhor.",
       "unavailable": "Ranking multicritério indisponível para os dados atuais.",
@@ -193,9 +193,23 @@
       "pendingReason": "As tabelas destes métodos contêm valores que a escala de Saaty ainda não cobre. A regra de conversão está pendente de definição.",
       "tabs": {
         "classic": "Resultados clássicos",
-        "mcdm": "Decisão multicritério (Nicholas)",
+        "mcdm": "Decisão multicritério",
         "scenarios": "Comparar cenários"
       },
+      "modes": {
+        "enfoque": "Enfoque",
+        "entropy": "Entropy",
+        "entropyState": "Em Entropy os pesos não são ajustáveis.",
+        "entropyHint": "Em Entropy os pesos não são ajustáveis: cada critério recebe um peso calculado a partir da dispersão dos próprios dados — critério em que os dez métodos pontuam quase igual pesa menos, critério que os separa pesa mais. Os valores resultantes aparecem na linha de peso do cabeçalho de cada coluna da matriz de decisão."
+      },
+      "rebalance": {
+        "legend": "Como os outros pesos são redistribuídos",
+        "proportional": "Proporcional",
+        "equalize": "Igualar",
+        "proportionalHint": "Ao mudar um peso, os outros três mantêm a proporção que tinham entre si e absorvem a diferença na medida de cada um.",
+        "equalizeHint": "Ao mudar um peso, os outros três ficam iguais entre si, dividindo o que sobra em partes idênticas — a repartição anterior entre eles é descartada."
+      },
+      "info": "Detalhes",
       "scenarios": {
         "title": "Comparar cenários",
         "subtitle": "Cada cenário guarda uma repartição de pesos com nome. O ranking de cada um é recalculado com os dados atuais do formulário.",

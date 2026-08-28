@@ -80,11 +80,16 @@ const REQUIRED_STEPS = [STEPS.GEOMETRY, STEPS.GEOTECHNICAL];
  * o que evita ter de mexer aqui a cada dado novo que a tela quiser mostrar.
  *
  * @param {object} formData      estado do formulário (só leitura)
- * @param {object} groupWeights  { [groupId]: peso }, os quatro grupos somando 1
+ * @param {object} groupWeights  { [groupId]: peso }, os quatro grupos somando 1;
+ *                               ignorado quando `mode` é 'entropy'
+ * @param {string} [mode]        'enfoque' (default) ou 'entropy'. O default
+ *                               preserva o comportamento de quem chama com dois
+ *                               argumentos — a comparação de cenários, que é
+ *                               Enfoque por definição do modelo de cenário.
  * @returns {{status: "ok", result: object}
  *          | {status: "unavailable", incompleteStep: string|null, error: Error|null}}
  */
-export function deriveMcdmRanking(formData, groupWeights) {
+export function deriveMcdmRanking(formData, groupWeights, mode = WEIGHTING_MODES.ENFOQUE) {
   // Fora do try, e sem console.error: formulário incompleto é ESTADO ESPERADO
   // do app (o usuário pode ainda estar preenchendo), não falha a depurar.
   const incompleteStep = REQUIRED_STEPS.find((stepId) => !isStepComplete(stepId, formData)) ?? null;
@@ -95,9 +100,17 @@ export function deriveMcdmRanking(formData, groupWeights) {
   try {
     assertMcdmMethodSupported(MCDM_SELECTION_METHOD);
 
-    const matrix    = buildDecisionMatrix(formData, { [MCDM_SELECTION_METHOD]: true });
-    const weighting = setWeightingMode(createWeightingState(), WEIGHTING_MODES.ENFOQUE, { groupWeights });
-    const result    = runMcdmPipeline(matrix, { method: MCDM_SELECTION_METHOD, weighting });
+    const matrix = buildDecisionMatrix(formData, { [MCDM_SELECTION_METHOD]: true });
+
+    // Em modo 'entropy' os pesos saem dos dados, e setWeightingMode nem aceita
+    // groupWeights fora do modo 'enfoque' (ver a guarda lá). Os pesos de grupo
+    // continuam no estado do app, guardados e ignorados — é o que torna a
+    // troca de modo reversível; ver defaultMcdmWeights em MmsContext.jsx.
+    const weighting = mode === WEIGHTING_MODES.ENTROPY
+      ? setWeightingMode(createWeightingState(), WEIGHTING_MODES.ENTROPY)
+      : setWeightingMode(createWeightingState(), WEIGHTING_MODES.ENFOQUE, { groupWeights });
+
+    const result = runMcdmPipeline(matrix, { method: MCDM_SELECTION_METHOD, weighting });
 
     return { status: MCDM_STATUS.OK, result };
   } catch (error) {

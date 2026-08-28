@@ -1,7 +1,7 @@
 import { createContext, useContext, useReducer, useEffect } from "react";
 import { normalizeThickness, normalizeRss } from "../data/formRules";
-import { ENFOQUE_GROUP_IDS, equalGroupWeights, validateGroupWeights } from "../algorithms/enfoque";
-import { rebalanceGroupWeights } from "../algorithms/enfoqueRebalance";
+import { ENFOQUE_GROUP_IDS, WEIGHTING_MODES, equalGroupWeights, validateGroupWeights } from "../algorithms/enfoque";
+import { REBALANCE_MODES, equalizeOtherGroups, rebalanceGroupWeights } from "../algorithms/enfoqueRebalance";
 
 const STORAGE_KEY = "mms2-state";
 
@@ -42,7 +42,37 @@ const neutralShbCriteria = () => ({
 // Uniforme (0.25 em cada grupo) é o único ponto de partida que não embute uma
 // preferência — ver equalGroupWeights em algorithms/enfoque.js, inclusive a
 // ressalva de que uniforme entre GRUPOS não é uniforme entre CRITÉRIOS.
-const defaultMcdmWeights = () => ({ groupWeights: equalGroupWeights() });
+//
+// `mode` escolhe QUEM decide os pesos: 'enfoque' (o usuário reparte 1.0 entre os
+// quatro grupos) ou 'entropy' (a dispersão dos dados decide, sem controle
+// manual — ver algorithms/entropyWeights.js). O default é 'enfoque', que é o
+// comportamento que existia antes de o campo existir.
+//
+// OS groupWeights CONTINUAM GUARDADOS EM MODO 'entropy', ignorados em vez de
+// descartados. Zerá-los ao trocar de modo faria o usuário perder a repartição
+// que ajustou, e a perda só apareceria ao voltar para Enfoque e encontrar os
+// sliders no uniforme. São quatro números; guardá-los custa nada e é o que
+// torna a troca de modo reversível.
+//
+// `rebalanceMode` escolhe COMO os outros três grupos reagem quando um slider se
+// move: 'proportional' preserva a proporção entre eles, 'equalize' os iguala
+// (ver enfoqueRebalance.js). É preferência de INTERAÇÃO, não parte do modelo de
+// pesos: nada no cálculo do TOPSIS a lê, e ela não viaja para dentro de um
+// cenário salvo — um cenário guarda o resultado (os quatro pesos), não o
+// caminho usado para chegar a ele. O default é 'proportional', o comportamento
+// que existia antes de o campo existir.
+const defaultMcdmWeights = () => ({
+  mode:          WEIGHTING_MODES.ENFOQUE,
+  rebalanceMode: REBALANCE_MODES.PROPORTIONAL,
+  groupWeights:  equalGroupWeights(),
+});
+
+/** Os dois modos que a tela oferece hoje. 'none' existe em enfoque.js mas não é
+ *  oferecido: é o modo sem ponderação declarada, que a UI não expõe. */
+const MCDM_UI_MODES = [WEIGHTING_MODES.ENFOQUE, WEIGHTING_MODES.ENTROPY];
+
+/** As duas políticas de rebalanceamento oferecidas pela tela. */
+const MCDM_REBALANCE_MODES = Object.values(REBALANCE_MODES);
 
 // Pesos individualizados por método de seleção
 const makeDefaultCriteriaWeights = () => ({
@@ -268,7 +298,33 @@ export function mmsReducer(state, action) {
       // caminho pelo qual um vetor de pesos inválido chegue ao estado. O
       // reducer é a única porta de entrada; fechá-la torna a soma 1 um
       // invariante do estado, não uma convenção que a tela precisa lembrar.
+      //
+      // DUAS POLÍTICAS, UMA PORTA. Qual das duas funções roda é decidido AQUI,
+      // pelo `rebalanceMode` do estado, e não pela tela: o componente continua
+      // despachando a mesma ação com grupo e valor, sem saber que existe
+      // escolha. Trocar de modo não é um caso a mais no caminho de escrita — é
+      // uma função diferente na mesma posição.
       const { group, value } = action;
+      const mcdm = state.formData.criteriaWeights.mcdm;
+      const rebalance = mcdm?.rebalanceMode === REBALANCE_MODES.EQUALIZE
+        ? equalizeOtherGroups
+        : rebalanceGroupWeights;
+      return {
+        ...state,
+        formData: {
+          ...state.formData,
+          criteriaWeights: {
+            ...state.formData.criteriaWeights,
+            mcdm: { ...mcdm, groupWeights: rebalance(mcdm?.groupWeights, group, value) },
+          },
+        },
+      };
+    }
+    case "SET_MCDM_REBALANCE_MODE": {
+      // Só a preferência muda. Os pesos ficam onde estão de propósito: trocar a
+      // política não é um ajuste de peso, e re-igualar os quatro na hora da
+      // troca descartaria a repartição atual sem que ninguém tenha mexido em
+      // slider nenhum. A nova política vale do próximo arraste em diante.
       const mcdm = state.formData.criteriaWeights.mcdm;
       return {
         ...state,
@@ -276,7 +332,22 @@ export function mmsReducer(state, action) {
           ...state.formData,
           criteriaWeights: {
             ...state.formData.criteriaWeights,
-            mcdm: { ...mcdm, groupWeights: rebalanceGroupWeights(mcdm?.groupWeights, group, value) },
+            mcdm: { ...mcdm, rebalanceMode: action.rebalanceMode },
+          },
+        },
+      };
+    }
+    case "SET_MCDM_MODE": {
+      // Só o modo muda. `groupWeights` viaja intacto de propósito — ver o
+      // comentário em defaultMcdmWeights sobre a troca de modo ser reversível.
+      const mcdm = state.formData.criteriaWeights.mcdm;
+      return {
+        ...state,
+        formData: {
+          ...state.formData,
+          criteriaWeights: {
+            ...state.formData.criteriaWeights,
+            mcdm: { ...mcdm, mode: action.mode },
           },
         },
       };
@@ -343,12 +414,38 @@ const MmsContext = createContext(null);
 // eslint-disable-next-line react-refresh/only-export-components
 export function normalizeMcdmWeights(formData) {
   const criteriaWeights = formData.criteriaWeights;
-  const groupWeights    = criteriaWeights?.mcdm?.groupWeights;
+  const mcdm            = criteriaWeights?.mcdm;
+  const groupWeights    = mcdm?.groupWeights;
 
   if (groupWeights) {
     try {
       validateGroupWeights(groupWeights);
-      return formData;
+
+      // Pesos válidos, mas `mode` e `rebalanceMode` podem faltar (estado
+      // gravado por uma versão anterior a cada um deles) ou não ser um dos
+      // valores que a tela oferece. Em todos os casos os PESOS são bons e
+      // ficam — só o campo torto é reposto. Trocar a sub-árvore inteira aqui
+      // descartaria uma repartição legítima por causa de um campo que aquela
+      // versão nem tinha como gravar.
+      //
+      // Os dois defaults repõem o comportamento anterior à existência do
+      // campo, e não o "melhor" valor: Enfoque era o único modo, e o
+      // rebalanceamento era sempre proporcional.
+      const modeOk      = MCDM_UI_MODES.includes(mcdm.mode);
+      const rebalanceOk = MCDM_REBALANCE_MODES.includes(mcdm.rebalanceMode);
+      if (modeOk && rebalanceOk) return formData;
+
+      return {
+        ...formData,
+        criteriaWeights: {
+          ...criteriaWeights,
+          mcdm: {
+            ...mcdm,
+            mode:          modeOk      ? mcdm.mode          : WEIGHTING_MODES.ENFOQUE,
+            rebalanceMode: rebalanceOk ? mcdm.rebalanceMode : REBALANCE_MODES.PROPORTIONAL,
+          },
+        },
+      };
     } catch {
       // Cai para a reposição abaixo.
     }

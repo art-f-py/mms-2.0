@@ -25,7 +25,8 @@
 import { extendSheetWithFixedCriteria, sheetCriteriaDirections } from "./decisionMatrix";
 import { FIXED_CRITERIA_BY_ID } from "./mcdmCriteria";
 import { toSaaty } from "./saatyScale";
-import { createWeightingState, resolveWeights } from "./enfoque";
+import { createWeightingState, resolveWeights, WEIGHTING_MODES } from "./enfoque";
+import { calculateEntropyWeights } from "./entropyWeights";
 import { topsis } from "./topsis";
 
 /** Métodos de seleção cujo pipeline MCDM já está liberado. */
@@ -197,7 +198,23 @@ export function runMcdmPipeline(matrix, options = {}) {
   // intactos, e o default de pesos-base é 1 para cada critério; depois da
   // normalização do TOPSIS isso é exatamente o equalWeights do motor. Em modo
   // 'enfoque' devolve peso-de-grupo ÷ tamanho-do-grupo para cada critério.
-  const weights = resolveWeights(weighting, criterionIds, baseWeights);
+  //
+  // ENTROPY RAMIFICA AQUI, E NÃO DENTRO DE resolveWeights. A diferença não é de
+  // arrumação: resolveWeights recebe `criterionIds` e o estado de ponderação, e
+  // é só disso que ela precisa para os modos 'none' e 'enfoque' — ambos
+  // calculam pesos a partir da ESTRUTURA dos critérios. Entropy precisa dos
+  // DADOS, da aba inteira, que resolveWeights não recebe nem deveria receber:
+  // enfoque.js é o modelo de ponderação declarada pelo usuário e não tem por
+  // que conhecer o formato de uma aba de decisão.
+  //
+  // Consequência deliberada: resolveWeights continua LANÇANDO para 'entropy' se
+  // alguém a chamar direto. É o comportamento certo — quem a chama com esse
+  // modo está pedindo algo que ela não tem como fazer, e receber pesos-base em
+  // silêncio seria pior. Há teste fixando as duas metades: que o pipeline
+  // funciona no modo entropy e que resolveWeights sozinha ainda recusa.
+  const weights = weighting.mode === WEIGHTING_MODES.ENTROPY
+    ? calculateEntropyWeights(converted, criterionIds)
+    : resolveWeights(weighting, criterionIds, baseWeights);
 
   // Passo 5 — motor.
   const result = topsis({

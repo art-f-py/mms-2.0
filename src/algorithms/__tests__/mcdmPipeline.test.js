@@ -17,6 +17,7 @@ import {
   ENFOQUE_GROUPS_BY_ID,
   equalGroupWeights,
   groupOfCriterion,
+  resolveWeights,
 } from "../enfoque";
 import {
   CRITERION_GROUPS,
@@ -413,11 +414,24 @@ describe("Enfoque dentro do pipeline", () => {
     expect(com.topsis.closeness).not.toEqual(sem.topsis.closeness);
   });
 
-  it("modo Entropy continua barrado dentro do pipeline", () => {
-    // A exclusividade vive em resolveWeights; aqui so se confirma que o
-    // pipeline nao contorna a decisao dela.
+  it("modo Entropy roda pelo pipeline, sem passar por resolveWeights", () => {
+    // Este teste JA AFIRMOU O CONTRARIO: enquanto Entropy nao existia, ele
+    // fixava que o pipeline nao contornava a recusa de resolveWeights. Agora
+    // Entropy existe, e a ramificacao vive aqui — resolveWeights continua
+    // recusando, e ha teste proprio para isso logo abaixo.
     const estado = { ...createWeightingState(), mode: WEIGHTING_MODES.ENTROPY };
-    expect(() => runMcdmPipeline(nicholasMatrix(), { weighting: estado }))
+    const saida  = runMcdmPipeline(nicholasMatrix(), { weighting: estado });
+
+    expect(saida.ranking).toHaveLength(10);
+    expect(saida.weights.reduce((a, b) => a + b, 0)).toBeCloseTo(1, 12);
+  });
+
+  it("resolveWeights sozinha continua recusando Entropy", () => {
+    // A outra metade da garantia: a ramificacao esta no pipeline, e NAO dentro
+    // de resolveWeights. Se alguem um dia mover a logica para la, este teste
+    // cai — que e o ponto.
+    const estado = { ...createWeightingState(), mode: WEIGHTING_MODES.ENTROPY };
+    expect(() => resolveWeights(estado, ["a", "b"]))
       .toThrow(/Entropy ainda não implementada/);
   });
 

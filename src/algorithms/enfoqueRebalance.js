@@ -1,11 +1,16 @@
-// REBALANCEAMENTO PROPORCIONAL DOS PESOS DE GRUPO DO ENFOQUE
+// REBALANCEAMENTO DOS PESOS DE GRUPO DO ENFOQUE
 //
 // Os quatro pesos de grupo do Enfoque precisam somar 1 (ver GROUP_WEIGHT_SUM em
 // enfoque.js). Numa UI de quatro sliders independentes isso seria uma regra que
 // o usuário quebra a todo momento e alguém precisa validar depois. Aqui o
 // invariante é mantido pela PRÓPRIA INTERAÇÃO: mexer num slider redistribui os
-// outros três proporcionalmente, então nunca existe um instante em que o estado
-// esteja inválido. Não é validação — é construção.
+// outros três, então nunca existe um instante em que o estado esteja inválido.
+// Não é validação — é construção.
+//
+// DUAS POLÍTICAS, MESMO INVARIANTE. rebalanceGroupWeights preserva a proporção
+// entre os três não alterados; equalizeOtherGroups iguala os três. As duas têm
+// a mesma assinatura e as mesmas garantias de saída — quem chama escolhe uma e
+// não precisa saber mais nada. Ver REBALANCE_MODES.
 //
 // Arquivo companheiro, e não uma função a mais dentro de enfoque.js, porque o
 // que mora aqui é POLÍTICA DE INTERAÇÃO, não o modelo de ponderação. O modelo
@@ -103,6 +108,71 @@ export function rebalanceGroupWeights(currentWeights, changedGroupId, newValue) 
     const factor = remaining / previousSum;
     for (const id of others) next[id] = clampToUnit(readWeight(currentWeights, id) * factor);
   }
+
+  const soma = ENFOQUE_GROUP_IDS.reduce((acc, id) => acc + next[id], 0);
+  next[changedGroupId] = clampToUnit(next[changedGroupId] + (GROUP_WEIGHT_SUM - soma));
+
+  return next;
+}
+
+/**
+ * Os dois modos de rebalanceamento que a tela oferece.
+ *
+ * Não é a mesma família de WEIGHTING_MODES: aquilo é QUEM decide os pesos
+ * (usuário ou dados); isto é COMO os outros três reagem quando o usuário move
+ * um slider. Só faz sentido dentro do modo 'enfoque' — em 'entropy' não há
+ * slider para mover.
+ */
+export const REBALANCE_MODES = Object.freeze({
+  PROPORTIONAL: "proportional",
+  EQUALIZE:     "equalize",
+});
+
+/**
+ * Novo vetor de pesos IGUALANDO os outros três — a alternativa a
+ * rebalanceGroupWeights.
+ *
+ * O grupo alterado recebe V; os outros três recebem (1 - V) / 3 cada,
+ * independentemente do que tinham antes. A repartição anterior entre eles é
+ * DESCARTADA de propósito: é justamente isso que distingue este modo do
+ * proporcional. Quem põe Geometria em 0.7 e quer os outros três em 0.1 cada
+ * não está pedindo que uma proporção seja preservada — está dizendo que os
+ * outros três não se distinguem entre si.
+ *
+ * Mais simples que a proporcional por não precisar do ramo de "soma dos outros
+ * ≈ zero" (ver REBALANCE_NEAR_ZERO): aquele ramo existe para decidir o que
+ * fazer quando não há proporção a preservar, e aqui nunca há — o resultado é o
+ * mesmo com qualquer entrada. Por isso `currentWeights` só é lido para nada:
+ * o parâmetro fica na assinatura para as duas funções serem intercambiáveis no
+ * ponto de chamada do reducer.
+ *
+ * Mesma correção de drift e mesmo clamp final da companheira, e pelos mesmos
+ * motivos — ver o cabeçalho de rebalanceGroupWeights.
+ *
+ * @param {object|null} currentWeights  pesos atuais; aceito e ignorado (ver acima)
+ * @param {string}      changedGroupId  grupo que o usuário moveu
+ * @param {number}      newValue        novo valor desse grupo, em [0, 1]
+ * @returns {object} os quatro pesos novos, somando 1 dentro da precisão de float
+ * @throws {RangeError} se o grupo for desconhecido ou newValue estiver fora de [0, 1]
+ */
+export function equalizeOtherGroups(currentWeights, changedGroupId, newValue) {
+  if (!ENFOQUE_GROUP_IDS.includes(changedGroupId)) {
+    throw new RangeError(
+      `[MMS] Enfoque: grupo desconhecido no rebalanceamento: ${String(changedGroupId)}. ` +
+      `Os grupos válidos são: ${ENFOQUE_GROUP_IDS.join(", ")}.`,
+    );
+  }
+  if (typeof newValue !== "number" || !Number.isFinite(newValue) || newValue < 0 || newValue > 1) {
+    throw new RangeError(
+      `[MMS] Enfoque: novo peso do grupo "${changedGroupId}" fora de [0, 1] (${String(newValue)})`,
+    );
+  }
+
+  const others = ENFOQUE_GROUP_IDS.filter((id) => id !== changedGroupId);
+  const share  = (GROUP_WEIGHT_SUM - newValue) / others.length;
+
+  const next = { [changedGroupId]: newValue };
+  for (const id of others) next[id] = clampToUnit(share);
 
   const soma = ENFOQUE_GROUP_IDS.reduce((acc, id) => acc + next[id], 0);
   next[changedGroupId] = clampToUnit(next[changedGroupId] + (GROUP_WEIGHT_SUM - soma));

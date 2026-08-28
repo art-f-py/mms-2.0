@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useMms } from "../context/MmsContext";
 import { MCDM_STATUS } from "../utils/mcdmRanking";
 import { buildScenarioComparisonTable } from "../utils/scenarioComparison";
+import InfoTip from "./InfoTip";
 
 // ---------------------------------------------------------------------------
 // COMPARAR CENÁRIOS
@@ -88,10 +89,10 @@ export default function ScenarioComparison() {
 
   const header = (
     <div style={{ borderLeft: `4px solid ${colors.primary}`, paddingLeft: "12px", marginBottom: "16px" }}>
-      <h3 style={{ margin: 0, color: colors.primary }}>{t("results.mcdm.scenarios.title")}</h3>
-      <p style={{ margin: "4px 0 0", color: colors.muted, fontSize: "14px" }}>
-        {t("results.mcdm.scenarios.subtitle")}
-      </p>
+      <h3 style={{ margin: 0, color: colors.primary, display: "flex", alignItems: "center" }}>
+        {t("results.mcdm.scenarios.title")}
+        <InfoTip text={t("results.mcdm.scenarios.subtitle")} />
+      </h3>
     </div>
   );
 
@@ -132,10 +133,6 @@ export default function ScenarioComparison() {
       {header}
 
       <div style={panelStyle}>
-        <p style={{ fontSize: "13px", color: colors.muted, margin: "0 0 14px" }}>
-          {t("results.mcdm.scenarios.hint")}
-        </p>
-
         {/* Rola dentro do próprio contêiner: com muitos cenários salvos a
             tabela fica larga, e a página não deve ganhar rolagem horizontal. */}
         <div style={{ overflowX: "auto" }}>
@@ -143,7 +140,14 @@ export default function ScenarioComparison() {
             <thead>
               <tr>
                 <th style={{ ...baseCell, ...stickyMethod, borderBottom: `2px solid ${colors.border}`, fontSize: "11px", color: colors.muted, textTransform: "uppercase", letterSpacing: "0.04em" }}>
-                  {t("results.mcdm.matrix.method")}
+                  {/* Como ler a tabela — o que a cor significa e por que as
+                      linhas não são reordenadas por colocação — sai do
+                      parágrafo acima e vira ⓘ AQUI, na primeira célula que o
+                      olho encontra ao entrar na tabela. */}
+                  <span style={{ display: "flex", alignItems: "center" }}>
+                    {t("results.mcdm.matrix.method")}
+                    <InfoTip text={t("results.mcdm.scenarios.hint")} />
+                  </span>
                 </th>
                 {table.scenarios.map((scenario) => (
                   <th

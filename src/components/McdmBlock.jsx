@@ -1,13 +1,16 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMms } from "../context/MmsContext";
-import { ENFOQUE_GROUP_IDS } from "../algorithms/enfoque";
+import { ENFOQUE_GROUP_IDS, WEIGHTING_MODES } from "../algorithms/enfoque";
+import { REBALANCE_MODES } from "../algorithms/enfoqueRebalance";
 import { CRITERION_GROUPS, FIXED_CRITERIA_BY_ID } from "../algorithms/mcdmCriteria";
 import { MCDM_PENDING_METHODS } from "../algorithms/mcdmPipeline";
 import { deriveMcdmRanking, MCDM_STATUS } from "../utils/mcdmRanking";
 import { buildMatrixColumns } from "../utils/mcdmMatrixLayout";
 import { uiMethodLabel } from "../utils/methodLabel";
 import { parseWeightInput } from "../utils/weightInput";
+import { weightSliderStyle } from "../utils/sliderTrack";
+import InfoTip from "./InfoTip";
 
 // ---------------------------------------------------------------------------
 // BLOCO MCDM — ENFOQUE (PESO POR GRUPO) + TOPSIS, SÓ NICHOLAS
@@ -67,6 +70,10 @@ const panelTitleStyle = {
   color:         colors.muted,
   textTransform: "uppercase",
   letterSpacing: "0.05em",
+  // O ⓘ entra como irmão do texto dentro do próprio <h4>: em flex ele fica na
+  // linha do título sem herdar o caixa-alta nem o espaçamento de letra.
+  display:       "flex",
+  alignItems:    "center",
 };
 
 // ---------------------------------------------------------------------------
@@ -152,7 +159,12 @@ function GroupSlider({ label, value, color, onChange }) {
       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
         <input
           type="range" min={0} max={1} step="0.01"
-          style={{ flex: 1, minWidth: 0, accentColor: color }}
+          className="mms-weight-slider"
+          // Sem accent-color de propósito: o Chromium deriva dela a cor do
+          // trecho não preenchido e escurece o trilho inteiro para cores claras,
+          // o que deixava o slider do Técnico-Operacional preto. O trilho é
+          // nosso; ver src/utils/sliderTrack.js.
+          style={{ flex: 1, minWidth: 0, ...weightSliderStyle(color, value) }}
           value={value}
           aria-label={label}
           onChange={(e) => {
@@ -195,8 +207,84 @@ function GroupSlider({ label, value, color, onChange }) {
 // única diferença entre os dois casos: na coluna estreita ao lado da matriz os
 // quatro sliders empilham, porque duas colunas de slider dentro de 260px não
 // caberiam.
-function WeightsPanel({ groups, stacked, onChange, onSaveScenario }) {
+// Botão-aba do seletor de modo. Mesmo visual do seletor domínio/critério do
+// Nicholas em Inputs.jsx e das abas de Statistics.jsx — o objeto de estilo de
+// lá é local daqueles arquivos e não é exportado, daí a reescrita.
+const modeButtonStyle = (on) => ({
+  flex:            "1 1 0",
+  padding:         "6px 12px",
+  minHeight:       "44px",
+  borderRadius:    "6px",
+  fontSize:        "13px",
+  cursor:          "pointer",
+  backgroundColor: on ? colors.primary : "transparent",
+  color:           on ? colors.white : colors.muted,
+  border:          `1px solid ${on ? colors.primary : colors.border}`,
+  fontWeight:      on ? "700" : "400",
+});
+
+// ---------------------------------------------------------------------------
+// SELETOR DE REBALANCEAMENTO
+// ---------------------------------------------------------------------------
+// DELIBERADAMENTE MENOR que os botões Enfoque/Entropy logo acima, e a diferença
+// de tamanho é a informação: aquele seletor troca QUEM decide os pesos e muda o
+// painel inteiro; este é uma preferência de como os outros três sliders reagem
+// ao que a pessoa arrasta. Dar aos dois o mesmo peso visual sugeriria duas
+// decisões da mesma ordem, e a segunda passaria a competir com a primeira pela
+// atenção de quem chega.
+//
+// Só existe em modo Enfoque: em Entropy não há slider para arrastar, e um
+// controle sobre o que acontece ao arrastar não teria sobre o que agir.
+//
+// A explicação de cada modo mora no `title` do próprio botão, e não numa frase
+// ao lado: o botão É o alvo natural do hover, e são duas frases que ninguém
+// precisa reler depois de escolher uma vez.
+const rebalanceButtonStyle = (on) => ({
+  flex:            "0 1 auto",
+  padding:         "4px 10px",
+  borderRadius:    "5px",
+  fontSize:        "12px",
+  cursor:          "pointer",
+  backgroundColor: on ? colors.primary50 : "transparent",
+  color:           on ? colors.primary : colors.muted,
+  border:          `1px solid ${on ? colors.primary : colors.border}`,
+  fontWeight:      on ? "700" : "400",
+});
+
+function RebalanceSelector({ value, onChange }) {
   const { t } = useTranslation();
+  const active = value === REBALANCE_MODES.EQUALIZE
+    ? REBALANCE_MODES.EQUALIZE
+    : REBALANCE_MODES.PROPORTIONAL;
+
+  return (
+    <div
+      role="group"
+      aria-label={t("results.mcdm.rebalance.legend")}
+      style={{ display: "flex", gap: "6px", marginBottom: "14px" }}
+    >
+      {[
+        [REBALANCE_MODES.PROPORTIONAL, "proportional"],
+        [REBALANCE_MODES.EQUALIZE,     "equalize"],
+      ].map(([id, chave]) => (
+        <button
+          key={id}
+          type="button"
+          onClick={() => onChange(id)}
+          aria-pressed={id === active}
+          title={t(`results.mcdm.rebalance.${chave}Hint`)}
+          style={rebalanceButtonStyle(id === active)}
+        >
+          {t(`results.mcdm.rebalance.${chave}`)}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function WeightsPanel({ groups, stacked, mode, rebalanceMode, onChange, onModeChange, onRebalanceModeChange, onSaveScenario }) {
+  const { t } = useTranslation();
+  const enfoqueMode = mode !== WEIGHTING_MODES.ENTROPY;
 
   // Nome do cenário em digitação. Estado LOCAL, e não no contexto: é rascunho
   // de formulário, some quando o cenário é salvo e não interessa a mais
@@ -218,24 +306,67 @@ function WeightsPanel({ groups, stacked, onChange, onSaveScenario }) {
 
   return (
     <div style={panelStyle}>
-      <h4 style={panelTitleStyle}>{t("results.mcdm.weightsTitle")}</h4>
-      <p style={{ fontSize: "13px", color: colors.muted, margin: "0 0 14px" }}>
-        {t("results.mcdm.weightsHint")}
-      </p>
+      <h4 style={{ ...panelTitleStyle, marginBottom: "14px" }}>
+        {t("results.mcdm.weightsTitle")}
+        <InfoTip text={t("results.mcdm.weightsHint")} />
+      </h4>
 
-      <p style={{ ...panelTitleStyle, fontSize: "11px", marginBottom: "6px" }}>
-        {t("results.mcdm.proportionTitle")}
-      </p>
-      <ProportionBar groups={groups} />
-
-      <div
-        className={stacked ? undefined : "mms-grid2"}
-        style={stacked ? { display: "grid", gap: "14px", marginTop: "18px" } : { marginTop: "18px" }}
-      >
-        {groups.map(({ id, label, value, color }) => (
-          <GroupSlider key={id} label={label} value={value} color={color} onChange={(v) => onChange(id, v)} />
+      {/* SELETOR DE MODO — quem decide os pesos. Dois botões, não um checkbox:
+          são duas alternativas nomeadas e mutuamente exclusivas, e o nome de
+          cada uma é a informação (ver o mesmo padrão em Inputs.jsx). */}
+      <div style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
+        {[
+          [WEIGHTING_MODES.ENFOQUE, t("results.mcdm.modes.enfoque")],
+          [WEIGHTING_MODES.ENTROPY, t("results.mcdm.modes.entropy")],
+        ].map(([id, rotulo]) => (
+          <button
+            key={id}
+            onClick={() => onModeChange(id)}
+            aria-pressed={(id === WEIGHTING_MODES.ENTROPY) === !enfoqueMode}
+            style={modeButtonStyle((id === WEIGHTING_MODES.ENTROPY) === !enfoqueMode)}
+          >
+            {rotulo}
+          </button>
         ))}
       </div>
+
+      {enfoqueMode ? (
+        <>
+          <RebalanceSelector value={rebalanceMode} onChange={onRebalanceModeChange} />
+
+          <p style={{ ...panelTitleStyle, fontSize: "11px", marginBottom: "6px" }}>
+            {t("results.mcdm.proportionTitle")}
+          </p>
+          <ProportionBar groups={groups} />
+
+          <div
+            className={stacked ? undefined : "mms-grid2"}
+            style={stacked ? { display: "grid", gap: "14px", marginTop: "18px" } : { marginTop: "18px" }}
+          >
+            {groups.map(({ id, label, value, color }) => (
+              <GroupSlider key={id} label={label} value={value} color={color} onChange={(v) => onChange(id, v)} />
+            ))}
+          </div>
+        </>
+      ) : (
+        // MODO ENTROPY — nada a ajustar, e é esse o ponto. Os quatro sliders
+        // não somem por economia de espaço: em Entropy não existe "grupo", os
+        // pesos são por CRITÉRIO e saem da dispersão dos dados. Deixá-los na
+        // tela inertes sugeriria que ainda mandam em alguma coisa.
+        //
+        // Os pesos calculados não são repetidos aqui: eles já aparecem, um por
+        // um, na linha de peso do cabeçalho de cada coluna da matriz de decisão
+        // — que é onde ficam ao lado do critério a que pertencem. Uma segunda
+        // lista dos mesmos 19 números, longe das colunas, seria mais difícil de
+        // ler, não menos.
+        // A frase curta é MENSAGEM DE ESTADO — diz por que não há slider
+        // nenhum aqui — e por isso fica na tela; o parágrafo que explica COMO
+        // a entropia chega aos pesos é apoio, e foi para o ⓘ.
+        <p style={{ fontSize: "13px", color: colors.muted, margin: 0, display: "flex", alignItems: "center" }}>
+          {t("results.mcdm.modes.entropyState")}
+          <InfoTip text={t("results.mcdm.modes.entropyHint")} />
+        </p>
+      )}
 
       {/* SALVAR CENÁRIO — campo inline, não window.prompt(). O prompt do
           navegador bloqueia a página inteira, não é estilizável e some do fluxo
@@ -244,7 +375,17 @@ function WeightsPanel({ groups, stacked, onChange, onSaveScenario }) {
           pesos que ele vai guardar.
 
           Envolve um <form> para que Enter no campo salve — é o que se espera de
-          um campo de texto com um botão do lado, e sai de graça. */}
+          um campo de texto com um botão do lado, e sai de graça.
+
+          SÓ EM MODO ENFOQUE, e isso é o modelo de cenário falando, não uma
+          restrição de tela: um cenário É uma repartição de pesos com nome
+          ({id, name, groupWeights}). Entropy não tem peso ajustável para
+          nomear — os pesos dele saem dos dados e mudam junto com o formulário,
+          então dois "cenários de Entropy" sobre o mesmo formulário seriam
+          sempre idênticos. Salvar aqui guardaria os groupWeights que Entropy
+          está ignorando, e a coluna salva não teria relação com o que está na
+          tela. Comparar cenários de Entropy não existe, e não foi inventado. */}
+      {enfoqueMode && (
       <form
         onSubmit={(e) => { e.preventDefault(); save(); }}
         style={{ marginTop: "18px", paddingTop: "14px", borderTop: `1px solid ${colors.border}`, display: "flex", flexWrap: "wrap", gap: "8px" }}
@@ -275,6 +416,7 @@ function WeightsPanel({ groups, stacked, onChange, onSaveScenario }) {
           {t("results.mcdm.scenarios.save")}
         </button>
       </form>
+      )}
     </div>
   );
 }
@@ -288,7 +430,7 @@ function WeightsPanel({ groups, stacked, onChange, onSaveScenario }) {
 // `{open && children}` em vez de esconder por CSS não é detalhe: com o acordeão
 // fechado a tabela não existe no DOM, então arrastar um slider não paga nada por
 // ela. É o que dispensa qualquer debounce no caso comum.
-function Collapsible({ title, open, onToggle, children }) {
+function Collapsible({ title, info, open, onToggle, children }) {
   return (
     <div style={{ border: `1px solid ${colors.border}`, borderRadius: "8px", overflow: "hidden" }}>
       <button
@@ -296,7 +438,14 @@ function Collapsible({ title, open, onToggle, children }) {
         aria-expanded={open}
         style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 18px", minHeight: "44px", backgroundColor: colors.primary50, border: "none", cursor: "pointer", fontSize: "15px", fontWeight: "700", color: colors.primary }}
       >
-        <span>{title}</span>
+        {/* O ⓘ fica DENTRO do botão de propósito: o cabeçalho inteiro é a
+            área clicável do acordeão, e um ícone flutuando ao lado dela seria
+            um alvo de clique que não abre nada. Passar por cima mostra o aviso;
+            clicar abre a matriz, que é o que o cabeçalho sempre fez. */}
+        <span style={{ display: "flex", alignItems: "center", minWidth: 0 }}>
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{title}</span>
+          {info ? <InfoTip text={info} /> : null}
+        </span>
         <span style={{ fontSize: "13px" }} aria-hidden="true">{open ? "▾" : "▸"}</span>
       </button>
       {open && <div style={{ padding: "18px" }}>{children}</div>}
@@ -480,14 +629,22 @@ export default function McdmBlock() {
 
   const [matrixOpen, setMatrixOpen] = useState(false);
 
-  const groupWeights = state.formData.criteriaWeights.mcdm.groupWeights;
+  const mcdm         = state.formData.criteriaWeights.mcdm;
+  const groupWeights = mcdm.groupWeights;
+  // Estado persistido por uma versão anterior a Entropy não tem `mode`.
+  // normalizeMcdmWeights já repõe no carregamento; o default aqui cobre o
+  // caminho em que o objeto chega por outra via.
+  const mode = mcdm.mode ?? WEIGHTING_MODES.ENFOQUE;
+  // Mesmo caso do `mode` acima: campo acrescentado depois, com default aqui
+  // para o caminho em que o objeto não passou por normalizeMcdmWeights.
+  const rebalanceMode = mcdm.rebalanceMode ?? REBALANCE_MODES.PROPORTIONAL;
 
-  // Só reroda o pipeline quando o formulário ou os pesos mudam. Sem isto, cada
-  // render de /statistics (um toggle de pill, por exemplo) refaria matriz,
-  // conversão de Saaty e TOPSIS à toa.
+  // Só reroda o pipeline quando o formulário, os pesos ou o modo mudam. Sem
+  // isto, cada render de /statistics (um toggle de pill, por exemplo) refaria
+  // matriz, conversão de Saaty e TOPSIS à toa.
   const derived = useMemo(
-    () => deriveMcdmRanking(state.formData, groupWeights),
-    [state.formData, groupWeights],
+    () => deriveMcdmRanking(state.formData, groupWeights, mode),
+    [state.formData, groupWeights, mode],
   );
 
   // Ordem, rótulo e cor de cada grupo — ENFOQUE_GROUP_IDS é a ordem canônica em
@@ -508,6 +665,11 @@ export default function McdmBlock() {
 
   const setGroupWeight = (group, value) =>
     dispatch({ type: "SET_MCDM_GROUP_WEIGHT", group, value });
+
+  const setMode = (novoModo) => dispatch({ type: "SET_MCDM_MODE", mode: novoModo });
+
+  const setRebalanceMode = (novoModo) =>
+    dispatch({ type: "SET_MCDM_REBALANCE_MODE", rebalanceMode: novoModo });
 
   // Salva a repartição ATUAL com um nome. Só os pesos vão — nem ranking nem
   // formData —, e é por isso que o cenário continua fazendo sentido depois de o
@@ -535,7 +697,11 @@ export default function McdmBlock() {
     <WeightsPanel
       groups={groups}
       stacked={matrixOpen}
+      mode={mode}
+      rebalanceMode={rebalanceMode}
       onChange={setGroupWeight}
+      onModeChange={setMode}
+      onRebalanceModeChange={setRebalanceMode}
       onSaveScenario={saveScenario}
     />
   );
@@ -546,7 +712,12 @@ export default function McdmBlock() {
     // casa (como nos scores clássicos) empataria a metade da lista na tela sem
     // empate nenhum no cálculo.
     <div style={panelStyle}>
-      <h4 style={panelTitleStyle}>{t("results.ranking")}</h4>
+      <h4 style={panelTitleStyle}>
+        {t("results.ranking")}
+        {/* Só quando há ranking: sem ele o ⓘ explicaria uma escala que não está
+            na tela. A mensagem de indisponibilidade continua visível. */}
+        {ok ? <InfoTip text={t("results.mcdm.closenessHint")} /> : null}
+      </h4>
 
       {ok ? (
         <>
@@ -581,9 +752,6 @@ export default function McdmBlock() {
               </div>
             ))}
           </div>
-          <p style={{ fontSize: "13px", color: colors.muted, margin: "12px 0 0" }}>
-            {t("results.mcdm.closenessHint")}
-          </p>
         </>
       ) : (
         <p style={{ fontSize: "14px", color: colors.muted, margin: 0 }}>
@@ -596,15 +764,19 @@ export default function McdmBlock() {
   // MATRIZ DE DECISÃO — fechada por padrão. É a mesma aba que o motor leu, já
   // estendida com os seis critérios fixos e já convertida para Saaty; nada é
   // recalculado para exibi-la.
+  //
+  // O aviso de que as células NÃO acompanham os sliders continua sendo a coisa
+  // mais fácil de ler errado nesta tabela — por isso ele vai para o cabeçalho
+  // da matriz (`info`), e não para junto das colunas. Sai da tela por padrão
+  // porque só importa uma vez; quem estranhar a tabela "travada" acha a
+  // resposta no ⓘ que está exatamente onde clicou para abri-la.
   const matrixSection = ok ? (
     <Collapsible
       title={t("results.mcdm.matrix.title")}
+      info={t("results.mcdm.matrix.hint")}
       open={matrixOpen}
       onToggle={() => setMatrixOpen((o) => !o)}
     >
-      <p style={{ fontSize: "13px", color: colors.muted, margin: "0 0 14px" }}>
-        {t("results.mcdm.matrix.hint")}
-      </p>
       <DecisionMatrixTable
         sheet={derived.result.sheet}
         weights={derived.result.weights}
@@ -617,10 +789,10 @@ export default function McdmBlock() {
     <div style={{ marginTop: "28px" }}>
       {/* Título do bloco — mesma faixa lateral dos blocos por método */}
       <div style={{ borderLeft: `4px solid ${colors.primary}`, paddingLeft: "12px", marginBottom: "16px" }}>
-        <h3 style={{ margin: 0, color: colors.primary }}>{t("results.mcdm.title")}</h3>
-        <p style={{ margin: "4px 0 0", color: colors.muted, fontSize: "14px" }}>
-          {t("results.mcdm.subtitle")}
-        </p>
+        <h3 style={{ margin: 0, color: colors.primary, display: "flex", alignItems: "center" }}>
+          {t("results.mcdm.title")}
+          <InfoTip text={t("results.mcdm.subtitle")} />
+        </h3>
       </div>
 
       {matrixOpen ? (
@@ -649,8 +821,14 @@ export default function McdmBlock() {
           exceção e nomeando de quem a pendência depende — não é frase de tela
           nem passa pelo sistema de tradução. */}
       <div style={{ ...panelStyle, marginTop: "12px", backgroundColor: colors.primary50, borderStyle: "dashed" }}>
-        <h4 style={panelTitleStyle}>{t("results.mcdm.pendingTitle")}</h4>
-        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "10px" }}>
+        {/* O título e as pastilhas são a MENSAGEM DE ESTADO — quais métodos
+            ainda estão de fora — e ficam. O motivo da pendência é o "por quê",
+            e foi para o ⓘ. */}
+        <h4 style={panelTitleStyle}>
+          {t("results.mcdm.pendingTitle")}
+          <InfoTip text={t("results.mcdm.pendingReason")} />
+        </h4>
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
           {Object.entries(MCDM_PENDING_METHODS).map(([key, { label }]) => (
             <span
               key={key}
@@ -668,9 +846,6 @@ export default function McdmBlock() {
             </span>
           ))}
         </div>
-        <p style={{ fontSize: "13px", color: colors.muted, margin: 0 }}>
-          {t("results.mcdm.pendingReason")}
-        </p>
       </div>
     </div>
   );

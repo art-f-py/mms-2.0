@@ -139,9 +139,31 @@ describe("normalizeMcdmWeights — estado persistido de versões anteriores", ()
     expect(depois.criteriaWeights.shb).toBe(SENTINELA_SHB);
   });
 
-  it("devolve o MESMO objeto quando já há pesos válidos", () => {
+  it("devolve o MESMO objeto quando pesos, modo e rebalanceamento são válidos", () => {
+    // A identidade exige TODOS os campos repostos por esta função. Cada versão
+    // que acrescentou um campo (mode, depois rebalanceMode) fez um estado
+    // gravado pela anterior deixar de devolver o objeto intacto — que é
+    // exatamente o comportamento desejado. Ver os testes seguintes.
     const atual = estado().formData;
-    expect(normalizeMcdmWeights(atual)).toBe(atual);
+    const completo = {
+      ...atual,
+      criteriaWeights: {
+        ...atual.criteriaWeights,
+        mcdm: { ...atual.criteriaWeights.mcdm, mode: "enfoque", rebalanceMode: "proportional" },
+      },
+    };
+    expect(normalizeMcdmWeights(completo)).toBe(completo);
+  });
+
+  it("repõe só o modo quando ele falta, PRESERVANDO os pesos gravados", () => {
+    // O caso do estado persistido por uma versão anterior a Entropy. Os pesos
+    // são legítimos e não podem ser descartados junto — trocar a sub-árvore
+    // inteira aqui apagaria uma repartição que o usuário ajustou, por causa de
+    // um campo que aquela versão nem tinha como gravar.
+    const salvos = { [GEOMETRY]: 0.7, [GEOMECHANICS]: 0.1, [TECHNICAL]: 0.1, [ECONOMIC]: 0.1 };
+    const depois = normalizeMcdmWeights(estado(salvos).formData);
+    expect(depois.criteriaWeights.mcdm.mode).toBe("enfoque");
+    expect(depois.criteriaWeights.mcdm.groupWeights).toEqual(salvos);
   });
 
   it("preserva pesos válidos e não uniformes que o usuário salvou", () => {
