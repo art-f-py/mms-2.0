@@ -239,18 +239,49 @@ const modeButtonStyle = (on) => ({
 // A explicação de cada modo mora no `title` do próprio botão, e não numa frase
 // ao lado: o botão É o alvo natural do hover, e são duas frases que ninguém
 // precisa reler depois de escolher uma vez.
-const rebalanceButtonStyle = (on) => ({
+//
+// COMPACTO NO DESENHO, 44px NO TOQUE. A primeira versão comprou o tamanho
+// pequeno tirando o minHeight de 44px que todo controle do app tem, e isso
+// estava errado: quem usa no celular não vê a diferença de hierarquia, vê um
+// alvo que erra. Os dois requisitos não conflitam — é a mesma técnica que os
+// sliders já usam em index.css (ver "Área de toque confortável"): o ELEMENTO
+// clicável tem 44px de altura e é transparente; o que se vê é uma peça menor
+// desenhada dentro dele. Lá o trilho fino é um pseudo-elemento; aqui é o
+// <span> interno, que é o único jeito de ter borda e fundo próprios já que um
+// pseudo-elemento não é alcançável por estilo inline.
+//
+// O botão perde padding vertical (a altura vem do minHeight) e mantém uma
+// folga horizontal de 2px, para que a área de toque de dois vizinhos com 6px
+// de gap não se encoste.
+const rebalanceButtonStyle = {
   flex:            "0 1 auto",
+  minHeight:       "44px",
+  display:         "flex",
+  alignItems:      "center",
+  padding:         "0 2px",
+  border:          "none",
+  backgroundColor: "transparent",
+  cursor:          "pointer",
+};
+
+// A peça visível. Tudo o que era estilo do botão veio para cá — borda, fundo,
+// padding e fonte —, e é ela que fica visualmente menor que os botões
+// Enfoque/Entropy. `pointer-events` fica no padrão: o clique atravessa o span e
+// chega ao botão, que é quem escuta.
+const rebalanceChipStyle = (on) => ({
   padding:         "4px 10px",
   borderRadius:    "5px",
   fontSize:        "12px",
-  cursor:          "pointer",
+  lineHeight:      1.4,
   backgroundColor: on ? colors.primary50 : "transparent",
   color:           on ? colors.primary : colors.muted,
   border:          `1px solid ${on ? colors.primary : colors.border}`,
   fontWeight:      on ? "700" : "400",
 });
 
+// A margem inferior do grupo é 8px, e não os 14px do resto do painel: a área de
+// toque de 44px já traz ~9px de espaço transparente abaixo do chip visível, e
+// somar os dois abriria um buraco entre o seletor e a barra de proporção.
 function RebalanceSelector({ value, onChange }) {
   const { t } = useTranslation();
   const active = value === REBALANCE_MODES.EQUALIZE
@@ -261,7 +292,7 @@ function RebalanceSelector({ value, onChange }) {
     <div
       role="group"
       aria-label={t("results.mcdm.rebalance.legend")}
-      style={{ display: "flex", gap: "6px", marginBottom: "14px" }}
+      style={{ display: "flex", gap: "6px", marginBottom: "8px" }}
     >
       {[
         [REBALANCE_MODES.PROPORTIONAL, "proportional"],
@@ -273,9 +304,11 @@ function RebalanceSelector({ value, onChange }) {
           onClick={() => onChange(id)}
           aria-pressed={id === active}
           title={t(`results.mcdm.rebalance.${chave}Hint`)}
-          style={rebalanceButtonStyle(id === active)}
+          style={rebalanceButtonStyle}
         >
-          {t(`results.mcdm.rebalance.${chave}`)}
+          <span style={rebalanceChipStyle(id === active)}>
+            {t(`results.mcdm.rebalance.${chave}`)}
+          </span>
         </button>
       ))}
     </div>
