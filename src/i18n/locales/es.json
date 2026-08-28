@@ -184,7 +184,8 @@
     "mcdm": {
       "_comment": "MARCADOR DE POSICION — los textos de este bloque siguen deliberadamente en portugues, copiados tal cual de pt-BR.json. Es una decision consciente de esta fase, NO una traduccion olvidada: el bloque MCDM entro antes de que su redaccion estuviera cerrada. La prueba de paridad exige que cada clave exista en los cuatro idiomas, de ahi la copia. Las claves que empiezan con '_' son metadatos y quedan fuera de la comprobacion.",
       "title": "Enfoque + TOPSIS",
-      "subtitle": "Ranking multicritério sobre a matriz de decisão do Nicholas: 13 critérios clássicos + 6 critérios fixos, ponderados por grupo.",
+      "subtitle": "Ranking multicritério sobre a matriz de decisão do método de seleção em foco: os critérios clássicos dele + 6 critérios fixos, ponderados por grupo.",
+      "methodSelector": "Método de seleção usado no multicritério",
       "weightsTitle": "Pesos por grupo",
       "weightsHint": "Os quatro pesos somam 1. Ajustar um redistribui os outros três conforme o modo de redistribuição escolhido.",
       "proportionTitle": "Proporção",
@@ -225,7 +226,7 @@
         "title": "Ver matriz de decisão",
         "method": "Método",
         "weight": "Peso",
-        "hint": "O peso muda ao vivo conforme os sliders. Os valores das células não — eles vêm das tabelas do Nicholas e dos critérios fixos, e só mudam se o formulário mudar."
+        "hint": "O peso muda ao vivo conforme os sliders. Os valores das células não — eles vêm das tabelas do método de seleção em foco e dos critérios fixos, e só mudam se o formulário mudar."
       },
       "fixedCriteria": {
         "performance": "Desempenho",

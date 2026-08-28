@@ -73,16 +73,20 @@ const stickyMethod = {
   backgroundColor: colors.white,
 };
 
-export default function ScenarioComparison() {
+export default function ScenarioComparison({ method }) {
   const { t } = useTranslation();
   const { state, dispatch } = useMms();
 
   const scenarios = state.mcdmScenarios;
 
-  // Um pipeline TOPSIS por cenário — só quando o formulário ou a lista mudam.
+  // Um pipeline TOPSIS por cenário — só quando o formulário, a lista ou o
+  // método mudam. Os cenários guardam apenas a repartição de pesos, sem método
+  // (ver buildScenarioComparisonTable): são REAPLICADOS contra o método em foco,
+  // que é o mesmo que o bloco MCDM está mostrando na aba ao lado, e por isso
+  // `method` precisa estar nas dependências junto dos outros dois.
   const table = useMemo(
-    () => buildScenarioComparisonTable(scenarios, state.formData),
-    [scenarios, state.formData],
+    () => buildScenarioComparisonTable(scenarios, state.formData, method),
+    [scenarios, state.formData, method],
   );
 
   const remove = (id) => dispatch({ type: "REMOVE_MCDM_SCENARIO", id });

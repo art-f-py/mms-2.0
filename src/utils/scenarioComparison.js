@@ -1,9 +1,17 @@
 // COMPARAÇÃO DE CENÁRIOS — CENÁRIOS SALVOS -> ESTRUTURA DE TABELA
 //
-// Recebe a lista de cenários (cada um só {id, name, groupWeights}) e o formData
-// ATUAL, e devolve a tabela pronta para a tela: uma linha por método de lavra,
-// uma coluna por cenário, e em cada célula a colocação daquele método sob
-// aqueles pesos.
+// Recebe a lista de cenários (cada um só {id, name, groupWeights}), o formData
+// ATUAL e o método de seleção em foco, e devolve a tabela pronta para a tela:
+// uma linha por método de lavra, uma coluna por cenário, e em cada célula a
+// colocação daquele método sob aqueles pesos.
+//
+// O CENÁRIO É METHOD-AGNÓSTICO — guarda só {id, name, groupWeights}, sem
+// nenhuma marca de qual método estava na tela quando foi salvo. É de propósito:
+// uma repartição de peso do Enfoque ("70% em Geometria") é uma POSTURA DE
+// DECISÃO, não um resultado, e faz o mesmo sentido no Nicholas e no UBC.
+// Reaplicá-la contra o método atual é o que deixa o usuário comparar as mesmas
+// posturas de um método para o outro trocando a pill, em vez de manter duas
+// listas paralelas de cenários que diriam a mesma coisa.
 //
 // RECALCULA, NÃO LÊ CACHE. Uma chamada a deriveMcdmRanking por cenário, sempre
 // contra o formData do momento. É o que faz a comparação acompanhar o
@@ -34,8 +42,8 @@ import { rankToColor } from "./rankColor";
  * Tabela de comparação de cenários.
  *
  * INDISPONIBILIDADE É DA TABELA INTEIRA, NUNCA DE UMA COLUNA. O que torna o
- * ranking indisponível (formulário incompleto, Nicholas não marcado) depende só
- * do formData, que é o mesmo para todos os cenários — então ou todas as colunas
+ * ranking indisponível (formulário incompleto, método não marcado) depende só do
+ * formData e do método, os mesmos para todos os cenários — então ou todas as colunas
  * teriam ranking, ou nenhuma tem. Marcar coluna a coluna sugeriria que um
  * cenário pode estar indisponível e o vizinho não, o que não existe. Nesse caso
  * `rows` volta VAZIA: não há colocação nenhuma a mostrar, e devolver dez linhas
@@ -49,6 +57,8 @@ import { rankToColor } from "./rankColor";
  * @param {Array<{id: string, name: string, groupWeights: object}>} scenarios
  *        cenários salvos, na ordem em que foram acrescentados
  * @param {object} formData  estado do formulário (só leitura)
+ * @param {string} method    chave do método de seleção contra o qual reaplicar
+ *                           os cenários ('nicholas', 'ubc')
  * @returns {{
  *   status: "ok"|"unavailable",
  *   scenarios: Array<{id: string, name: string}>,
@@ -62,7 +72,7 @@ import { rankToColor } from "./rankColor";
  *   pesos não vão junto). Em cada linha, `cells` acompanha `scenarios` posição a
  *   posição.
  */
-export function buildScenarioComparisonTable(scenarios, formData) {
+export function buildScenarioComparisonTable(scenarios, formData, method) {
   const list    = Array.isArray(scenarios) ? scenarios : [];
   const columns = list.map(({ id, name }) => ({ id, name }));
 
@@ -80,7 +90,9 @@ export function buildScenarioComparisonTable(scenarios, formData) {
   const porCodigo = new Map(rows.map((row) => [row.code, row]));
 
   for (const scenario of list) {
-    const derived = deriveMcdmRanking(formData, scenario.groupWeights);
+    // Sem `mode`: o cenário É uma repartição do Enfoque, então o default da
+    // função (enfoque) é o modo certo por definição do modelo de cenário.
+    const derived = deriveMcdmRanking(formData, scenario.groupWeights, { method });
 
     // O primeiro "indisponível" encerra: os demais cenários dariam o mesmo
     // veredito, e rodar o pipeline para cada um deles só para confirmar seria

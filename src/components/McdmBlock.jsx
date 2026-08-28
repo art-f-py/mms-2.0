@@ -6,6 +6,7 @@ import { REBALANCE_MODES } from "../algorithms/enfoqueRebalance";
 import { CRITERION_GROUPS, FIXED_CRITERIA_BY_ID } from "../algorithms/mcdmCriteria";
 import { MCDM_PENDING_METHODS } from "../algorithms/mcdmPipeline";
 import { deriveMcdmRanking, MCDM_STATUS } from "../utils/mcdmRanking";
+import Pill from "./Pill";
 import { buildMatrixColumns } from "../utils/mcdmMatrixLayout";
 import { uiMethodLabel } from "../utils/methodLabel";
 import { parseWeightInput } from "../utils/weightInput";
@@ -13,7 +14,7 @@ import { weightSliderStyle } from "../utils/sliderTrack";
 import InfoTip from "./InfoTip";
 
 // ---------------------------------------------------------------------------
-// BLOCO MCDM — ENFOQUE (PESO POR GRUPO) + TOPSIS, SÓ NICHOLAS
+// BLOCO MCDM — ENFOQUE (PESO POR GRUPO) + TOPSIS
 // ---------------------------------------------------------------------------
 // Conteúdo da aba "Decisão multicritério" de /statistics. O ranking daqui é
 // DERIVADO a cada render a partir do formulário e dos pesos de grupo — nunca
@@ -23,7 +24,11 @@ import InfoTip from "./InfoTip";
 // A consequência boa disso é que mexer num slider atualiza o ranking na hora,
 // sem "recalcular": não há resultado congelado a invalidar. O useMemo existe
 // para o pipeline não rodar de novo a cada render que não mudou nem o
-// formulário nem os pesos.
+// formulário, nem os pesos, nem o método.
+//
+// O MÉTODO DE SELEÇÃO VEM DE FORA, por prop. Quem o guarda é Statistics.jsx —
+// ver lá o porquê: a aba de cenários é irmã deste bloco, e as duas precisam
+// concordar sobre qual método está em foco.
 
 // Tokens semânticos → variáveis CSS centralizadas em index.css.
 // Mesmo conjunto que Statistics.jsx usa, para o bloco não destoar dos vizinhos.
@@ -656,7 +661,7 @@ function DecisionMatrixTable({ sheet, weights, criterionIds }) {
 // ---------------------------------------------------------------------------
 // COMPONENTE PRINCIPAL
 // ---------------------------------------------------------------------------
-export default function McdmBlock() {
+export default function McdmBlock({ method, available = [], onMethodChange }) {
   const { t } = useTranslation();
   const { state, dispatch } = useMms();
 
@@ -672,12 +677,16 @@ export default function McdmBlock() {
   // para o caminho em que o objeto não passou por normalizeMcdmWeights.
   const rebalanceMode = mcdm.rebalanceMode ?? REBALANCE_MODES.PROPORTIONAL;
 
-  // Só reroda o pipeline quando o formulário, os pesos ou o modo mudam. Sem
-  // isto, cada render de /statistics (um toggle de pill, por exemplo) refaria
-  // matriz, conversão de Saaty e TOPSIS à toa.
+  // Só reroda o pipeline quando o formulário, os pesos, o modo ou o MÉTODO
+  // mudam. Sem isto, cada render de /statistics (um toggle de pill de filtro,
+  // por exemplo) refaria matriz, conversão de escala e TOPSIS à toa.
+  //
+  // `method` nas dependências é o que faz trocar a pill do seletor recalcular de
+  // verdade — sem ele, a matriz e o ranking ficariam congelados no método
+  // anterior enquanto o pill já mostraria o novo.
   const derived = useMemo(
-    () => deriveMcdmRanking(state.formData, groupWeights, mode),
-    [state.formData, groupWeights, mode],
+    () => deriveMcdmRanking(state.formData, groupWeights, { mode, method }),
+    [state.formData, groupWeights, mode, method],
   );
 
   // Ordem, rótulo e cor de cada grupo — ENFOQUE_GROUP_IDS é a ordem canônica em
@@ -827,6 +836,43 @@ export default function McdmBlock() {
           <InfoTip text={t("results.mcdm.subtitle")} />
         </h3>
       </div>
+
+      {/* SELETOR DE MÉTODO DE SELEÇÃO.
+          SÓ COM MAIS DE UM DISPONÍVEL. Com um método só, o seletor não oferece
+          escolha nenhuma — seria um controle que não faz nada, pedindo ao
+          usuário que decida entre uma opção. A aba então mostra o método direto,
+          exatamente como fazia antes de o UBC entrar no pipeline.
+
+          Mesmos pills e MESMOS RÓTULOS da fileira de filtros de /statistics: o
+          componente é o de components/Pill.jsx e os objetos ({ key, label,
+          color }) chegam prontos por prop, vindos do SELECTION_METHODS de lá.
+          Nada de rótulo próprio — "Nicholas 1981/1992" precisa ser a mesma
+          palavra nos dois lugares, ou vira outro método aos olhos de quem lê.
+
+          A semântica aqui é EXCLUSIVA (um ligado por vez), ao contrário da
+          fileira de filtros, onde os pills são independentes. Quem faz essa
+          diferença é o `active`/`onClick` daqui, não o componente — ver Pill.jsx.
+          Daí o role="radiogroup": para leitor de tela, isto é uma escolha entre
+          alternativas, não três interruptores soltos. */}
+      {available.length > 1 && (
+        <div
+          role="radiogroup"
+          aria-label={t("results.mcdm.methodSelector")}
+          style={{ display: "flex", gap: "24px", flexWrap: "wrap", marginBottom: "16px" }}
+        >
+          {available.map((sm) => (
+            <Pill
+              key={sm.key}
+              label={sm.label}
+              color={sm.color}
+              active={sm.key === method}
+              // Clicar no método JÁ ativo não desliga: sem método não há aba, e
+              // um estado "nenhum selecionado" não existe neste seletor.
+              onClick={() => onMethodChange?.(sm.key)}
+            />
+          ))}
+        </div>
+      )}
 
       {matrixOpen ? (
         // Matriz aberta: os pesos viram a coluna estreita à esquerda da tabela.

@@ -5,8 +5,9 @@ import { useMms } from "../context/MmsContext";
 import { METHODS, METHOD_LABELS } from "../algorithms/ubcWeights";
 import { normalizeScores } from "../algorithms/algorithms";
 import McdmBlock from "../components/McdmBlock";
+import Pill from "../components/Pill";
 import ScenarioComparison from "../components/ScenarioComparison";
-import { MCDM_SELECTION_METHOD } from "../utils/mcdmRanking";
+import { availableMcdmMethods, safeMcdmMethod } from "../utils/mcdmMethods";
 import {
   BarChart, Bar, Cell, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer,
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
@@ -28,25 +29,6 @@ const colors = {
   text:       "var(--color-text)",
   background: "var(--color-bg-card)",
 };
-
-// ---------------------------------------------------------------------------
-// PILL
-// ---------------------------------------------------------------------------
-function Pill({ label, color, active, onClick }) {
-  return (
-    <div
-      onClick={onClick}
-      style={{ display: "flex", alignItems: "center", gap: "8px", minHeight: "44px", cursor: "pointer" }}
-    >
-      <span style={{ fontSize: "14px", fontWeight: "500" }}>{label}</span>
-      <div
-        style={{ width: "50px", height: "26px", borderRadius: "20px", backgroundColor: active ? color : "#d1d5db", position: "relative", transition: "background-color 0.3s", flexShrink: 0 }}
-      >
-        <div style={{ width: "22px", height: "22px", borderRadius: "50%", backgroundColor: "#fff", position: "absolute", top: "2px", left: active ? "26px" : "2px", transition: "left 0.3s" }} />
-      </div>
-    </div>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // BLOCO DE RESULTADO (barra + ranking + radar) por método
@@ -204,6 +186,18 @@ function Statistics() {
 
   const [filters, setFilters] = useState({ ubc: true, nicholas: true, shb: true });
   const [view, setView]       = useState(VIEWS.CLASSIC);
+  // Método de seleção em foco na aba MCDM. MORA AQUI, e não dentro de
+  // McdmBlock, porque a aba de cenários é IRMÃ do bloco MCDM (as duas são
+  // filhas desta página, ver o fim do return), e a decisão de desenho é que o
+  // método escopa a área multicritério INTEIRA — pesos, ranking, matriz e
+  // comparação de cenários mudam juntos ao trocar a pill. Um useState dentro de
+  // McdmBlock não alcançaria ScenarioComparison.
+  //
+  // Começa em `null`, não numa chave: qual método está disponível depende dos
+  // filtros e dos resultados calculados, que só se sabe abaixo. `null` significa
+  // "o usuário ainda não escolheu", e safeMcdmMethod traduz isso no primeiro
+  // disponível.
+  const [mcdmMethod, setMcdmMethod] = useState(null);
 
   const toggleFilter = (key) => setFilters((prev) => ({ ...prev, [key]: !prev[key] }));
 
@@ -227,19 +221,25 @@ function Statistics() {
     (m) => filters[m.key] && state.results[m.key]
   );
 
-  // A aba MCDM SOME quando o Nicholas não está ativo — não fica desabilitada.
-  // Aba morta que o usuário não tem como usar só ocupa espaço explicando uma
-  // indisponibilidade que a pill logo acima já explica.
-  const showMcdmTab = activeMethods.some((sm) => sm.key === MCDM_SELECTION_METHOD);
+  // Os métodos ativos que o pipeline multicritério aceita, e o que a aba de
+  // fato usa depois de clampar a escolha do usuário no que sobrou disponível.
+  // As duas regras são funções puras testáveis em utils/mcdmMethods.js.
+  const mcdmAvailable = availableMcdmMethods(activeMethods);
+  const safeMethod    = safeMcdmMethod(mcdmMethod, mcdmAvailable);
 
-  // Desligar a pill do Nicholas enquanto a aba MCDM está aberta tiraria a aba
-  // debaixo da visão atual. Clampa em vez de corrigir por efeito colateral —
-  // mesma solução do `safeStep` do stepper em Inputs.jsx, pelo mesmo motivo:
-  // um useState que só se conserta depois do render mostraria um quadro vazio
-  // no meio do caminho.
+  // A aba MCDM SOME quando NENHUM método suportado está ativo — não fica
+  // desabilitada. Aba morta que o usuário não tem como usar só ocupa espaço
+  // explicando uma indisponibilidade que as pills logo acima já explicam.
+  const showMcdmTab = mcdmAvailable.length > 0;
+
+  // Desligar a pill do último método suportado enquanto a aba MCDM está aberta
+  // tiraria a aba debaixo da visão atual. Clampa em vez de corrigir por efeito
+  // colateral — mesma solução do `safeStep` do stepper em Inputs.jsx (e do
+  // safeMethod acima), pelo mesmo motivo: um useState que só se conserta depois
+  // do render mostraria um quadro vazio no meio do caminho.
   // As duas visões que dependem do pipeline MCDM. "Comparar cenários" entra
-  // junto: os cenários são repartições de peso do Enfoque, e sem o Nicholas
-  // ativo não há ranking para nenhuma coluna recalcular.
+  // junto: os cenários são repartições de peso do Enfoque, e sem nenhum método
+  // suportado ativo não há ranking para nenhuma coluna recalcular.
   const MCDM_VIEWS = [VIEWS.MCDM, VIEWS.SCENARIOS];
   const safeView   = MCDM_VIEWS.includes(view) && !showMcdmTab ? VIEWS.CLASSIC : view;
 
@@ -272,9 +272,9 @@ function Statistics() {
       )}
 
       {/* ABAS — só aparecem quando há uma segunda visão para onde ir.
-          A do MCDM depende do Nicholas estar entre os métodos ativos: o
-          pipeline multicritério só suporta ele nesta fase (ver
-          MCDM_SUPPORTED_METHODS em algorithms/mcdmPipeline.js). */}
+          A do MCDM depende de haver ao menos um método suportado entre os
+          ativos (ver MCDM_SUPPORTED_METHODS em algorithms/mcdmPipeline.js);
+          qual deles a aba usa é o seletor de pills lá dentro. */}
       {showMcdmTab && activeMethods.length > 0 && (
         <div style={{ marginTop: "20px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
           {[
@@ -312,9 +312,18 @@ function Statistics() {
           <MethodBlock key={sm.key} sm={sm} result={state.results[sm.key]} />
         ))}
 
-      {safeView === VIEWS.MCDM && <McdmBlock />}
+      {safeView === VIEWS.MCDM && (
+        <McdmBlock
+          method={safeMethod}
+          available={mcdmAvailable}
+          onMethodChange={setMcdmMethod}
+        />
+      )}
 
-      {safeView === VIEWS.SCENARIOS && <ScenarioComparison />}
+      {/* MESMO `safeMethod` do bloco acima — é o que faz trocar a pill lá dentro
+          reordenar também esta tabela, em vez de a comparação ficar presa a um
+          método enquanto o ranking ao lado mostra outro. */}
+      {safeView === VIEWS.SCENARIOS && <ScenarioComparison method={safeMethod} />}
 
       {/* BOTÃO VOLTAR — fixo na tela */}
       <button
