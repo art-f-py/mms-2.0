@@ -6,8 +6,7 @@ import { REBALANCE_MODES } from "../algorithms/enfoqueRebalance";
 import { CRITERION_GROUPS, FIXED_CRITERIA_BY_ID } from "../algorithms/mcdmCriteria";
 import { MCDM_PENDING_METHODS } from "../algorithms/mcdmPipeline";
 import { deriveMcdmRanking, MCDM_STATUS } from "../utils/mcdmRanking";
-import Pill from "./Pill";
-import { buildMatrixColumns } from "../utils/mcdmMatrixLayout";
+import { buildMatrixColumns, buildOriginSpans } from "../utils/mcdmMatrixLayout";
 import { uiMethodLabel } from "../utils/methodLabel";
 import { parseWeightInput } from "../utils/weightInput";
 import { weightSliderStyle } from "../utils/sliderTrack";
@@ -533,6 +532,9 @@ function DecisionMatrixTable({ sheet, weights, criterionIds }) {
   // pipeline, então uma memoização por identidade nunca acertaria o cache — e
   // reagrupar 19 itens custa menos que a comparação que evitaria fazê-lo.
   const { columns, groups } = buildMatrixColumns(criterionIds);
+  // De onde cada bloco de colunas veio — clássicas do método x os seis fixos do
+  // Francisco. Vira a primeira linha do cabeçalho (ver o comentário lá).
+  const origens = buildOriginSpans(columns);
 
   // Rótulo do critério. Os 13 clássicos já têm chave em results.criteria (a
   // mesma que o radar de breakdown dos blocos clássicos usa); os 6 fixos são
@@ -543,6 +545,18 @@ function DecisionMatrixTable({ sheet, weights, criterionIds }) {
     id in FIXED_CRITERIA_BY_ID
       ? t(`results.mcdm.fixedCriteria.${id}`, fallback)
       : t(`results.criteria.${id}`, fallback);
+
+  // Texto conceitual dos SEIS FIXOS, e só deles. Os clássicos não ganham ⓘ
+  // aqui: o que eles significam é a publicação do método que define, e o
+  // formulário já os explica campo a campo na etapa em que são preenchidos.
+  // Os seis do Francisco não têm essa outra tela — a matriz é o único lugar em
+  // que aparecem, e até aqui apareciam sem nenhuma explicação.
+  //
+  // O SEGUNDO ARGUMENTO É O DEFAULT do i18next, e é o que mantém o ⓘ fora do ar
+  // enquanto não houver chave: sem ele, um id novo renderizaria o caminho da
+  // chave crua ("results.mcdm.fixedCriteriaHints.xyz") dentro do tooltip.
+  const criterionHint = (id) =>
+    id in FIXED_CRITERIA_BY_ID ? t(`results.mcdm.fixedCriteriaHints.${id}`, "") : "";
 
   // Inteiro sai sem casas (a escala de Saaty e os critérios técnicos são
   // inteiros); o resto com duas, para o índice de custo não virar um número
@@ -583,6 +597,32 @@ function DecisionMatrixTable({ sheet, weights, criterionIds }) {
     <div style={{ overflowX: "auto" }}>
       <table style={{ borderCollapse: "separate", borderSpacing: 0, fontSize: "12px", color: colors.text }}>
         <thead>
+          {/* LINHA DE ORIGEM — de onde as colunas vêm.
+              A matriz junta duas procedências que pareciam uma só: as colunas
+              CLÁSSICAS, que o método de seleção pontua e mudam entre Nicholas e
+              UBC, e os SEIS FIXOS do Francisco, que descrevem o método de lavra
+              e valem igual nos dois. Até aqui nada dizia isso, e os seis liam-se
+              como se fossem mais colunas da publicação do método.
+
+              As faixas vêm de buildOriginSpans, que as CALCULA a partir das
+              colunas em vez de presumir que os fixos são sempre os dois últimos
+              grupos — ver o porquê lá. */}
+          <tr>
+            <th style={{ ...baseCell, ...stickyMethod, backgroundColor: colors.white, borderBottom: "none" }} />
+            {origens.map(({ fixed, span }, i) => (
+              <th
+                key={`${fixed ? "fixos" : "classicos"}-${i}`}
+                colSpan={span}
+                style={{ ...baseCell, textAlign: "center", borderBottom: "none", paddingBottom: "2px", fontSize: "10px", fontWeight: "600", letterSpacing: "0.04em", textTransform: "uppercase", color: colors.muted }}
+              >
+                <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                  {t(`results.mcdm.matrixOrigin.${fixed ? "fixed" : "classic"}`)}
+                  <InfoTip text={t(`results.mcdm.matrixOrigin.${fixed ? "fixedHint" : "classicHint"}`)} />
+                </span>
+              </th>
+            ))}
+          </tr>
+
           {/* Linha dos grupos — o colSpan só fecha porque buildMatrixColumns
               garante que as colunas de um grupo saem contíguas. */}
           <tr>
@@ -607,14 +647,24 @@ function DecisionMatrixTable({ sheet, weights, criterionIds }) {
             </th>
             {columns.map(({ index, id, groupId }) => {
               const label = criterionLabel(id, sheet.columns[index]);
+              const hint  = criterionHint(id);
               return (
                 <th
                   key={id}
                   title={label}
                   style={{ ...baseCell, width: `${CRIT_COL_WIDTH}px`, minWidth: `${CRIT_COL_WIDTH}px`, maxWidth: `${CRIT_COL_WIDTH}px`, textAlign: "center", verticalAlign: "bottom", borderTop: `3px solid ${groupColor(groupId)}`, borderBottom: `2px solid ${colors.border}` }}
                 >
-                  <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: "11px", fontWeight: "600", color: colors.text }}>
-                    {label}
+                  {/* O ⓘ é IRMÃO do texto, dentro de um flex, e não parte dele:
+                      assim o `text-overflow: ellipsis` corta o nome do critério
+                      e nunca o ícone, que de outro modo seria o primeiro a
+                      sumir numa coluna de 96px — justo o que veio para ficar.
+                      InfoTip devolve null sem texto, então os clássicos
+                      continuam com o cabeçalho exatamente como estava. */}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minWidth: 0 }}>
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: "11px", fontWeight: "600", color: colors.text }}>
+                      {label}
+                    </span>
+                    <InfoTip text={hint} />
                   </div>
                   <div style={{ fontSize: "10px", fontWeight: "700", color: colors.muted, fontVariantNumeric: "tabular-nums" }}>
                     {weights[index].toFixed(4)}
@@ -837,41 +887,59 @@ export default function McdmBlock({ method, available = [], onMethodChange }) {
         </h3>
       </div>
 
-      {/* SELETOR DE MÉTODO DE SELEÇÃO.
+      {/* SELETOR DE MÉTODO DE SELEÇÃO — RADIO NATIVO.
           SÓ COM MAIS DE UM DISPONÍVEL. Com um método só, o seletor não oferece
           escolha nenhuma — seria um controle que não faz nada, pedindo ao
-          usuário que decida entre uma opção. A aba então mostra o método direto,
-          exatamente como fazia antes de o UBC entrar no pipeline.
+          usuário que decida entre uma opção. A aba então mostra o método direto.
 
-          Mesmos pills e MESMOS RÓTULOS da fileira de filtros de /statistics: o
-          componente é o de components/Pill.jsx e os objetos ({ key, label,
-          color }) chegam prontos por prop, vindos do SELECTION_METHODS de lá.
-          Nada de rótulo próprio — "Nicholas 1981/1992" precisa ser a mesma
-          palavra nos dois lugares, ou vira outro método aos olhos de quem lê.
+          ERA UMA FILEIRA DE PILLS, e virou <input type="radio"> por duas razões.
+          A visual: os pills daqui eram idênticos aos pills de FILTRO de método
+          logo acima, com semânticas diferentes — lá vários ligam ao mesmo tempo,
+          aqui é um só —, e duas fileiras iguais que se comportam diferente é
+          ambiguidade gratuita. (O item 1 desta leva também esconde os filtros
+          fora da aba clássica, o que ataca o mesmo problema pelo outro lado.)
+          A semântica: o papel de grupo-de-rádio declarado à mão, com
+          aria-pressed em cada botão, era uma reconstrução do que o
+          <fieldset>/<input type="radio"> já dá de graça —
+          navegação por setas, exclusividade garantida pelo `name` compartilhado,
+          rótulo associado por <label>. Menos código e mais acessível.
 
-          A semântica aqui é EXCLUSIVA (um ligado por vez), ao contrário da
-          fileira de filtros, onde os pills são independentes. Quem faz essa
-          diferença é o `active`/`onClick` daqui, não o componente — ver Pill.jsx.
-          Daí o role="radiogroup": para leitor de tela, isto é uma escolha entre
-          alternativas, não três interruptores soltos. */}
+          O RÓTULO NÃO MUDA: continua vindo de SELECTION_METHODS (por prop), a
+          mesma palavra da fileira de filtros e dos blocos clássicos. */}
       {available.length > 1 && (
-        <div
-          role="radiogroup"
-          aria-label={t("results.mcdm.methodSelector")}
-          style={{ display: "flex", gap: "24px", flexWrap: "wrap", marginBottom: "16px" }}
+        <fieldset
+          style={{ border: "none", margin: "0 0 16px", padding: 0, display: "flex", gap: "20px", flexWrap: "wrap", alignItems: "center" }}
         >
-          {available.map((sm) => (
-            <Pill
-              key={sm.key}
-              label={sm.label}
-              color={sm.color}
-              active={sm.key === method}
-              // Clicar no método JÁ ativo não desliga: sem método não há aba, e
-              // um estado "nenhum selecionado" não existe neste seletor.
-              onClick={() => onMethodChange?.(sm.key)}
-            />
-          ))}
-        </div>
+          {/* O <legend> é o rótulo do grupo para leitor de tela. Fica fora da
+              tela em vez de escondido com `display:none`, que o removeria
+              também da árvore de acessibilidade — que é justamente onde ele
+              precisa estar. O título do bloco logo acima já cumpre o papel
+              visual, e repeti-lo na tela seria ruído. */}
+          <legend className="mms-sr-only">{t("results.mcdm.methodSelector")}</legend>
+          {available.map((sm) => {
+            const id = `mcdm-metodo-${sm.key}`;
+            return (
+              <div key={sm.key} style={{ display: "flex", alignItems: "center", gap: "8px", minHeight: "44px" }}>
+                <input
+                  type="radio"
+                  id={id}
+                  // O `name` compartilhado é o que torna a escolha exclusiva —
+                  // é ele que faz o navegador desmarcar o irmão sozinho.
+                  name="mcdm-metodo"
+                  value={sm.key}
+                  checked={sm.key === method}
+                  onChange={() => onMethodChange?.(sm.key)}
+                  // accentColor pinta a bolinha na cor do método, o mesmo elo
+                  // visual que a pill fazia com o bloco clássico correspondente.
+                  style={{ width: "18px", height: "18px", accentColor: sm.color, cursor: "pointer", flexShrink: 0 }}
+                />
+                <label htmlFor={id} style={{ fontSize: "14px", fontWeight: "500", cursor: "pointer" }}>
+                  {sm.label}
+                </label>
+              </div>
+            );
+          })}
+        </fieldset>
       )}
 
       {matrixOpen ? (

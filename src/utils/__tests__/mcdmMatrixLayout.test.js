@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildMatrixColumns } from "../mcdmMatrixLayout";
+import { buildMatrixColumns, buildOriginSpans } from "../mcdmMatrixLayout";
 import { ENFOQUE_GROUP_IDS, groupOfCriterion } from "../../algorithms/enfoque";
 import { CRITERION_GROUPS, FIXED_CRITERIA } from "../../algorithms/mcdmCriteria";
 import { CLASSIC_CRITERIA } from "../../algorithms/classicCriteria";
@@ -129,5 +129,90 @@ describe("casos de borda", () => {
     const um = { [GEOMETRY]: "shape", [GEOMECHANICS]: "rss_ob", [TECHNICAL]: "dilution", [ECONOMIC]: "comparativeCosts" };
     const { groups } = buildMatrixColumns(ENFOQUE_GROUP_IDS.map((g) => um[g]));
     expect(groups).toEqual(ENFOQUE_GROUP_IDS.map((groupId) => ({ groupId, span: 1 })));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// FAIXAS DE ORIGEM — CLÁSSICOS x OS SEIS DO FRANCISCO
+// ---------------------------------------------------------------------------
+// A linha de cabeçalho que diz de onde cada bloco de colunas veio. O contrato é
+// o mesmo de `groups`: faixas contíguas, na ordem de exibição, cada uma virando
+// um colSpan.
+
+describe("buildOriginSpans", () => {
+  const colunasDe = (ids) => buildMatrixColumns(ids).columns;
+
+  it("separa as colunas em duas faixas: clássicas primeiro, fixas depois", () => {
+    // Os spans saem de CLASSIC_CRITERIA/FIXED_CRITERIA, e não de números
+    // escritos à mão: CLASSIC_CRITERIA já cresceu de 13 para 17 quando o UBC
+    // entrou, e um literal aqui teria virado dívida na mesma hora.
+    expect(buildOriginSpans(colunasDe(IDS_19))).toEqual([
+      { fixed: false, span: CLASSIC_CRITERIA.length },
+      { fixed: true,  span: FIXED_CRITERIA.length },
+    ]);
+  });
+
+  it("os spans somam exatamente o número de colunas — nenhuma fica sem cobertura", () => {
+    // Se somassem menos, o cabeçalho deixaria colunas órfãs à direita; se
+    // somassem mais, o colSpan estouraria a tabela. As duas falhas são visuais
+    // e silenciosas, daí a asserção explícita.
+    const colunas = colunasDe(IDS_19);
+    const total = buildOriginSpans(colunas).reduce((a, f) => a + f.span, 0);
+    expect(total).toBe(colunas.length);
+  });
+
+  it("classifica como fixo exatamente os seis do Francisco, e ninguém mais", () => {
+    const colunas = colunasDe(IDS_19);
+    const faixas  = buildOriginSpans(colunas);
+
+    // Reconstrói a marcação coluna a coluna a partir das faixas e confere
+    // contra FIXED_CRITERIA — a fonte única de quem é fixo.
+    const marcados = [];
+    let i = 0;
+    for (const { fixed, span } of faixas) {
+      for (let n = 0; n < span; n++) marcados.push({ id: colunas[i++].id, fixed });
+    }
+    const idsFixos = new Set(FIXED_CRITERIA.map((c) => c.id));
+    for (const { id, fixed } of marcados) expect(fixed).toBe(idsFixos.has(id));
+  });
+
+  it("funciona igual na matriz do UBC, que tem outras colunas clássicas", () => {
+    // 11 clássicas + 6 fixas. O número muda com o método; a separação não.
+    const idsUbc = ["shape", "thickness", "dip", "grade", "depth",
+                    "rss_ob", "rmr_ob", "rss_hw", "rmr_hw", "rss_fw", "rmr_fw",
+                    ...FIXED_CRITERIA.map((c) => c.id)];
+    expect(buildOriginSpans(colunasDe(idsUbc))).toEqual([
+      { fixed: false, span: 11 },
+      { fixed: true,  span: 6 },
+    ]);
+  });
+
+  it("só fixos, ou só clássicos, dá uma faixa só", () => {
+    expect(buildOriginSpans(colunasDe(FIXED_CRITERIA.map((c) => c.id))))
+      .toEqual([{ fixed: true, span: 6 }]);
+    expect(buildOriginSpans(colunasDe(["shape", "thickness"])))
+      .toEqual([{ fixed: false, span: 2 }]);
+  });
+
+  it("origens intercaladas viram mais faixas, em vez de uma marcação errada", () => {
+    // O caso que o cálculo protege: se um critério fixo passasse a cair num
+    // grupo cercado de clássicos, o colSpan chumbado de "dois últimos grupos"
+    // cobriria a coluna errada em silêncio. Aqui saem três faixas honestas.
+    // (Não é o layout de hoje — é a garantia de que a função não presume.)
+    const colunas = [
+      { index: 0, id: "shape",       groupId: GEOMETRY },
+      { index: 1, id: "performance", groupId: TECHNICAL },
+      { index: 2, id: "dip",         groupId: GEOMETRY },
+    ];
+    expect(buildOriginSpans(colunas)).toEqual([
+      { fixed: false, span: 1 },
+      { fixed: true,  span: 1 },
+      { fixed: false, span: 1 },
+    ]);
+  });
+
+  it("sem colunas devolve lista vazia, e sem lançar", () => {
+    expect(buildOriginSpans([])).toEqual([]);
+    expect(buildOriginSpans()).toEqual([]);
   });
 });

@@ -18,6 +18,7 @@
 // no DOM, não muta o que recebe.
 
 import { ENFOQUE_GROUP_IDS, groupOfCriterion } from "../algorithms/enfoque";
+import { FIXED_CRITERIA_BY_ID } from "../algorithms/mcdmCriteria";
 
 /**
  * Colunas da matriz, reordenadas e agrupadas para exibição.
@@ -68,4 +69,43 @@ export function buildMatrixColumns(criterionIds = []) {
   }
 
   return { columns, groups };
+}
+
+/**
+ * Faixas de ORIGEM das colunas: de onde cada bloco contíguo de colunas veio.
+ *
+ * A matriz mistura duas procedências que a tela precisa separar. As colunas
+ * CLÁSSICAS são as que o próprio método de seleção pontua (mudam entre Nicholas
+ * e UBC); as FIXAS são os seis critérios do Francisco, que descrevem o método de
+ * lavra e valem igual nos dois. Sem essa distinção na tela, os seis aparecem
+ * como se fossem mais colunas da publicação do método — que é justamente o que
+ * eles não são.
+ *
+ * CALCULA AS FAIXAS, NÃO AS PRESUME. Hoje as fixas caem inteiras em
+ * Técnico-Operacional e Economia, e as clássicas em Geometria e Geomecânica, o
+ * que faria um `colSpan` fixo de dois grupos funcionar por acidente. Mas essa
+ * coincidência é do conteúdo atual de FIXED_CRITERIA, não uma regra: um critério
+ * fixo novo em Geometria quebraria o colSpan chumbado, em silêncio e com o
+ * rótulo de origem cobrindo a coluna errada. Percorrer e agrupar por corridas
+ * de mesma origem custa uma passada e não tem esse modo de falha.
+ *
+ * Devolve faixas CONTÍGUAS na ordem de exibição — o mesmo contrato de `groups`,
+ * e pela mesma razão: cada faixa vira um `colSpan` de uma linha de cabeçalho.
+ * Se as origens se intercalassem, sairiam mais faixas, e o cabeçalho continuaria
+ * correto em vez de mentir.
+ *
+ * @param {Array<{id: string}>} columns  saída de buildMatrixColumns
+ * @returns {Array<{fixed: boolean, span: number}>} faixas na ordem de exibição
+ */
+export function buildOriginSpans(columns = []) {
+  const faixas = [];
+
+  for (const { id } of columns) {
+    const fixed = id in FIXED_CRITERIA_BY_ID;
+    const ultima = faixas[faixas.length - 1];
+    if (ultima && ultima.fixed === fixed) ultima.span += 1;
+    else faixas.push({ fixed, span: 1 });
+  }
+
+  return faixas;
 }

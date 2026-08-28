@@ -213,3 +213,27 @@ input[type="range"] {
     text-align: center;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   RÓTULO SÓ PARA LEITOR DE TELA
+   ---------------------------------------------------------------------------
+   Tira o elemento da tela SEM tirá-lo da árvore de acessibilidade. É a
+   diferença para `display:none` e `visibility:hidden`, que o removem dos dois
+   — e o ponto aqui é justamente o contrário: o <legend> do seletor de método
+   precisa existir para quem navega por leitor de tela e não precisa aparecer,
+   porque o título do bloco logo acima já diz a mesma coisa visualmente.
+
+   O clip de 1px é a receita conhecida (a mesma do .sr-only do Bootstrap): não
+   usa `text-indent` negativo, que quebra em RTL, nem posiciona fora da tela com
+   `left:-9999px`, que alguns navegadores incluem no cálculo de rolagem. */
+.mms-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

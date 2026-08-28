@@ -10,7 +10,10 @@ import {
   calculateUBC, calculateNicholas, calculateSHB,
   classifyRSS, classifyRSSNicholas,
 } from "../algorithms/algorithms";
-import { downloadDecisionMatrix } from "../utils/downloadDecisionMatrix";
+// Import comentado junto com o botão de exportar matriz (ver o bloco no Step 4,
+// perto do fim deste arquivo). A FUNÇÃO CONTINUA EXISTINDO E TESTADA em
+// utils/downloadDecisionMatrix.js — o que saiu é só o gatilho na tela.
+// import { downloadDecisionMatrix } from "../utils/downloadDecisionMatrix";
 import DepositSketch from "./DepositSketch";
 import RockTooltip  from "../components/RockTooltip";
 import { rmrToClass, gsiToRmr, qToRmr } from "../data/rmrData";
@@ -1108,21 +1111,35 @@ function Inputs() {
         </Collapsible>
       )}
 
-      {/* Exportação da matriz de decisão BRUTA para MCDM externo (Pro D.M.).
-          Cálculo paralelo com pesos neutros: ignora tanto os sliders acima
-          quanto os multiplicadores de domínio do Nicholas, e não mexe no
-          estado — ver algorithms/decisionMatrix.js. */}
-      <div style={{ marginTop: "24px", paddingTop: "20px", borderTop: `1px solid ${C.border}` }}>
-        <button
-          style={{ ...S.btnGhost, opacity: anyMethod ? 1 : 0.5, cursor: anyMethod ? "pointer" : "not-allowed" }}
-          disabled={!anyMethod}
-          onClick={() => { downloadDecisionMatrix(fd, sm).catch((err) => console.error("[MMS] falha ao exportar a matriz de decisão:", err)); }}>
-          {t("inputs.complementary.exportMatrix")}
-        </button>
-        <p style={{ ...S.hint, marginTop: "10px", marginBottom: 0 }}>
-          {t("inputs.complementary.exportMatrixHint")}
-        </p>
-      </div>
+      {/* !!! EXPORTAÇÃO DA MATRIZ — BOTÃO OCULTO NESTA FASE, TAREFA FUTURA !!!
+          ---------------------------------------------------------------------
+          O botão que chamava downloadDecisionMatrix saiu da tela. NADA MAIS SAIU:
+          `downloadDecisionMatrix` (utils/downloadDecisionMatrix.js) continua
+          exportada e testada, e `buildDecisionMatrix` (algorithms/decisionMatrix.js)
+          NÃO foi tocada — ela é carga viva do MCDM, e não só deste botão: o
+          pipeline a chama a cada render da aba multicritério, via mcdmRanking.js.
+          Apagar qualquer uma das duas derrubaria o ranking da tela de resultados.
+
+          PARA REATIVAR: descomente o bloco abaixo E o import de
+          `downloadDecisionMatrix` no topo deste arquivo (o lint recusa import
+          sem uso, então os dois têm de andar juntos). Nada mais: `anyMethod`,
+          que a condição de habilitação usa, segue vivo por causa do stepper. As
+          duas chaves de i18n
+          (inputs.complementary.exportMatrix / exportMatrixHint) também ficaram
+          nos quatro idiomas, intactas.
+
+          <div style={{ marginTop: "24px", paddingTop: "20px", borderTop: `1px solid ${C.border}` }}>
+            <button
+              style={{ ...S.btnGhost, opacity: anyMethod ? 1 : 0.5, cursor: anyMethod ? "pointer" : "not-allowed" }}
+              disabled={!anyMethod}
+              onClick={() => { downloadDecisionMatrix(fd, sm).catch((err) => console.error("[MMS] falha ao exportar a matriz de decisão:", err)); }}>
+              {t("inputs.complementary.exportMatrix")}
+            </button>
+            <p style={{ ...S.hint, marginTop: "10px", marginBottom: 0 }}>
+              {t("inputs.complementary.exportMatrixHint")}
+            </p>
+          </div>
+      */}
     </div>
   ) : null;
 

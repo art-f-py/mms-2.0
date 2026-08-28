@@ -40,7 +40,7 @@
   },
   "inputs": {
     "pageTitle": "Paramètres du Gisement",
-    "pageSubtitle": "MMS 2.0 — Mining Method Selection",
+    "pageSubtitle": "MMS 2.0 — Mining Method Selection Tool",
     "methods": {
       "title": "Sélectionnez les méthodes de sélection",
       "subtitle": "Le formulaire s'adaptera automatiquement aux champs nécessaires.",
@@ -151,7 +151,7 @@
   },
   "results": {
     "title": "Résultats",
-    "subtitle": "MMS 2.0 — Mining Method Selection",
+    "subtitle": "MMS 2.0 — Mining Method Selection Tool",
     "noResult": "Aucun résultat calculé pour le moment.",
     "goToInputs": "Aller aux Inputs",
     "activateOne": "Activez au moins une méthode pour visualiser les résultats.",
@@ -196,7 +196,8 @@
       "tabs": {
         "classic": "Resultados clássicos",
         "mcdm": "Decisão multicritério",
-        "scenarios": "Comparar cenários"
+        "scenarios": "Comparar cenários",
+        "weights": "Pesos e ranking"
       },
       "modes": {
         "enfoque": "Enfoque",
@@ -235,6 +236,21 @@
         "dilution": "Diluição",
         "capitalInvestment": "Investimento de capital",
         "comparativeCosts": "Custos comparativos"
+      },
+      "_commentFixedCriteriaHints": "PLACEHOLDER CONSCIENTE: a descricao conceitual de cada um dos seis criterios do Francisco ainda nao foi escrita. Cada chave abaixo e um ponto de edicao de STRING — a estrutura (o InfoTip por criterio no cabecalho da matriz) ja esta pronta e nao muda quando o texto real chegar.",
+      "fixedCriteriaHints": {
+        "performance": "[Descrição conceitual pendente — a confirmar]",
+        "productivity": "[Descrição conceitual pendente — a confirmar]",
+        "recovery": "[Descrição conceitual pendente — a confirmar]",
+        "dilution": "[Descrição conceitual pendente — a confirmar]",
+        "capitalInvestment": "[Descrição conceitual pendente — a confirmar]",
+        "comparativeCosts": "[Descrição conceitual pendente — a confirmar]"
+      },
+      "matrixOrigin": {
+        "classic": "Critérios do método",
+        "classicHint": "As colunas que o próprio método de seleção pontua, a partir do que foi preenchido no formulário. Mudam de um método para o outro.",
+        "fixed": "Critérios adicionais",
+        "fixedHint": "Seis critérios que descrevem o método de lavra em si — não o depósito — e por isso valem igual em qualquer método de seleção. Vêm da metodologia do Francisco (Pro D.M.) e entram na matriz depois das colunas clássicas."
       },
       "groups": {
         "geometry": "Geometria",

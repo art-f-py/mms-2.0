@@ -25,8 +25,14 @@ const SELECTION_METHODS = [
 // Tokens semânticos → variáveis CSS centralizadas em index.css
 const colors = {
   primary:    "var(--color-primary)",
+  // `primary50` é o fundo esmaecido da sub-aba ativa; `muted` já era usado por
+  // tabButtonStyle abaixo sem estar declarado aqui — o `color` saía `undefined`
+  // e herdava, em vez do cinza de apoio que o estilo pedia. Mesmos tokens que
+  // McdmBlock.jsx usa, para as duas telas não divergirem de paleta.
+  primary50:  "var(--color-primary-50)",
   border:     "var(--color-border)",
   text:       "var(--color-text)",
+  muted:      "var(--color-muted)",
   background: "var(--color-bg-card)",
 };
 
@@ -159,7 +165,14 @@ function MethodBlock({ sm, result }) {
 // bloco MCDM respondem à mesma pergunta por caminhos diferentes, e vê-los
 // juntos numa rolagem só convida a comparar ranking com ranking como se fossem
 // a mesma escala (score de tabela x proximidade de TOPSIS, que não são).
-const VIEWS = { CLASSIC: "classic", MCDM: "mcdm", SCENARIOS: "scenarios" };
+const VIEWS = { CLASSIC: "classic", MCDM: "mcdm" };
+
+// Sub-navegação DENTRO da aba multicritério. "Comparar cenários" era uma aba de
+// topo irmã do bloco MCDM e desceu para cá: as duas visões partilham o método de
+// seleção e os pesos, e lê-las como irmãs da aba clássica sugeria três assuntos
+// independentes quando são dois — os resultados de tabela, e o multicritério
+// visto de dois ângulos.
+const MCDM_SUBVIEWS = { WEIGHTS: "weights", SCENARIOS: "scenarios" };
 
 // Mesmo botão-aba do seletor domínio/critério do Nicholas (Inputs.jsx), com o
 // S.btnGhost de lá reescrito aqui — aquele objeto de estilo é local do Inputs e
@@ -176,6 +189,23 @@ const tabButtonStyle = (on) => ({
   fontWeight:      on ? "700" : "400",
 });
 
+// Sub-aba: o MESMO botão-aba, deliberadamente menor e mais leve. A hierarquia
+// precisa ser visível sem legenda — se as duas fileiras tivessem o mesmo peso,
+// voltaríamos ao problema que o item de cima resolve, com o usuário sem saber
+// qual escolha manda na outra. Fundo esmaecido em vez de sólido, e altura de
+// toque menor (36px, ainda confortável) contra os 44px da fileira de topo.
+const subTabButtonStyle = (on) => ({
+  padding:         "4px 12px",
+  minHeight:       "36px",
+  borderRadius:    "6px",
+  fontSize:        "12px",
+  cursor:          "pointer",
+  backgroundColor: on ? colors.primary50 : "transparent",
+  color:           on ? colors.primary : colors.muted,
+  border:          `1px solid ${on ? colors.primary : colors.border}`,
+  fontWeight:      on ? "700" : "400",
+});
+
 // ---------------------------------------------------------------------------
 // COMPONENTE PRINCIPAL
 // ---------------------------------------------------------------------------
@@ -186,18 +216,30 @@ function Statistics() {
 
   const [filters, setFilters] = useState({ ubc: true, nicholas: true, shb: true });
   const [view, setView]       = useState(VIEWS.CLASSIC);
-  // Método de seleção em foco na aba MCDM. MORA AQUI, e não dentro de
-  // McdmBlock, porque a aba de cenários é IRMÃ do bloco MCDM (as duas são
-  // filhas desta página, ver o fim do return), e a decisão de desenho é que o
-  // método escopa a área multicritério INTEIRA — pesos, ranking, matriz e
-  // comparação de cenários mudam juntos ao trocar a pill. Um useState dentro de
-  // McdmBlock não alcançaria ScenarioComparison.
+  // Método de seleção em foco na aba MCDM, compartilhado pelas DUAS sub-visões:
+  // pesos/ranking/matriz e comparação de cenários mudam juntos ao trocá-lo.
+  //
+  // CONTINUA AQUI DEPOIS DE AS DUAS VIRAREM SUB-VISÕES DA MESMA ABA. O motivo
+  // original — eram abas irmãs, e um useState em McdmBlock não alcançaria
+  // ScenarioComparison — deixou de valer, e descer o estado para um componente
+  // que agrupasse as duas passou a ser possível. Não desceu porque a troca sai
+  // pior: esta página fica montada o tempo todo, enquanto um agrupador montaria
+  // só com a aba MCDM aberta, e a escolha de método (e a de sub-visão) se
+  // perderia a cada ida e volta pela aba clássica. Manter aqui preserva um
+  // comportamento já verificado, sem nenhum ganho perdido — os dois estados
+  // continuam privados desta página e descem só como prop.
   //
   // Começa em `null`, não numa chave: qual método está disponível depende dos
   // filtros e dos resultados calculados, que só se sabe abaixo. `null` significa
   // "o usuário ainda não escolheu", e safeMcdmMethod traduz isso no primeiro
   // disponível.
   const [mcdmMethod, setMcdmMethod] = useState(null);
+  // Qual das duas visões multicritério está aberta. FICA AQUI, e não dentro de
+  // um componente que agrupasse as duas, pela mesma razão que `mcdmMethod`
+  // ficou: esta página segue montada ao trocar de aba, e um wrapper montado só
+  // enquanto a aba MCDM está aberta perderia a escolha ao passar pela aba
+  // clássica e voltar. Ver a nota sobre isso logo abaixo do return.
+  const [mcdmView, setMcdmView] = useState(MCDM_SUBVIEWS.WEIGHTS);
 
   const toggleFilter = (key) => setFilters((prev) => ({ ...prev, [key]: !prev[key] }));
 
@@ -237,11 +279,9 @@ function Statistics() {
   // colateral — mesma solução do `safeStep` do stepper em Inputs.jsx (e do
   // safeMethod acima), pelo mesmo motivo: um useState que só se conserta depois
   // do render mostraria um quadro vazio no meio do caminho.
-  // As duas visões que dependem do pipeline MCDM. "Comparar cenários" entra
-  // junto: os cenários são repartições de peso do Enfoque, e sem nenhum método
-  // suportado ativo não há ranking para nenhuma coluna recalcular.
-  const MCDM_VIEWS = [VIEWS.MCDM, VIEWS.SCENARIOS];
-  const safeView   = MCDM_VIEWS.includes(view) && !showMcdmTab ? VIEWS.CLASSIC : view;
+  // Uma aba só depende do pipeline agora — a comparação de cenários virou
+  // sub-visão dela e é clampada junto, de graça.
+  const safeView = view === VIEWS.MCDM && !showMcdmTab ? VIEWS.CLASSIC : view;
 
   return (
     <div style={{ backgroundColor: "var(--color-bg)", minHeight: "100vh", padding: "32px clamp(12px, 4vw, 24px) 180px" }}>
@@ -252,18 +292,32 @@ function Statistics() {
         <p style={{ margin: 0, color: "var(--color-muted)", fontSize: "16px" }}>{t("results.subtitle")}</p>
       </div>
 
-      {/* PILLS */}
-      <div style={{ marginTop: "20px", display: "flex", gap: "24px", flexWrap: "wrap" }}>
-        {SELECTION_METHODS.filter((m) => state.results[m.key]).map((m) => (
-          <Pill
-            key={m.key}
-            label={m.label}
-            color={m.color}
-            active={filters[m.key]}
-            onClick={() => toggleFilter(m.key)}
-          />
-        ))}
-      </div>
+      {/* PILLS DE FILTRO — SÓ NA ABA CLÁSSICA.
+          Elas ligam e desligam os métodos que os blocos clássicos mostram, e é
+          lá que a ação é imediata e visível. Na aba multicritério o efeito
+          delas é indireto (mexem em quais métodos o seletor de método OFERECE)
+          e ficavam a um palmo do seletor, duas fileiras parecidas com
+          semânticas diferentes — a mesma confusão que o seletor em radio
+          resolve pelo outro lado.
+
+          O ESTADO NÃO É RESETADO, só o controle sai da tela: `filters` continua
+          valendo, `activeMethods` continua saindo dele, e voltar para a aba
+          clássica reencontra exatamente os filtros de antes. Esconder o
+          controle e zerar a escolha seriam coisas bem diferentes; esta é a
+          primeira. */}
+      {safeView === VIEWS.CLASSIC && (
+        <div style={{ marginTop: "20px", display: "flex", gap: "24px", flexWrap: "wrap" }}>
+          {SELECTION_METHODS.filter((m) => state.results[m.key]).map((m) => (
+            <Pill
+              key={m.key}
+              label={m.label}
+              color={m.color}
+              active={filters[m.key]}
+              onClick={() => toggleFilter(m.key)}
+            />
+          ))}
+        </div>
+      )}
 
       {activeMethods.length === 0 && (
         <div style={{ padding: "40px", textAlign: "center", color: "#6b7280" }}>
@@ -271,16 +325,15 @@ function Statistics() {
         </div>
       )}
 
-      {/* ABAS — só aparecem quando há uma segunda visão para onde ir.
-          A do MCDM depende de haver ao menos um método suportado entre os
-          ativos (ver MCDM_SUPPORTED_METHODS em algorithms/mcdmPipeline.js);
-          qual deles a aba usa é o seletor de pills lá dentro. */}
+      {/* ABAS DE TOPO — DUAS. Só aparecem quando há uma segunda visão para
+          onde ir: a do MCDM depende de haver ao menos um método suportado entre
+          os ativos (ver MCDM_SUPPORTED_METHODS em algorithms/mcdmPipeline.js);
+          qual deles ela usa é o seletor de método lá dentro. */}
       {showMcdmTab && activeMethods.length > 0 && (
         <div style={{ marginTop: "20px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
           {[
-            [VIEWS.CLASSIC,   t("results.mcdm.tabs.classic")],
-            [VIEWS.MCDM,      t("results.mcdm.tabs.mcdm")],
-            [VIEWS.SCENARIOS, t("results.mcdm.tabs.scenarios")],
+            [VIEWS.CLASSIC, t("results.mcdm.tabs.classic")],
+            [VIEWS.MCDM,    t("results.mcdm.tabs.mcdm")],
           ].map(([id, label]) => (
             <button
               key={id}
@@ -313,17 +366,48 @@ function Statistics() {
         ))}
 
       {safeView === VIEWS.MCDM && (
-        <McdmBlock
-          method={safeMethod}
-          available={mcdmAvailable}
-          onMethodChange={setMcdmMethod}
-        />
-      )}
+        <>
+          {/* SUB-ABAS — subordinadas à fileira de cima, e visivelmente menores
+              (ver subTabButtonStyle). Ficam ACIMA do conteúdo das duas visões,
+              e não dentro de McdmBlock, porque governam as duas: enfiá-las
+              dentro de uma delas faria o controle sumir ao escolher a outra. */}
+          <div style={{ marginTop: "16px", marginLeft: "12px", display: "flex", gap: "6px", flexWrap: "wrap" }}>
+            {[
+              [MCDM_SUBVIEWS.WEIGHTS,   t("results.mcdm.tabs.weights")],
+              [MCDM_SUBVIEWS.SCENARIOS, t("results.mcdm.tabs.scenarios")],
+            ].map(([id, label]) => (
+              <button
+                key={id}
+                onClick={() => setMcdmView(id)}
+                aria-pressed={mcdmView === id}
+                style={subTabButtonStyle(mcdmView === id)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
 
-      {/* MESMO `safeMethod` do bloco acima — é o que faz trocar a pill lá dentro
-          reordenar também esta tabela, em vez de a comparação ficar presa a um
-          método enquanto o ranking ao lado mostra outro. */}
-      {safeView === VIEWS.SCENARIOS && <ScenarioComparison method={safeMethod} />}
+          {/* O MESMO `safeMethod` nas duas: é o que faz trocar o método numa
+              reordenar a outra, em vez de a comparação ficar presa a um método
+              enquanto o ranking mostra outro.
+
+              O seletor de método vive dentro de McdmBlock e some junto com ele
+              na sub-visão de cenários. É intencional: a comparação é uma leitura
+              da repartição de pesos que a outra sub-visão monta, e trocar o
+              método é uma decisão que se toma lá, ao lado dos sliders que ele
+              afeta. Quem quiser trocar volta uma sub-aba — o mesmo caminho que
+              já faz para mexer nos pesos que a tabela compara. */}
+          {mcdmView === MCDM_SUBVIEWS.WEIGHTS && (
+            <McdmBlock
+              method={safeMethod}
+              available={mcdmAvailable}
+              onMethodChange={setMcdmMethod}
+            />
+          )}
+
+          {mcdmView === MCDM_SUBVIEWS.SCENARIOS && <ScenarioComparison method={safeMethod} />}
+        </>
+      )}
 
       {/* BOTÃO VOLTAR — fixo na tela */}
       <button
