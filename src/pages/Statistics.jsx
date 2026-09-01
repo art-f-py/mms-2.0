@@ -8,6 +8,7 @@ import McdmBlock from "../components/McdmBlock";
 import Pill from "../components/Pill";
 import ScenarioComparison from "../components/ScenarioComparison";
 import { availableMcdmMethods, safeMcdmMethod } from "../utils/mcdmMethods";
+import { eliminatingCriteriaFor } from "../utils/eliminationMarker";
 import {
   BarChart, Bar, Cell, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer,
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
@@ -34,6 +35,13 @@ const colors = {
   text:       "var(--color-text)",
   muted:      "var(--color-muted)",
   background: "var(--color-bg-card)",
+  // Vermelho de ERRO/ALERTA, os MESMOS dois tokens que o realce de campo
+  // obrigatório vazio usa em Inputs.jsx (C.danger / C.danger50). Não foi criado
+  // token novo de propósito: "este cartão está eliminado" é a mesma família
+  // semântica de "este campo está errado", e um segundo vermelho ao lado do
+  // primeiro só criaria duas convenções de alerta para manter em sincronia.
+  danger:     "var(--color-danger)",
+  danger50:   "var(--color-danger-50)",
 };
 
 // ---------------------------------------------------------------------------
@@ -129,29 +137,64 @@ function MethodBlock({ sm, result }) {
       <div style={{ border: `1px solid ${colors.border}`, padding: "16px", marginTop: "12px", borderRadius: "6px" }}>
         <h4 style={{ marginTop: 0, fontSize: "13px", color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>{t("results.ranking")}</h4>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(90px, 1fr))", gap: "6px" }}>
-          {result.ranking.map((m, i) => (
-            <div
-              key={m}
-              onClick={() => handleCardClick(m)}
-              style={{
-                padding: "8px 6px",
-                borderRadius: "4px",
-                backgroundColor: m === selectedMethod ? sm.color : "#f1f5f9",
-                color: m === selectedMethod ? "#fff" : colors.text,
-                textAlign: "center",
-                fontSize: "12px",
-                cursor: "pointer",
-                minHeight: "44px",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-              }}
-            >
-              <div style={{ fontWeight: "700" }}>{t("results.rank", { n: i + 1 })}</div>
-              <div style={{ fontWeight: "600" }}>{METHOD_LABELS[m] || m}</div>
-              <div style={{ opacity: 0.8 }}>{result.scores[m].toFixed(1)}</div>
-            </div>
-          ))}
+          {result.ranking.map((m, i) => {
+            // ELIMINAÇÃO — o marcador é do MÉTODO DE SELEÇÃO deste bloco
+            // (`sm.key`), não um número global: −49 no Nicholas e no UBC, −50
+            // no SH&B. Ver eliminationMarker.js, inclusive por que o −25 do
+            // SH&B fica de fora.
+            const eliminatedBy = eliminatingCriteriaFor(result, sm.key, m);
+            const eliminated   = eliminatedBy.length > 0;
+            const selected     = m === selectedMethod;
+
+            return (
+              <div
+                key={m}
+                onClick={() => handleCardClick(m)}
+                // O HOVER LISTA RÓTULOS, NÃO IDS. `title` é o mesmo mecanismo
+                // de dica do resto do app (cabeçalhos da matriz, barra de
+                // proporção, botões de rebalanceamento), e os rótulos vêm da
+                // MESMA chave i18n que o radar de breakdown usa logo acima —
+                // assim o critério aparece com o mesmo nome nos dois lugares.
+                // Mais de um critério eliminando: todos entram, na ordem em que
+                // o método os pontuou.
+                title={
+                  eliminated
+                    ? t("results.eliminatedBy", {
+                        criteria: eliminatedBy
+                          .map((id) => t(`results.criteria.${id}`, id))
+                          .join(", "),
+                      })
+                    : undefined
+                }
+                style={{
+                  padding: "8px 6px",
+                  borderRadius: "4px",
+                  // A borda existe SEMPRE, transparente quando não há
+                  // eliminação: pintá-la só no caso vermelho mudaria a altura
+                  // do cartão e faria a fileira inteira saltar.
+                  border: `2px solid ${eliminated ? colors.danger : "transparent"}`,
+                  // Seleção continua mandando no FUNDO — é o estado que o
+                  // usuário acabou de provocar com um clique, e o vermelho não
+                  // pode engolir o retorno visual desse clique. A borda
+                  // vermelha fica nos dois casos, então o cartão eliminado
+                  // segue reconhecível mesmo selecionado.
+                  backgroundColor: selected ? sm.color : eliminated ? colors.danger50 : "#f1f5f9",
+                  color: selected ? "#fff" : eliminated ? colors.danger : colors.text,
+                  textAlign: "center",
+                  fontSize: "12px",
+                  cursor: "pointer",
+                  minHeight: "44px",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                }}
+              >
+                <div style={{ fontWeight: "700" }}>{t("results.rank", { n: i + 1 })}</div>
+                <div style={{ fontWeight: "600" }}>{METHOD_LABELS[m] || m}</div>
+                <div style={{ opacity: 0.8 }}>{result.scores[m].toFixed(1)}</div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -387,16 +430,17 @@ function Statistics() {
             ))}
           </div>
 
-          {/* O MESMO `safeMethod` nas duas: é o que faz trocar o método numa
-              reordenar a outra, em vez de a comparação ficar presa a um método
-              enquanto o ranking mostra outro.
+          {/* `safeMethod` GOVERNA SÓ O BLOCO MCDM AGORA. Ele valia para as duas
+              sub-visões enquanto o cenário era method-agnóstico e a tabela o
+              reaplicava contra o método em foco; com o método dentro do
+              cenário, a comparação passou a ter tantos métodos quantas colunas
+              e não tem mais o que fazer com este.
 
-              O seletor de método vive dentro de McdmBlock e some junto com ele
-              na sub-visão de cenários. É intencional: a comparação é uma leitura
-              da repartição de pesos que a outra sub-visão monta, e trocar o
-              método é uma decisão que se toma lá, ao lado dos sliders que ele
-              afeta. Quem quiser trocar volta uma sub-aba — o mesmo caminho que
-              já faz para mexer nos pesos que a tabela compara. */}
+              O seletor de método continua vivendo dentro de McdmBlock e sumindo
+              junto com ele na sub-visão de cenários — e agora com um motivo
+              mais forte que antes: lá ele não governaria nada. Ele é a escolha
+              do que SERÁ SALVO no próximo cenário, e essa escolha se toma ao
+              lado dos sliders que ela afeta. */}
           {mcdmView === MCDM_SUBVIEWS.WEIGHTS && (
             <McdmBlock
               method={safeMethod}
@@ -405,7 +449,13 @@ function Statistics() {
             />
           )}
 
-          {mcdmView === MCDM_SUBVIEWS.SCENARIOS && <ScenarioComparison method={safeMethod} />}
+          {/* A COMPARAÇÃO NÃO RECEBE MAIS O MÉTODO EM FOCO. Cada cenário salvo
+              carrega o próprio método e o próprio modo e é recalculado com
+              eles — é o que permite ver Nicholas e UBC na mesma tabela, em vez
+              de todas as colunas trocarem de método juntas quando o seletor
+              muda. O seletor ao lado continua governando o bloco MCDM, e só
+              ele. Ver buildScenarioComparisonTable. */}
+          {mcdmView === MCDM_SUBVIEWS.SCENARIOS && <ScenarioComparison />}
         </>
       )}
 

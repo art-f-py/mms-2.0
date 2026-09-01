@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useMms } from "../context/MmsContext";
 import { MCDM_STATUS } from "../utils/mcdmRanking";
 import { buildScenarioComparisonTable } from "../utils/scenarioComparison";
+import { uiSelectionMethodLabel } from "../utils/methodLabel";
 import InfoTip from "./InfoTip";
 
 // ---------------------------------------------------------------------------
@@ -73,23 +74,36 @@ const stickyMethod = {
   backgroundColor: colors.white,
 };
 
-export default function ScenarioComparison({ method }) {
+export default function ScenarioComparison() {
   const { t } = useTranslation();
   const { state, dispatch } = useMms();
 
   const scenarios = state.mcdmScenarios;
 
-  // Um pipeline TOPSIS por cenário — só quando o formulário, a lista ou o
-  // método mudam. Os cenários guardam apenas a repartição de pesos, sem método
-  // (ver buildScenarioComparisonTable): são REAPLICADOS contra o método em foco,
-  // que é o mesmo que o bloco MCDM está mostrando na aba ao lado, e por isso
-  // `method` precisa estar nas dependências junto dos outros dois.
+  // Um pipeline TOPSIS por cenário — só quando o formulário ou a lista mudam.
+  //
+  // NÃO RECEBE MAIS O MÉTODO EM FOCO. Cada cenário carrega o próprio método e o
+  // próprio modo, e é com eles que a coluna é recalculada; o seletor de método
+  // da aba ao lado governa o bloco MCDM e não mexe mais nesta tabela. É o que
+  // permite ler "Nicholas · Enfoque" e "UBC · Entropy" lado a lado. Ver
+  // buildScenarioComparisonTable.
   const table = useMemo(
-    () => buildScenarioComparisonTable(scenarios, state.formData, method),
-    [scenarios, state.formData, method],
+    () => buildScenarioComparisonTable(scenarios, state.formData),
+    [scenarios, state.formData],
   );
 
   const remove = (id) => dispatch({ type: "REMOVE_MCDM_SCENARIO", id });
+
+  // Identidade da coluna: método, modo e nome, nessa ordem — do mais geral ao
+  // mais particular, que é como se lê um caminho. O nome vem por último porque
+  // é o que muda mais, e alinhá-lo à esquerda do resto deixaria o par
+  // método/modo dançando de coluna para coluna.
+  //
+  // Em Entropy o cenário costuma não ter nome próprio além do que o usuário
+  // digitou; a legenda não muda de forma por causa disso — o que muda é só o
+  // rótulo do modo.
+  const columnCaption = (s) =>
+    `${uiSelectionMethodLabel(s.method)} · ${t(`results.mcdm.modes.${s.mode}`, s.mode)}`;
 
   const header = (
     <div style={{ borderLeft: `4px solid ${colors.primary}`, paddingLeft: "12px", marginBottom: "16px" }}>
@@ -117,8 +131,11 @@ export default function ScenarioComparison({ method }) {
     );
   }
 
-  // Indisponibilidade é do formData, então vale para a tabela inteira — nunca
-  // para uma coluna só. Ver buildScenarioComparisonTable.
+  // Indisponibilidade é POR COLUNA (ver buildScenarioComparisonTable), e a
+  // grade é desenhada mesmo com colunas vazias no meio — é assim que se vê que
+  // um cenário não calculou e os vizinhos sim. Este caminho é só o extremo em
+  // que NENHUMA coluna calculou: aí não há grade que valha a pena, e a mensagem
+  // sozinha diz mais que dez linhas de traço.
   if (table.status !== MCDM_STATUS.OK) {
     return (
       <div style={{ marginTop: "28px" }}>
@@ -156,9 +173,27 @@ export default function ScenarioComparison({ method }) {
                 {table.scenarios.map((scenario) => (
                   <th
                     key={scenario.id}
-                    title={scenario.name}
+                    // O título completo — "Nicholas · Enfoque · Cenário A" —
+                    // vive no hover porque a coluna é estreita e a legenda
+                    // trunca. Mesmo mecanismo (`title`) das outras dicas da
+                    // tabela.
+                    title={`${columnCaption(scenario)} · ${scenario.name}`}
                     style={{ ...baseCell, width: `${SCENARIO_COL_WIDTH}px`, minWidth: `${SCENARIO_COL_WIDTH}px`, maxWidth: `${SCENARIO_COL_WIDTH}px`, textAlign: "center", borderBottom: `2px solid ${colors.border}` }}
                   >
+                    {/* MÉTODO · MODO acima do nome, e não na mesma linha: os
+                        dois primeiros identificam O QUE a coluna calcula e o
+                        nome identifica QUAL ela é entre as irmãs. Numa linha só
+                        eles competiriam pela mesma largura de 130px e o nome —
+                        a única parte que o usuário escreveu — seria o primeiro
+                        a ser cortado.
+
+                        Menor, em maiúsculas e no cinza de apoio: é a MESMA
+                        fórmula do cabeçalho de painel (panelTitleStyle) usada
+                        em toda a tela para "rótulo de categoria acima do
+                        conteúdo", então não introduz convenção nova. */}
+                    <div style={{ fontSize: "10px", fontWeight: "600", color: colors.muted, textTransform: "uppercase", letterSpacing: "0.04em", overflow: "hidden", textOverflow: "ellipsis", marginBottom: "2px" }}>
+                      {columnCaption(scenario)}
+                    </div>
                     <div style={{ display: "flex", alignItems: "center", gap: "6px", justifyContent: "space-between" }}>
                       <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", fontSize: "12px", fontWeight: "700" }}>
                         {scenario.name}
@@ -192,25 +227,34 @@ export default function ScenarioComparison({ method }) {
                   >
                     {row.label}
                   </th>
-                  {row.cells.map((cell) => (
-                    <td
-                      key={cell.scenarioId}
-                      style={{
-                        ...baseCell,
-                        textAlign:          "center",
-                        fontWeight:         "700",
-                        fontVariantNumeric: "tabular-nums",
-                        backgroundColor:    cell.color,
-                        color:              colors.text,
-                      }}
-                    >
-                      {/* MESMA chave i18n dos cartões de ranking, e não um "º"
-                          escrito à mão aqui: assim a colocação sai com a mesma
-                          forma nos dois lugares em cada idioma, em vez de duas
-                          convenções que divergem na primeira tradução. */}
-                      {t("results.rank", { n: cell.rank })}
-                    </td>
-                  ))}
+                  {row.cells.map((cell) => {
+                    // CÉLULA INDISPONÍVEL É DESTA COLUNA, e só dela: o cenário
+                    // vizinho pode ter calculado sem problema nenhum (ver
+                    // buildScenarioComparisonTable). Sai como um traço, sem cor
+                    // de gradiente — a ausência de cor é o sinal, porque
+                    // qualquer cor sugeriria uma colocação.
+                    const vazia = cell.status !== MCDM_STATUS.OK;
+                    return (
+                      <td
+                        key={cell.scenarioId}
+                        title={vazia ? t("results.mcdm.unavailable") : undefined}
+                        style={{
+                          ...baseCell,
+                          textAlign:          "center",
+                          fontWeight:         vazia ? "400" : "700",
+                          fontVariantNumeric: "tabular-nums",
+                          backgroundColor:    vazia ? "transparent" : cell.color,
+                          color:              vazia ? colors.muted : colors.text,
+                        }}
+                      >
+                        {/* MESMA chave i18n dos cartões de ranking, e não um "º"
+                            escrito à mão aqui: assim a colocação sai com a mesma
+                            forma nos dois lugares em cada idioma, em vez de duas
+                            convenções que divergem na primeira tradução. */}
+                        {vazia ? "—" : t("results.rank", { n: cell.rank })}
+                      </td>
+                    );
+                  })}
                 </tr>
               ))}
             </tbody>

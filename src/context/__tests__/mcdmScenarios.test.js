@@ -80,11 +80,13 @@ describe("ADD_MCDM_SCENARIO", () => {
     expect(depois.mcdmScenarios[0].groupWeights).not.toHaveProperty("lixo");
   });
 
-  it("não guarda ranking nem formData — só id, nome e pesos", () => {
-    // O cenário é uma repartição de pesos com nome. Guardar ranking congelado
-    // faria a comparação responder a pergunta de ontem com a cara da de hoje.
+  it("não guarda ranking nem formData — só a configuração de ponderação", () => {
+    // O cenário é uma configuração de ponderação com nome: método, modo e (em
+    // Enfoque) os pesos. Guardar ranking congelado faria a comparação responder
+    // a pergunta de ontem com a cara da de hoje.
     const depois = adicionar(comCenarios([]), "X");
-    expect(Object.keys(depois.mcdmScenarios[0]).sort()).toEqual(["groupWeights", "id", "name"]);
+    expect(Object.keys(depois.mcdmScenarios[0]).sort())
+      .toEqual(["groupWeights", "id", "method", "mode", "name"]);
   });
 
   it("não compartilha referência com os pesos do formulário", () => {
@@ -208,7 +210,7 @@ describe("normalizeScenarios — lista persistida", () => {
   });
 
   it("preserva cenário bem formado, com os pesos intactos", () => {
-    const salvos = [{ id: "a", name: "Economia", groupWeights: PESOS_ECONOMIA }];
+    const salvos = [{ id: "a", name: "Economia", method: "ubc", mode: "enfoque", groupWeights: PESOS_ECONOMIA }];
     expect(normalizeScenarios(salvos)).toEqual(salvos);
   });
 
@@ -271,8 +273,102 @@ describe("normalizeScenarios — lista persistida", () => {
   });
 
   it("sobrevive a uma ida e volta por JSON, como no localStorage", () => {
-    const salvos = [{ id: "a", name: "A", groupWeights: PESOS_ECONOMIA }];
+    const salvos = [{ id: "a", name: "A", method: "shb", mode: "enfoque", groupWeights: PESOS_ECONOMIA }];
     const daStorage = JSON.parse(JSON.stringify({ mcdmScenarios: salvos })).mcdmScenarios;
     expect(normalizeScenarios(daStorage)).toEqual(salvos);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// MÉTODO E MODO DENTRO DO CENÁRIO
+// ---------------------------------------------------------------------------
+// O cenário deixou de ser method-agnóstico: cada um guarda com que método de
+// seleção e em que modo de ponderação foi salvo, e é com eles que a coluna é
+// recalculada na comparação. É o que permite ver Nicholas e UBC lado a lado.
+//
+// Em modo 'entropy' NÃO HÁ PESO A GUARDAR — eles saem da dispersão dos dados —
+// e `groupWeights` fica `null`. Guardar os pesos "por via das dúvidas" faria a
+// coluna carregar uma repartição que o cálculo dela ignora.
+describe("ADD_MCDM_SCENARIO — método e modo", () => {
+  const salvar = (state, extra) =>
+    mmsReducer(state, { type: "ADD_MCDM_SCENARIO", name: "X", groupWeights: equalGroupWeights(), ...extra });
+
+  it("grava o método e o modo que vieram na ação", () => {
+    const depois = salvar(comCenarios([]), { method: "ubc", mode: "enfoque" });
+    expect(depois.mcdmScenarios[0].method).toBe("ubc");
+    expect(depois.mcdmScenarios[0].mode).toBe("enfoque");
+  });
+
+  it("em Entropy não grava peso nenhum", () => {
+    const depois = salvar(comCenarios([]), { method: "shb", mode: "entropy" });
+    expect(depois.mcdmScenarios[0].mode).toBe("entropy");
+    expect(depois.mcdmScenarios[0].groupWeights).toBeNull();
+  });
+
+  it("em Enfoque grava os quatro pesos, como sempre gravou", () => {
+    const depois = salvar(comCenarios([]), { method: "nicholas", mode: "enfoque", groupWeights: PESOS_ECONOMIA });
+    expect(depois.mcdmScenarios[0].groupWeights).toEqual(PESOS_ECONOMIA);
+  });
+
+  it("modo desconhecido cai em Enfoque — a porta de escrita não inventa modo", () => {
+    // A tela só oferece dois modos; qualquer outra coisa chegando aqui é bug de
+    // chamada, e o lado seguro é o modo que guarda os pesos.
+    const depois = salvar(comCenarios([]), { method: "ubc", mode: "quantico" });
+    expect(depois.mcdmScenarios[0].mode).toBe("enfoque");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// MIGRAÇÃO DOS CENÁRIOS SALVOS ANTES DE method/mode EXISTIREM
+// ---------------------------------------------------------------------------
+// O modelo antigo era {id, name, groupWeights}. Descartar esses cenários
+// apagaria a lista de quem já usava a comparação, então eles são migrados.
+//
+// `mode: 'enfoque'` é FATO — era a única opção que existia, porque o botão de
+// salvar só aparecia nesse modo. `method: 'nicholas'` é PALPITE: o modelo antigo
+// era method-agnóstico de propósito e a informação nunca foi gravada. Ver
+// SCENARIO_MIGRATION_DEFAULTS em MmsContext.jsx.
+describe("normalizeScenarios — migração do modelo antigo", () => {
+  const ANTIGO = { id: "velho", name: "Economia", groupWeights: PESOS_ECONOMIA };
+
+  it("cenário sem mode vira Enfoque — a única opção que existia", () => {
+    expect(normalizeScenarios([ANTIGO])[0].mode).toBe("enfoque");
+  });
+
+  it("cenário sem method vira Nicholas — palpite de migração, não fato", () => {
+    expect(normalizeScenarios([{ ...ANTIGO, mode: "enfoque" }])[0].method).toBe("nicholas");
+  });
+
+  it("os dois campos ausentes são migrados na mesma passada, e os pesos ficam", () => {
+    expect(normalizeScenarios([ANTIGO])[0]).toEqual({
+      id: "velho", name: "Economia", method: "nicholas", mode: "enfoque", groupWeights: PESOS_ECONOMIA,
+    });
+  });
+
+  it("method PRESENTE é respeitado — a migração só preenche ausência", () => {
+    expect(normalizeScenarios([{ ...ANTIGO, method: "shb" }])[0].method).toBe("shb");
+  });
+
+  it("cenário de Entropy sobrevive à releitura sem pesos", () => {
+    // A armadilha concreta: validar os pesos de um cenário que não tem pesos
+    // apagaria todos os cenários de Entropy na primeira releitura.
+    const salvo = { id: "e", name: "Sem opinião", method: "ubc", mode: "entropy", groupWeights: null };
+    expect(normalizeScenarios([salvo])).toEqual([salvo]);
+  });
+
+  it("descarta cenário com method que não existe, em vez de trocá-lo pelo default", () => {
+    // Ausente é migração; presente e inválido é localStorage adulterado.
+    // Substituí-lo por 'nicholas' inventaria uma comparação que ninguém pediu.
+    expect(normalizeScenarios([{ ...ANTIGO, method: "topsis-9000" }])).toEqual([]);
+  });
+
+  it("descarta cenário com mode que a tela não oferece", () => {
+    expect(normalizeScenarios([{ ...ANTIGO, mode: "quantico" }])).toEqual([]);
+  });
+
+  it("a migração é idempotente — o migrado volta igual", () => {
+    const uma  = normalizeScenarios([ANTIGO]);
+    const duas = normalizeScenarios(uma);
+    expect(duas).toEqual(uma);
   });
 });

@@ -135,12 +135,16 @@ describe("o cenário salvo não guarda a política", () => {
   // Um cenário é {id, name, groupWeights}. O modo usado para AJUSTAR os pesos
   // não é propriedade dos pesos ajustados: dois caminhos diferentes podem levar
   // à mesma repartição, e é a repartição que a comparação recalcula.
-  it("ADD_MCDM_SCENARIO grava só id, nome e pesos", () => {
+  it("ADD_MCDM_SCENARIO não grava a política de rebalanceamento", () => {
+    // O cenário guarda o RESULTADO (os quatro pesos), não o caminho usado para
+    // chegar a ele. Método e modo entraram na lista de campos depois; a
+    // política continua de fora.
     const depois = mmsReducer(
       comModo(REBALANCE_MODES.EQUALIZE),
-      { type: "ADD_MCDM_SCENARIO", name: "Geometria pesada", groupWeights: DESIGUAL },
+      { type: "ADD_MCDM_SCENARIO", name: "Geometria pesada", method: "nicholas", mode: "enfoque", groupWeights: DESIGUAL },
     );
-    expect(Object.keys(depois.mcdmScenarios[0]).sort()).toEqual(["groupWeights", "id", "name"]);
+    expect(Object.keys(depois.mcdmScenarios[0]).sort())
+      .toEqual(["groupWeights", "id", "method", "mode", "name"]);
     expect(depois.mcdmScenarios[0].rebalanceMode).toBeUndefined();
   });
 });

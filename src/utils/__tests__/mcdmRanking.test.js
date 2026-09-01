@@ -56,6 +56,15 @@ const NICHOLAS_SOZINHO = {
 // mudança — e UBC as do caminho novo.
 const NICH = { method: "nicholas" };
 const UBC  = { method: "ubc" };
+const SHB  = { method: "shb" };
+
+// SH&B marcado, formulário completo. Ele lê os mesmos campos do UBC MAIS o
+// valor do minério, que é perguntado no início da etapa complementar (era a
+// etapa EESG, que deixou de existir).
+const SHB_COMPLETO = {
+  ...FULL_SCENARIO,
+  selectedMethods: { ubc: false, nicholas: false, shb: true },
+};
 
 // O caminho de falha loga no console de propósito; silencia para não poluir a
 // saída da suíte, e de quebra permite afirmar que o log aconteceu.
@@ -240,6 +249,48 @@ describe("guarda de completude do formulário", () => {
     const spy = silenciarConsole();
     deriveMcdmRanking({}, equalGroupWeights(), NICH);
     expect(spy).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// A EXIGÊNCIA EXTRA DO SH&B — O VALOR DO MINÉRIO
+// ---------------------------------------------------------------------------
+// O SH&B é o único método com uma coluna que os outros dois não têm
+// (`oreValue`), e sem ela a matriz dele sai com uma coluna a menos SEM ERRO
+// NENHUM — sumCriteria descarta critério vazio em silêncio. Por isso a lista de
+// etapas obrigatórias é uma tabela por método, e não uma lista só.
+//
+// O CAMPO MUDOU DE ETAPA (EESG -> início da complementar) e a exigência tinha
+// de acompanhar. Estes casos travam as duas metades: o SH&B continua caindo em
+// "unavailable" com o valor do minério vazio, e Nicholas e UBC continuam NÃO
+// sendo afetados por um campo que não é deles.
+describe("completude por método — valor do minério (SH&B)", () => {
+  it("SH&B com o valor do minério vazio cai em indisponível", () => {
+    const semValor = { ...SHB_COMPLETO, oreValue: "" };
+    const saida = deriveMcdmRanking(semValor, equalGroupWeights(), SHB);
+    expect(saida.status).toBe(MCDM_STATUS.UNAVAILABLE);
+    expect(saida.result).toBeUndefined();
+  });
+
+  it("a etapa apontada é a complementar — onde o campo passou a ser perguntado", () => {
+    const semValor = { ...SHB_COMPLETO, oreValue: "" };
+    expect(deriveMcdmRanking(semValor, equalGroupWeights(), SHB).incompleteStep)
+      .toBe(STEPS.COMPLEMENTARY);
+  });
+
+  it("SH&B com o valor do minério preenchido roda normalmente", () => {
+    const saida = deriveMcdmRanking(SHB_COMPLETO, equalGroupWeights(), SHB);
+    expect(saida.status).toBe(MCDM_STATUS.OK);
+    expect(saida.result.ranking).toHaveLength(METHODS.length);
+  });
+
+  it("Nicholas e UBC NÃO são bloqueados pelo campo do SH&B", () => {
+    // Mesmo formulário, valor do minério em branco: é um critério que não
+    // existe nas matrizes deles, e exigi-lo travaria os dois por um campo que a
+    // etapa nem mostra quando o SH&B não está marcado.
+    const semValor = { ...FULL_SCENARIO, oreValue: "" };
+    expect(deriveMcdmRanking(semValor, equalGroupWeights(), NICH).status).toBe(MCDM_STATUS.OK);
+    expect(deriveMcdmRanking(semValor, equalGroupWeights(), UBC).status).toBe(MCDM_STATUS.OK);
   });
 });
 

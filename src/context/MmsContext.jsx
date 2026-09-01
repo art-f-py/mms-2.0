@@ -2,6 +2,7 @@ import { createContext, useContext, useReducer, useEffect } from "react";
 import { normalizeThickness, normalizeRss } from "../data/formRules";
 import { ENFOQUE_GROUP_IDS, WEIGHTING_MODES, equalGroupWeights, validateGroupWeights } from "../algorithms/enfoque";
 import { REBALANCE_MODES, equalizeOtherGroups, rebalanceGroupWeights } from "../algorithms/enfoqueRebalance";
+import { MCDM_SUPPORTED_METHODS } from "../algorithms/mcdmPipeline";
 
 const STORAGE_KEY = "mms2-state";
 
@@ -114,21 +115,38 @@ const neutralNicholasCriteria = () => ({
 // ---------------------------------------------------------------------------
 // CENÁRIOS DO MCDM
 // ---------------------------------------------------------------------------
-// Um cenário é uma REPARTIÇÃO DE PESOS COM NOME — {id, name, groupWeights} — e
-// nada mais. Deliberadamente NÃO guarda cópia congelada de ranking nem de
-// formData.
+// Um cenário é uma CONFIGURAÇÃO DE PONDERAÇÃO COM NOME —
+// {id, name, method, mode, groupWeights} — e nada mais. Deliberadamente NÃO
+// guarda cópia congelada de ranking nem de formData.
 //
 // O motivo é o que a comparação precisa responder: "com os dados que tenho
 // AGORA, o que muda se eu privilegiar economia em vez de geometria?". Um
 // ranking congelado responderia outra pergunta — o que teria acontecido com os
 // dados de ontem — e as duas dariam a mesma cara na tela, o que é a pior forma
-// de errar. Guardando só os pesos, cada cenário recalcula contra o formData
-// atual a cada render, e corrigir um RMR na etapa de geotecnia atualiza todas
-// as colunas da comparação de uma vez.
+// de errar. Guardando só a configuração, cada cenário recalcula contra o
+// formData atual a cada render, e corrigir um RMR na etapa de geotecnia
+// atualiza todas as colunas da comparação de uma vez.
+//
+// O CENÁRIO PASSOU A CARREGAR `method` E `mode`. Antes ele era method-agnóstico
+// de propósito — a ideia era que uma repartição ("70% em Geometria") é uma
+// POSTURA DE DECISÃO que faz o mesmo sentido em qualquer método, e a tabela a
+// reaplicava contra o método selecionado na tela. Isso tinha um custo que só
+// aparece quando se quer usar a tabela para valer: era impossível comparar
+// Nicholas com UBC, porque TODAS as colunas mudavam de método juntas. Com o
+// método dentro do cenário, cada coluna é uma pergunta completa e a tabela
+// compara o que antes só dava para ver em duas telas separadas.
+//
+// `mode` entrou pelo mesmo raciocínio, um degrau adiante: Entropy não tem peso
+// ajustável (os pesos saem da dispersão dos dados), então antes não havia o que
+// salvar e o botão só existia em Enfoque. Mas o que se quer comparar não é a
+// repartição — é o RANKING que ela produz —, e "Nicholas com pesos de Entropy"
+// é um ranking tão legítimo quanto os outros. Em modo 'entropy' o cenário é
+// nome + método + modo, e `groupWeights` fica `null`: não é campo faltando, é a
+// ausência sendo dita explicitamente.
 //
 // Fica na RAIZ do estado, irmão de formData e results, e não dentro de
 // criteriaWeights.mcdm: aquilo é a repartição em uso, uma só; isto é uma lista
-// de repartições guardadas, com ciclo de vida próprio.
+// de configurações guardadas, com ciclo de vida próprio.
 const emptyScenarios = () => [];
 
 /**
@@ -154,6 +172,34 @@ function makeScenarioId() {
  */
 const pickGroupWeights = (weights) =>
   Object.fromEntries(ENFOQUE_GROUP_IDS.map((id) => [id, weights?.[id] ?? 0]));
+
+// ---------------------------------------------------------------------------
+// DEFAULTS DE MIGRAÇÃO DOS CENÁRIOS SALVOS
+// ---------------------------------------------------------------------------
+// Cenários gravados no localStorage ANTES de o cenário carregar método e modo.
+// Eles trazem só {id, name, groupWeights} e precisam de um valor para os dois
+// campos novos — descartá-los apagaria a lista de quem já usava a comparação.
+//
+// `mode` é um FATO: 'enfoque' era a única opção que existia, porque o botão de
+// salvar só aparecia nesse modo. Todo cenário antigo é de Enfoque, sem exceção.
+//
+// `method` É UM PALPITE, E ISTO PRECISA FICAR REGISTRADO: não há como saber com
+// que método aquele cenário foi pensado. O modelo antigo era method-agnóstico DE
+// PROPÓSITO — a repartição era reaplicada contra o método que estivesse
+// selecionado na tela —, então a informação nunca foi gravada em lugar nenhum,
+// e nenhum outro campo do estado a insinua. 'nicholas' é escolhido por ser o
+// primeiro dos métodos suportados, não por evidência.
+//
+// A CONSEQUÊNCIA PRÁTICA, para quem for ler um cenário migrado: a coluna dele
+// aparece rotulada "Nicholas" e é recalculada como Nicholas. Se o usuário
+// pensava aquele cenário em UBC, o rótulo está errado e ele não tem como saber
+// só de olhar. O remédio é do usuário e existe: apagar a coluna e salvar de
+// novo com o método certo em foco, que é uma interação de dois cliques.
+// Adivinhar melhor não é possível; o que é possível é não esconder o palpite.
+const SCENARIO_MIGRATION_DEFAULTS = Object.freeze({
+  mode:   WEIGHTING_MODES.ENFOQUE,
+  method: "nicholas",
+});
 
 const initialState = {
   formData: initialFormData,
@@ -358,10 +404,24 @@ export function mmsReducer(state, action) {
       // determinística do reducer, e é assumida: a alternativa seria o
       // componente gerar o id e passá-lo na ação, o que só move o mesmo efeito
       // para um lugar onde ele fica mais fácil de esquecer.
+      //
+      // MÉTODO E MODO VÊM DA AÇÃO, e não são lidos do estado aqui: o método em
+      // foco é estado da TELA (vive em Statistics.jsx, ver lá o porquê) e não
+      // existe no reducer. O modo existe — em criteriaWeights.mcdm.mode —, mas
+      // lê-lo daqui criaria duas fontes para a mesma decisão; o componente já
+      // sabe em que modo o usuário clicou em salvar, e é esse o modo do
+      // cenário.
+      const entropia = action.mode === WEIGHTING_MODES.ENTROPY;
       const scenario = {
-        id:           makeScenarioId(),
-        name:         action.name,
-        groupWeights: pickGroupWeights(action.groupWeights),
+        id:     makeScenarioId(),
+        name:   action.name,
+        method: action.method,
+        mode:   entropia ? WEIGHTING_MODES.ENTROPY : WEIGHTING_MODES.ENFOQUE,
+        // `null` em Entropy, e não os pesos atuais "por via das dúvidas":
+        // guardá-los faria a coluna carregar uma repartição que o cálculo dela
+        // ignora, e que passaria a divergir do que a tela mostra assim que o
+        // usuário mexesse num slider. Nada a guardar é nada a guardar.
+        groupWeights: entropia ? null : pickGroupWeights(action.groupWeights),
       };
       return { ...state, mcdmScenarios: [...state.mcdmScenarios, scenario] };
     }
@@ -470,6 +530,22 @@ export function normalizeMcdmWeights(formData) {
  * inventado no lugar do que estava gravado seria uma comparação silenciosamente
  * falsa, pior que um cenário a menos. Os pesos passam por pickGroupWeights e
  * por validateGroupWeights — as mesmas regras da entrada pela tela.
+ *
+ * DUAS COISAS DIFERENTES ACONTECEM COM `method` E `mode`, e a distinção é o
+ * ponto:
+ *
+ *   AUSENTE  -> migração. O cenário foi gravado por uma versão que não tinha o
+ *               campo, e recebe o default de SCENARIO_MIGRATION_DEFAULTS (ver
+ *               lá, inclusive a ressalva de que o `method` é palpite).
+ *   PRESENTE E INVÁLIDO -> descarte, junto com o cenário. Um método que não
+ *               existe, ou um modo que a tela não oferece, só chega aqui por
+ *               localStorage adulterado. Substituí-lo por um default seria
+ *               inventar uma comparação que ninguém pediu — o mesmo erro que a
+ *               regra dos pesos já recusa a cometer.
+ *
+ * E `groupWeights` é validado SÓ EM ENFOQUE. Em Entropy o cenário guarda `null`
+ * de propósito, e exigir quatro pesos somando 1 de um cenário que não tem pesos
+ * apagaria justamente os cenários de Entropy na primeira releitura.
  */
 // eslint-disable-next-line react-refresh/only-export-components
 export function normalizeScenarios(saved) {
@@ -477,6 +553,27 @@ export function normalizeScenarios(saved) {
 
   return saved.flatMap((scenario) => {
     if (!scenario || typeof scenario.id !== "string") return [];
+
+    const mode = scenario.mode === undefined || scenario.mode === null
+      ? SCENARIO_MIGRATION_DEFAULTS.mode
+      : scenario.mode;
+    if (!MCDM_UI_MODES.includes(mode)) return [];
+
+    const method = scenario.method === undefined || scenario.method === null
+      ? SCENARIO_MIGRATION_DEFAULTS.method
+      : scenario.method;
+    if (!MCDM_SUPPORTED_METHODS.includes(method)) return [];
+
+    if (mode === WEIGHTING_MODES.ENTROPY) {
+      return [{
+        id:   scenario.id,
+        name: typeof scenario.name === "string" ? scenario.name : "",
+        method,
+        mode,
+        groupWeights: null,
+      }];
+    }
+
     const groupWeights = pickGroupWeights(scenario.groupWeights);
     try {
       validateGroupWeights(groupWeights);
@@ -486,6 +583,8 @@ export function normalizeScenarios(saved) {
     return [{
       id:   scenario.id,
       name: typeof scenario.name === "string" ? scenario.name : "",
+      method,
+      mode,
       groupWeights,
     }];
   });

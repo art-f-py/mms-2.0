@@ -117,12 +117,15 @@ describe("comparar cenários é sub-visão da aba multicritério", () => {
     expect(STATISTICS).not.toMatch(/safeView === VIEWS\.SCENARIOS/);
   });
 
-  it("as duas sub-visões recebem o MESMO método", () => {
-    // É o que mantém ranking e comparação falando do mesmo método. Ambas leem
-    // `safeMethod`, e não estados separados.
+  it("só o bloco MCDM recebe o método em foco; a comparação não recebe método", () => {
+    // Era o contrário: as duas liam `safeMethod`, porque o cenário era
+    // method-agnóstico e a tabela o reaplicava contra o método da tela. Com o
+    // método DENTRO de cada cenário, passar um método aqui voltaria a prender
+    // todas as colunas ao mesmo — que é exatamente o que a mudança desfez.
     const abaMcdm = STATISTICS.slice(STATISTICS.indexOf("safeView === VIEWS.MCDM &&"));
     expect(abaMcdm).toMatch(/<McdmBlock[\s\S]{0,200}method=\{safeMethod\}/);
-    expect(abaMcdm).toMatch(/<ScenarioComparison method=\{safeMethod\} \/>/);
+    expect(abaMcdm).toMatch(/<ScenarioComparison \/>/);
+    expect(abaMcdm).not.toMatch(/<ScenarioComparison[^/>]*method=/);
   });
 
   it("o estado do método e da sub-visão fica na página, que não desmonta", () => {

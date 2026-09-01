@@ -25,21 +25,56 @@ export const MCDM_STATUS = Object.freeze({
 /**
  * Etapas do formulário que precisam estar completas para o ranking ter sentido.
  *
- * NÃO VARIA POR MÉTODO, e isso foi verificado e não presumido. Geometria e
- * geotécnica alimentam TODAS as colunas clássicas dos dois métodos liberados: o
- * Nicholas lê forma/espessura/mergulho/teor mais espaçamento e condição de
- * juntas por domínio; o UBC lê os mesmos quatro de geometria mais profundidade,
- * RSS (derivado de UCS/densidade/profundidade) e RMR por domínio. A
- * profundidade, único campo que o Nicholas não usa, já é coletada na etapa de
- * Geometria — requiredFieldsForStep a exige lá assim que UBC ou SH&B está
- * marcado. O primeiro método a precisar de uma terceira etapa é o SH&B, que lê
- * `oreValue` (etapa EESG) e segue bloqueado por outro motivo; quem o liberar
- * precisa transformar esta lista numa tabela por método.
+ * VARIA POR MÉTODO, e virou tabela quando o SH&B foi liberado — era uma lista
+ * só, com a nota de que "o primeiro método a precisar de uma terceira etapa é o
+ * SH&B, e quem o liberar precisa transformar esta lista numa tabela por
+ * método". É este o momento.
  *
- * Complementar e revisar continuam de fora: não têm campo obrigatório (ver
- * requiredFieldsForStep em formRules.js).
+ * Geometria e geotécnica alimentam as colunas clássicas dos TRÊS: o Nicholas lê
+ * forma/espessura/mergulho/teor mais espaçamento e condição de juntas por
+ * domínio; UBC e SH&B leem os mesmos quatro de geometria mais profundidade, RSS
+ * (derivado de UCS/densidade/profundidade) e RMR por domínio. A profundidade,
+ * único campo que o Nicholas não usa, já é coletada na etapa de Geometria —
+ * requiredFieldsForStep a exige lá assim que UBC ou SH&B está marcado.
+ *
+ * O SH&B ACRESCENTA UMA TERCEIRA: ele tem uma coluna que os outros dois não
+ * têm, `oreValue`, e sem ela a matriz dele sai com 17 colunas em vez de 18 —
+ * sem erro nenhum, porque sumCriteria descarta critério vazio em silêncio (ver
+ * a explicação longa abaixo). O ranking sairia plausível e sem o único critério
+ * econômico do método.
+ *
+ * A ETAPA ONDE ESSE CAMPO MORA MUDOU, A EXIGÊNCIA NÃO. `oreValue` era
+ * perguntado na etapa EESG e passou para o início da etapa complementar; a
+ * etapa EESG deixou de existir. Por isso a terceira entrada aqui é
+ * STEPS.COMPLEMENTARY: é onde isStepComplete agora encontra a exigência de
+ * `oreValue` (ver requiredFieldsForStep em formRules.js). Trocar o nome da
+ * etapa sem trocar esta linha faria a checagem sumir sem barulho.
+ *
+ * A completude da complementar é condicional ao SH&B estar marcado — é a mesma
+ * regra do formulário —, então listá-la para o método 'shb' não passa a exigir
+ * nada de quem não marcou o SH&B: com `shb` desmarcado a matriz dele nem chega
+ * a ser montada (requireSheet barra antes).
+ *
+ * Revisar continua de fora: não tem campo obrigatório.
  */
-const REQUIRED_STEPS = [STEPS.GEOMETRY, STEPS.GEOTECHNICAL];
+const REQUIRED_STEPS_BY_METHOD = Object.freeze({
+  nicholas: Object.freeze([STEPS.GEOMETRY, STEPS.GEOTECHNICAL]),
+  ubc:      Object.freeze([STEPS.GEOMETRY, STEPS.GEOTECHNICAL]),
+  shb:      Object.freeze([STEPS.GEOMETRY, STEPS.GEOTECHNICAL, STEPS.COMPLEMENTARY]),
+});
+
+/**
+ * As etapas exigidas por um método, ou as duas comuns quando o método é
+ * desconhecido.
+ *
+ * O default NÃO é lista vazia de propósito: método desconhecido cai logo
+ * adiante em assertMcdmMethodSupported e vira "indisponível" de qualquer jeito,
+ * mas se algum dia essa guarda mudar, exigir o mínimo comum é o lado seguro do
+ * erro — pular a checagem de completude é o que produz ranking plausível sobre
+ * formulário vazio.
+ */
+const requiredStepsFor = (method) =>
+  REQUIRED_STEPS_BY_METHOD[method] ?? [STEPS.GEOMETRY, STEPS.GEOTECHNICAL];
 
 /**
  * Roda o pipeline MCDM, para o método de seleção pedido, a partir do formulário.
@@ -85,9 +120,10 @@ const REQUIRED_STEPS = [STEPS.GEOMETRY, STEPS.GEOTECHNICAL];
  * POR QUE `method` ENTROU NUM OBJETO, E NÃO COMO QUARTO POSICIONAL. Com quatro
  * posicionais, quem só quisesse trocar o método seria obrigado a repetir o
  * `mode` para alcançá-lo — `deriveMcdmRanking(fd, w, WEIGHTING_MODES.ENFOQUE,
- * "ubc")` — e é exatamente o caso da comparação de cenários, que é Enfoque por
- * definição do modelo de cenário e não tem opinião sobre modo. Um objeto nomeado
- * deixa cada chamada dizendo só o que lhe importa.
+ * "ubc")` — e as chamadas do app raramente têm opinião sobre os dois ao mesmo
+ * tempo. Um objeto nomeado deixa cada chamada dizendo só o que lhe importa. (A
+ * comparação de cenários passou a passar os dois, um por cenário: cada coluna
+ * traz o próprio método e o próprio modo. Ver buildScenarioComparisonTable.)
  *
  * `method` NÃO TEM DEFAULT, de propósito. Um default "nicholas" faria uma
  * chamada que esqueceu de passar o método devolver um ranking plausível e do
@@ -99,7 +135,8 @@ const REQUIRED_STEPS = [STEPS.GEOMETRY, STEPS.GEOTECHNICAL];
  *                                  1; ignorado quando `mode` é 'entropy'
  * @param {object} options
  * @param {string} [options.mode]   'enfoque' (default) ou 'entropy'
- * @param {string} options.method   chave do método de seleção ('nicholas', 'ubc')
+ * @param {string} options.method   chave do método de seleção ('nicholas', 'ubc',
+ *                                  'shb')
  * @returns {{status: "ok", result: object}
  *          | {status: "unavailable", incompleteStep: string|null, error: Error|null}}
  */
@@ -110,7 +147,8 @@ export function deriveMcdmRanking(
 ) {
   // Fora do try, e sem console.error: formulário incompleto é ESTADO ESPERADO
   // do app (o usuário pode ainda estar preenchendo), não falha a depurar.
-  const incompleteStep = REQUIRED_STEPS.find((stepId) => !isStepComplete(stepId, formData)) ?? null;
+  const incompleteStep =
+    requiredStepsFor(method).find((stepId) => !isStepComplete(stepId, formData)) ?? null;
   if (incompleteStep) {
     return { status: MCDM_STATUS.UNAVAILABLE, incompleteStep, error: null };
   }

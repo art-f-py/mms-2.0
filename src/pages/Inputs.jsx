@@ -573,14 +573,19 @@ function Inputs() {
   // -------------------------------------------------------------------------
   // VALIDAÇÃO POR ETAPA
   // -------------------------------------------------------------------------
-  // Etapas visíveis, na ordem: EESG só existe com SH&B, complementar só com
-  // algum método marcado. O conteúdo de cada uma é ligado pela chave mais
-  // abaixo (os blocos precisam de `invalid`, que depende deste plano).
+  // Etapas visíveis, na ordem: a complementar só existe com algum método
+  // marcado. O conteúdo de cada uma é ligado pela chave mais abaixo (os blocos
+  // precisam de `invalid`, que depende deste plano).
+  //
+  // A ETAPA EESG SAIU DAQUI. Ela existia com `show: showSHB` e tinha um campo
+  // só, o valor do minério, que agora abre a etapa complementar. Sem ele a
+  // etapa não teria conteúdo nenhum — um passo do stepper que só pede um
+  // "Avançar" —, então o mecanismo do `show` não bastava: o que sai não é a
+  // condição, é a etapa. Ver STEPS em data/formRules.js.
   const stepPlan = [
     { key: STEPS.METHODS,       label: t("stepper.methods"),       show: true },
     { key: STEPS.GEOMETRY,      label: t("stepper.geometry"),      show: true },
     { key: STEPS.GEOTECHNICAL,  label: t("stepper.geotechnical"),  show: true },
-    { key: STEPS.EESG,          label: t("stepper.eesg"),          show: showSHB },
     { key: STEPS.COMPLEMENTARY, label: t("stepper.complementary"), show: anyMethod },
     { key: STEPS.REVIEW,        label: t("stepper.review"),        show: true },
   ].filter((s) => s.show).map((s, i) => ({ ...s, id: i + 1 }));
@@ -936,25 +941,6 @@ function Inputs() {
   );
 
   // ---------------------------------------------------------------------------
-  // ETAPA — EESG (Economic Environmental Social Governance)
-  // ---------------------------------------------------------------------------
-  const StepEESG = showSHB ? (
-    <div style={S.card}>
-      <SecTitle>{t("inputs.eesg.title")}</SecTitle>
-      <p style={{ ...S.hint, marginBottom: "20px" }}>
-        {t("inputs.eesg.subtitle")}
-      </p>
-      <Field label={t("inputs.eesg.oreValue")} tip={<Tip id="oreValue" />} invalid={invalid("oreValue")}>
-        <div style={{ maxWidth: "280px" }}>
-          <Sel value={fd.oreValue} onChange={(v) => set("oreValue", null, v)}
-            options={["Baixo", "Médio", "Alto"]} labels={oreValueLabels}
-            invalid={invalid("oreValue")} />
-        </div>
-      </Field>
-    </div>
-  ) : null;
-
-  // ---------------------------------------------------------------------------
   // ETAPA — COMPLEMENTAR
   // ---------------------------------------------------------------------------
   const cw = fd.criteriaWeights;
@@ -973,6 +959,39 @@ function Inputs() {
         {t("inputs.complementary.subtitle")}
         <Tip id="weights" />
       </p>
+
+      {/* VALOR DO MINÉRIO — o único CAMPO DE DADO desta etapa, e por isso ele
+          vem ANTES dos blocos de peso. Era a etapa EESG inteira (ver o stepPlan
+          acima); a etapa saiu, o campo veio para cá.
+
+          A ORDEM NÃO É ARBITRÁRIA: tudo o que vem abaixo são multiplicadores
+          com valor padrão, que a pessoa pode simplesmente não tocar. Este é
+          um dado do depósito, obrigatório com o SH&B marcado, e é o único
+          controle desta etapa que trava o avanço — enterrá-lo depois de três
+          acordeões de slider faria o botão bloquear por um campo fora da vista.
+
+          Os textos são os MESMOS de antes (inputs.eesg.*): o campo continua
+          sendo o critério EESG do SH&B, e renomeá-lo ao mudar de etapa só
+          confundiria quem já conhece a tela. O agrupamento de Enfoque dele
+          (Economia) não foi tocado — ver classicCriteria.js. */}
+      {showSHB && (
+        <div style={{ marginBottom: "22px" }}>
+          <p style={{ fontSize: "15px", fontWeight: "700", color: C.text, margin: "0 0 6px" }}>
+            {t("inputs.eesg.title")}
+          </p>
+          <p style={{ ...S.hint, marginTop: 0, marginBottom: "14px" }}>
+            {t("inputs.eesg.subtitle")}
+          </p>
+          <Field label={t("inputs.eesg.oreValue")} tip={<Tip id="oreValue" />} invalid={invalid("oreValue")}>
+            <div style={{ maxWidth: "280px" }}>
+              <Sel value={fd.oreValue} onChange={(v) => set("oreValue", null, v)}
+                options={["Baixo", "Médio", "Alto"]} labels={oreValueLabels}
+                invalid={invalid("oreValue")} />
+            </div>
+          </Field>
+          <div style={S.div} />
+        </div>
+      )}
 
       {showUBC && (
         <Collapsible title="UBC 1995" open={openBlocks.ubc} onToggle={() => toggleBlock("ubc")}>
@@ -1212,7 +1231,6 @@ function Inputs() {
     [STEPS.METHODS]:       Step1,
     [STEPS.GEOMETRY]:      Step2,
     [STEPS.GEOTECHNICAL]:  Step3,
-    [STEPS.EESG]:          StepEESG,
     [STEPS.COMPLEMENTARY]: Step4,
     [STEPS.REVIEW]:        StepReview,
   };

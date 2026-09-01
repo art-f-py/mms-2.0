@@ -427,28 +427,40 @@ describe("missingFieldsForStep — geotecnica", () => {
   });
 });
 
-describe("missingFieldsForStep — EESG", () => {
-  it("SH&B exige o valor do minerio", () => {
-    expect(missingFieldsForStep(STEPS.EESG, emptyForm(sm(false, false, true)))).toEqual(["oreValue"]);
+// A etapa EESG deixou de existir: o valor do minerio, unico campo dela, passou
+// para o inicio da etapa complementar. A EXIGENCIA E A MESMA — so mudou o id da
+// etapa que a carrega —, e e isso que estes casos travam.
+describe("missingFieldsForStep — complementar (valor do minerio)", () => {
+  it("SH&B exige o valor do minerio na etapa complementar", () => {
+    expect(missingFieldsForStep(STEPS.COMPLEMENTARY, emptyForm(sm(false, false, true)))).toEqual(["oreValue"]);
   });
 
   it.each([
     ["Nicholas sozinho", sm(false, true,  false)],
     ["UBC sozinho",      sm(true,  false, false)],
     ["UBC + Nicholas",   sm(true,  true,  false)],
-  ])("%s NAO exige o valor do minerio — a etapa nem existe", (_caso, methods) => {
-    expect(missingFieldsForStep(STEPS.EESG, emptyForm(methods))).toEqual([]);
-    expect(isStepComplete(STEPS.EESG, emptyForm(methods))).toBe(true);
+  ])("%s NAO exige o valor do minerio — o campo nem aparece", (_caso, methods) => {
+    expect(missingFieldsForStep(STEPS.COMPLEMENTARY, emptyForm(methods))).toEqual([]);
+    expect(isStepComplete(STEPS.COMPLEMENTARY, emptyForm(methods))).toBe(true);
+  });
+
+  it("os sliders de peso da etapa continuam sem exigir nada", () => {
+    // Com o SH&B marcado e o valor do minerio preenchido, a etapa libera: os
+    // pesos ja vem com padrao e nunca entram na lista.
+    const fd = { ...emptyForm(sm(true, true, true)), oreValue: "Medio" };
+    expect(missingFieldsForStep(STEPS.COMPLEMENTARY, fd)).toEqual([]);
+  });
+
+  it("a etapa EESG nao existe mais em STEPS", () => {
+    expect(STEPS.EESG).toBeUndefined();
+    expect(Object.values(STEPS)).not.toContain("eesg");
   });
 });
 
 describe("missingFieldsForStep — etapas sem campo obrigatorio", () => {
-  it.each([
-    ["complementar", STEPS.COMPLEMENTARY],
-    ["revisar",      STEPS.REVIEW],
-  ])("a etapa %s nunca bloqueia (pesos ja vem com padrao)", (_caso, stepId) => {
-    expect(missingFieldsForStep(stepId, emptyForm(sm(true, true, true)))).toEqual([]);
-    expect(isStepComplete(stepId, emptyForm(sm(true, true, true)))).toBe(true);
+  it("a etapa revisar nunca bloqueia", () => {
+    expect(missingFieldsForStep(STEPS.REVIEW, emptyForm(sm(true, true, true)))).toEqual([]);
+    expect(isStepComplete(STEPS.REVIEW, emptyForm(sm(true, true, true)))).toBe(true);
   });
 
   it("etapa desconhecida nao inventa exigencia", () => {
@@ -462,7 +474,7 @@ describe("isStepComplete — estado vazio e estado restaurado", () => {
     expect(isStepComplete(STEPS.METHODS, fd)).toBe(true);
     expect(isStepComplete(STEPS.GEOMETRY, fd)).toBe(false);
     expect(isStepComplete(STEPS.GEOTECHNICAL, fd)).toBe(false);
-    expect(isStepComplete(STEPS.EESG, fd)).toBe(false);
+    expect(isStepComplete(STEPS.COMPLEMENTARY, fd)).toBe(false);
   });
 
   it("sem metodo marcado, nem a etapa de metodos esta completa", () => {
@@ -483,7 +495,7 @@ describe("isStepComplete — estado vazio e estado restaurado", () => {
     const restaurado = { ...fullForm(sm(false, false, true)), oreValue: "" };
     expect(isStepComplete(STEPS.GEOMETRY, restaurado)).toBe(true);
     expect(isStepComplete(STEPS.GEOTECHNICAL, restaurado)).toBe(true);
-    expect(isStepComplete(STEPS.EESG, restaurado)).toBe(false);
+    expect(isStepComplete(STEPS.COMPLEMENTARY, restaurado)).toBe(false);
   });
 
   it("aceita a selecao vinda por parametro, sem depender do formData", () => {

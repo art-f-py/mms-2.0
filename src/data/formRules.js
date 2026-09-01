@@ -70,12 +70,20 @@ export function normalizeRss(formData) {
 // VALIDAÇÃO POR ETAPA
 // ---------------------------------------------------------------------------
 // Identidade estável de cada etapa. O número da etapa no stepper é dinâmico
-// (EESG só existe com SH&B), então a validação se ancora no id, não no índice.
+// (a complementar só existe com algum método marcado), então a validação se
+// ancora no id, não no índice.
+//
+// A ETAPA EESG NÃO EXISTE MAIS. Ela tinha um único campo — `oreValue`, o valor
+// do minério, exclusivo do SH&B — que passou para o início da etapa
+// complementar. Esvaziada, ela virava um passo do stepper sem conteúdo nenhum,
+// então saiu inteira: da constante, do plano de etapas em Inputs.jsx e do
+// switch abaixo. O campo, a validação dele e o agrupamento de Enfoque
+// (Economia, em classicCriteria.js) seguem exatamente como estavam — o que
+// mudou foi ONDE o formulário o pergunta.
 export const STEPS = {
   METHODS:       "methods",
   GEOMETRY:      "geometry",
   GEOTECHNICAL:  "geotechnical",
-  EESG:          "eesg",
   COMPLEMENTARY: "complementary",
   REVIEW:        "review",
 };
@@ -124,11 +132,20 @@ export function requiredFieldsForStep(stepId, methods) {
       if (showNich)      fields.push(...forZones("jointSpacing", "jointCondition"));
       return fields;
     }
-    case STEPS.EESG:
+    case STEPS.COMPLEMENTARY:
+      // O ÚNICO campo obrigatório da etapa complementar, e ele veio da extinta
+      // etapa EESG junto com o próprio campo — a regra é a MESMA de antes,
+      // palavra por palavra, só mudou o `case` em que mora. Os sliders de peso
+      // que ocupam o resto da etapa continuam sem obrigatoriedade nenhuma:
+      // todos já nascem no valor neutro, então não há o que exigir deles.
+      //
+      // Continua espelhando a condicional de render do Inputs.jsx (`showSHB`),
+      // como manda a regra inegociável acima: sem SH&B marcado o campo não
+      // aparece na etapa, e não é exigido.
       return methods?.shb ? ["oreValue"] : [];
     default:
-      // Métodos tem regra própria (ver missingFieldsForStep); complementar e
-      // revisar não têm campo obrigatório — os pesos já vêm com padrão.
+      // Métodos tem regra própria (ver missingFieldsForStep); revisar não tem
+      // campo obrigatório — a etapa só relê o que já foi preenchido.
       return [];
   }
 }

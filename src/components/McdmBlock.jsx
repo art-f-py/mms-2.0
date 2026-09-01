@@ -414,15 +414,18 @@ function WeightsPanel({ groups, stacked, mode, rebalanceMode, onChange, onModeCh
           Envolve um <form> para que Enter no campo salve — é o que se espera de
           um campo de texto com um botão do lado, e sai de graça.
 
-          SÓ EM MODO ENFOQUE, e isso é o modelo de cenário falando, não uma
-          restrição de tela: um cenário É uma repartição de pesos com nome
-          ({id, name, groupWeights}). Entropy não tem peso ajustável para
-          nomear — os pesos dele saem dos dados e mudam junto com o formulário,
-          então dois "cenários de Entropy" sobre o mesmo formulário seriam
-          sempre idênticos. Salvar aqui guardaria os groupWeights que Entropy
-          está ignorando, e a coluna salva não teria relação com o que está na
-          tela. Comparar cenários de Entropy não existe, e não foi inventado. */}
-      {enfoqueMode && (
+          FUNCIONA NOS DOIS MODOS. Era só em Enfoque, pelo argumento de que um
+          cenário É uma repartição de pesos com nome e Entropy não tem peso
+          ajustável para nomear. O argumento descrevia certo o MODELO ANTIGO e
+          errado o que a comparação serve para responder: o que se compara não é
+          a repartição, é o RANKING que ela produz — e "este método com pesos de
+          Entropy" é um ranking tão comparável quanto os outros, justamente por
+          ser o que sai quando ninguém escolhe os pesos.
+
+          Em Entropy não há sliders acima deste campo, e é a única diferença
+          visível: o mesmo campo, o mesmo botão, o mesmo Enter. O que o cenário
+          guarda é nome + método + modo, sem groupWeights — ver
+          ADD_MCDM_SCENARIO em MmsContext.jsx. */}
       <form
         onSubmit={(e) => { e.preventDefault(); save(); }}
         style={{ marginTop: "18px", paddingTop: "14px", borderTop: `1px solid ${colors.border}`, display: "flex", flexWrap: "wrap", gap: "8px" }}
@@ -453,7 +456,6 @@ function WeightsPanel({ groups, stacked, mode, rebalanceMode, onChange, onModeCh
           {t("results.mcdm.scenarios.save")}
         </button>
       </form>
-      )}
     </div>
   );
 }
@@ -763,12 +765,20 @@ export default function McdmBlock({ method, available = [], onMethodChange }) {
   const setRebalanceMode = (novoModo) =>
     dispatch({ type: "SET_MCDM_REBALANCE_MODE", rebalanceMode: novoModo });
 
-  // Salva a repartição ATUAL com um nome. Só os pesos vão — nem ranking nem
-  // formData —, e é por isso que o cenário continua fazendo sentido depois de o
+  // Salva a configuração ATUAL de ponderação com um nome: o método em foco, o
+  // modo em foco e — só em Enfoque — os pesos. Nem ranking nem formData vão
+  // junto, e é por isso que o cenário continua fazendo sentido depois de o
   // formulário mudar: ele é recalculado, não relembrado. Ver o bloco de
   // cenários em MmsContext.jsx.
+  //
+  // É CONTEXTUAL AO QUE ESTÁ NA TELA. O método e o modo não são perguntados ao
+  // usuário num segundo controle — são os que ele já escolheu nos seletores
+  // logo acima, e salvar é dizer "guarde esta tela com este nome". Um seletor
+  // de método dentro do formulário de salvar permitiria guardar uma
+  // configuração diferente da que está sendo mostrada, que é justamente o tipo
+  // de divergência que a comparação existe para não ter.
   const saveScenario = (name) =>
-    dispatch({ type: "ADD_MCDM_SCENARIO", name, groupWeights });
+    dispatch({ type: "ADD_MCDM_SCENARIO", name, method, mode, groupWeights });
 
   const ok = derived.status === MCDM_STATUS.OK;
 
@@ -966,7 +976,20 @@ export default function McdmBlock({ method, available = [], onMethodChange }) {
           (fonte única, em mcdmPipeline.js), mas o TEXTO do motivo vem do i18n.
           O `reason` da constante é português cru, escrito para a mensagem de
           exceção e nomeando de quem a pendência depende — não é frase de tela
-          nem passa pelo sistema de tradução. */}
+          nem passa pelo sistema de tradução.
+
+          SÓ RENDERIZA COM A LISTA NÃO VAZIA. Desde que o SH&B foi liberado,
+          MCDM_PENDING_METHODS ficou `{}` e o painel aparecia com título,
+          explicação e NENHUMA pastilha — um aviso sobre um conjunto vazio de
+          métodos, que só sobrava espaço e dava a entender que algo continuava
+          bloqueado.
+
+          O MECANISMO INTEIRO FICA: a constante, o texto no i18n e este bloco de
+          JSX estão prontos e ligados. Um quarto método de seleção que chegue
+          bloqueado (e é assim que eles chegam — ver a nota em
+          MCDM_PENDING_METHODS) faz o painel voltar sozinho, sem ninguém
+          reescrever nada. Apagar o painel obrigaria a reinventá-lo nesse dia. */}
+      {Object.keys(MCDM_PENDING_METHODS).length > 0 && (
       <div style={{ ...panelStyle, marginTop: "12px", backgroundColor: colors.primary50, borderStyle: "dashed" }}>
         {/* O título e as pastilhas são a MENSAGEM DE ESTADO — quais métodos
             ainda estão de fora — e ficam. O motivo da pendência é o "por quê",
@@ -994,6 +1017,7 @@ export default function McdmBlock({ method, available = [], onMethodChange }) {
           ))}
         </div>
       </div>
+      )}
     </div>
   );
 }

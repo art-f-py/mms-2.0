@@ -41,3 +41,40 @@ import { METHOD_LABELS } from "../algorithms/ubcWeights";
 export function uiMethodLabel(code) {
   return METHOD_LABELS[code] || code;
 }
+
+// ---------------------------------------------------------------------------
+// MÉTODO DE SELEÇÃO (não de lavra) — RÓTULO CURTO
+// ---------------------------------------------------------------------------
+// Outra família de rótulos, para outra coisa: aqui são os três MÉTODOS DE
+// SELEÇÃO (quem monta a tabela de pesos), não os dez métodos de lavra (quem é
+// ranqueado). Confundir os dois é fácil porque a palavra "método" serve aos
+// dois, e é por isso que este bloco fica ao lado do de cima em vez de num
+// arquivo à parte — lidos juntos, a diferença é óbvia.
+//
+// FORMA CURTA. SELECTION_METHODS em Statistics.jsx traz a forma longa com ano
+// ("Nicholas 1981/1992", "UBC 1995", "SH&B 2007"), certa para um título de
+// bloco e para a pill de filtro, larga demais para um cabeçalho de coluna de
+// 130px na comparação de cenários. Esta é a forma que cabe.
+//
+// NÃO PASSA PELO i18n, e isso é deliberado: são nomes próprios de publicações.
+// "Nicholas" é Nicholas em qualquer idioma, e mandá-los para os locales criaria
+// quatro cópias do mesmo texto para alguém traduzir por engano um dia.
+const SELECTION_METHOD_LABELS = Object.freeze({
+  nicholas: "Nicholas",
+  ubc:      "UBC",
+  shb:      "SH&B",
+});
+
+/**
+ * Rótulo curto de um método de SELEÇÃO, a partir da sua chave.
+ *
+ * Mesma política de fallback de uiMethodLabel, pelo mesmo motivo: chave sem
+ * rótulo sai como a própria chave, que é visivelmente um código e alguém
+ * corrige — melhor que um rótulo errado, que ninguém percebe.
+ *
+ * @param {string} key  'nicholas' | 'ubc' | 'shb'
+ * @returns {string} rótulo curto, ou a própria chave se não houver rótulo
+ */
+export function uiSelectionMethodLabel(key) {
+  return SELECTION_METHOD_LABELS[key] || key;
+}

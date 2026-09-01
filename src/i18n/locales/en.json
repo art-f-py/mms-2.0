@@ -27,7 +27,6 @@
     "methods": "Methods",
     "geometry": "Geometry",
     "geotechnical": "Geotechnical",
-    "eesg": "EESG",
     "complementary": "Complementary",
     "review": "Review"
   },
@@ -158,6 +157,7 @@
     "radarNormalized": "Radar (normalized)",
     "breakdown": "Breakdown — {{method}}",
     "ranking": "Ranking",
+    "eliminatedBy": "Eliminated by: {{criteria}}",
     "rank": "{{n}}",
     "backToInputs": "← Back to Inputs",
     "criteria": {
