@@ -12,17 +12,31 @@
 // vermelho um cartão que a publicação não elimina. Mesma razão para −10 e −7
 // ficarem de fora — são penalidades da mesma família, só que menores.
 //
-// LIMITE CONHECIDO: o breakdown guarda o score JÁ MULTIPLICADO pelo peso por
-// critério da etapa Complementar (ver sumCriteria em algorithms/algorithms.js).
-// Com os pesos no padrão — 1.00, que é onde eles ficam a não ser que alguém
-// mexa — o valor gravado é o da tabela e a comparação exata acerta. Com um peso
-// diferente de 1 o marcador vira outro número e o cartão deixa de ser marcado.
-// A comparação continua EXATA de propósito: a alternativa (dividir pelo peso
-// para recuperar o valor cru) reconstruiria por aritmética de ponto flutuante
-// um dado que o breakdown não guarda, e um falso positivo aqui — cartão pintado
-// de vermelho sem eliminação nenhuma — é pior que um falso negativo. Quem quiser
-// resolver isso de verdade precisa fazer sumCriteria guardar o score cru ao lado
-// do ponderado; é mudança na camada de algoritmo, não aqui.
+// A FONTE É A MATRIZ DE PESOS NEUTROS, E NÃO O `breakdown` DO RESULTADO.
+// Esta função já leu o breakdown, e isso era um bug: o breakdown guarda o score
+// JÁ MULTIPLICADO pelo peso por critério da etapa Complementar (ver sumCriteria
+// em algorithms/algorithms.js). Com os pesos no padrão o valor gravado é o da
+// tabela e a comparação exata acertava; bastava alguém arrastar um slider para
+// −49 virar −73,5 e o cartão parar de ser marcado. Falso negativo silencioso:
+// o método continuava eliminado pela publicação e a tela deixava de dizer.
+//
+// A CORREÇÃO NÃO MEXEU NO CÁLCULO CLÁSSICO, mexeu na origem do dado. O que
+// chega aqui agora é uma aba de `buildDecisionMatrix`, que monta os scores com
+// `neutralWeights()` — as duas camadas de ponderação do usuário em 1.00, por
+// contrato declarado no cabeçalho de decisionMatrix.js. Os pesos continuam
+// valendo em tudo o que a tela EXIBE (scores, ranking, radar de breakdown);
+// eles só não têm voz em "a publicação elimina este método?", que é uma
+// pergunta sobre a tabela, não sobre a ponderação de quem preenche o
+// formulário.
+//
+// É A MESMA TÉCNICA que scaleFloorCriteria.js usa na aba multicritério — ler de
+// uma fonte sem peso em vez de tentar desfazer a multiplicação —, e os dois
+// módulos seguem SEPARADOS de propósito, porque o que eles procuram é
+// diferente. Lá o valor já passou pela conversão de escala (Saaty/UBC/SH&B) e a
+// eliminação virou 0. AQUI NÃO HÁ CONVERSÃO NENHUMA: a aba clássica é lida crua,
+// então o que se procura continua sendo −49 / −50, e um 0 nesta matriz é um
+// score legítimo da tabela — o oposto do que um 0 significa lá. Fundir os dois
+// faria cada um procurar o número do outro.
 //
 // Puro: não lê estado global, não toca no DOM, não muta o que recebe.
 
@@ -30,7 +44,7 @@
  * O valor de eliminação de cada método de SELEÇÃO.
  *
  * Chaveado pela chave do método de seleção ('nicholas', 'ubc', 'shb') — a mesma
- * de state.results e de SELECTION_METHODS em Statistics.jsx.
+ * de state.results, de SELECTION_METHODS em Statistics.jsx e de `sheet.key`.
  */
 export const ELIMINATION_SCORE_BY_METHOD = Object.freeze({
   nicholas: -49,
@@ -39,32 +53,45 @@ export const ELIMINATION_SCORE_BY_METHOD = Object.freeze({
 });
 
 /**
- * Os critérios que ELIMINAM um método de lavra, dentro de um resultado clássico.
+ * Os critérios que ELIMINAM um método de lavra, numa aba clássica sem pesos.
  *
  * Devolve os IDS dos critérios (`rss_ob`, `thickness`, ...), não os rótulos: o
  * rótulo é assunto da tela e sai do i18n (`results.criteria.<id>`), que é onde
  * o radar de breakdown já o busca. Devolver id aqui é o que mantém esta função
  * testável sem i18n.
  *
- * As chaves do breakdown têm a forma `${criterio}__${valorSelecionado}` (ver
- * sumCriteria); só a primeira metade identifica o critério. Como cada critério
- * entra uma vez por cálculo, não há id repetido na saída.
+ * `sheet.criterionKeys` e `row.values` andam juntos posição a posição — é o
+ * formato que buildDecisionMatrix produz e que McdmBlock já consome. Os ids são
+ * OS MESMOS que o breakdown produzia (`criterionKeys` sai de `Object.keys(
+ * breakdown).map(k => k.split("__")[0])`, ver buildSheet), na mesma ordem, o
+ * que é o que permitiu trocar a fonte sem reescrever esta comparação: a lista
+ * do hover continua saindo na ordem em que o `calculate*` montou os critérios,
+ * a mesma do radar de breakdown ao lado.
  *
- * A ordem é a do breakdown — a ordem em que o `calculate*` montou os critérios.
- * É a mesma que o radar de breakdown usa, então a lista do hover sai na mesma
- * sequência que o gráfico ao lado.
+ * Como cada critério entra uma vez por cálculo, não há id repetido na saída.
  *
- * @param {object} result               saída de calculateNicholas/UBC/SHB
+ * O `selectionMethodKey` continua sendo parâmetro, e não é lido de `sheet.key`,
+ * porque é ele que escolhe o MARCADOR — a pergunta que esta função faz é "qual
+ * o veto DESTE método?", e a tela já carrega essa chave (`sm.key`) para o bloco
+ * inteiro. Ler do sheet economizaria um argumento e criaria uma segunda fonte
+ * para a mesma decisão.
+ *
+ * @param {{criterionKeys: string[], rows: Array<{code: string, values: Array}>}} sheet
+ *        aba de buildDecisionMatrix para este método de seleção (pesos neutros)
  * @param {string} selectionMethodKey   'nicholas' | 'ubc' | 'shb'
  * @param {string} miningCode           código do método de lavra ('OP', 'BC', ...)
  * @returns {string[]} ids dos critérios que eliminam; vazio quando nenhum
  */
-export function eliminatingCriteriaFor(result, selectionMethodKey, miningCode) {
+export function eliminatingCriteriaFor(sheet, selectionMethodKey, miningCode) {
   const marker = ELIMINATION_SCORE_BY_METHOD[selectionMethodKey];
-  const breakdown = result?.breakdown;
-  if (marker === undefined || !breakdown) return [];
+  if (marker === undefined) return [];
 
-  return Object.entries(breakdown)
-    .filter(([, scores]) => scores?.[miningCode] === marker)
-    .map(([breakdownKey]) => breakdownKey.split("__")[0]);
+  const criterionKeys = Array.isArray(sheet?.criterionKeys) ? sheet.criterionKeys : [];
+  const row = Array.isArray(sheet?.rows)
+    ? sheet.rows.find((r) => r?.code === miningCode)
+    : undefined;
+  if (!row) return [];
+
+  const values = Array.isArray(row.values) ? row.values : [];
+  return criterionKeys.filter((_, index) => values[index] === marker);
 }

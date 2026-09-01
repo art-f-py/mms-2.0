@@ -131,7 +131,13 @@ describe("texto do hover", () => {
 describe("a aba clássica não foi tocada", () => {
   it("Statistics.jsx continua usando eliminationMarker, e só ele", () => {
     expect(STATISTICS).toMatch(/import \{ eliminatingCriteriaFor \} from "\.\.\/utils\/eliminationMarker"/);
-    expect(STATISTICS).not.toMatch(/scaleFloorCriteria/);
+    // NÃO IMPORTA nem CHAMA o módulo do MCDM. O padrão não pode ser só
+    // "scaleFloorCriteria": a aba clássica passou a citar o arquivo num
+    // comentário, ao explicar que as duas marcações usam a mesma TÉCNICA (ler
+    // de uma fonte sem peso) procurando coisas diferentes — e a menção é
+    // justamente a documentação que se quer manter.
+    expect(STATISTICS).not.toMatch(/from "\.\.\/utils\/scaleFloorCriteria"/);
+    expect(STATISTICS).not.toMatch(/floorCriteriaBySheet\s*\(/);
   });
 
   it("McdmBlock.jsx não importa eliminationMarker", () => {

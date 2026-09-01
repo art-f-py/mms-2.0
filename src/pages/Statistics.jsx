@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useMms } from "../context/MmsContext";
 import { METHODS, METHOD_LABELS } from "../algorithms/ubcWeights";
 import { normalizeScores } from "../algorithms/algorithms";
+import { buildDecisionMatrix } from "../algorithms/decisionMatrix";
 import McdmBlock from "../components/McdmBlock";
 import Pill from "../components/Pill";
 import ScenarioComparison from "../components/ScenarioComparison";
@@ -47,9 +48,40 @@ const colors = {
 // ---------------------------------------------------------------------------
 // BLOCO DE RESULTADO (barra + ranking + radar) por método
 // ---------------------------------------------------------------------------
-function MethodBlock({ sm, result }) {
+function MethodBlock({ sm, result, formData }) {
   const { t } = useTranslation();
   const [selectedMethod, setSelectedMethod] = useState(null);
+
+  // ABA SEM PESO — FONTE **EXCLUSIVA** DA MARCAÇÃO DE ELIMINAÇÃO
+  //
+  // ADITIVA, e é importante que fique claro: NADA do que este bloco exibe passa
+  // por aqui. Os scores, o ranking, o gráfico de barras, o radar normalizado e
+  // o radar de breakdown continuam saindo de `result` — o `state.results` que
+  // o botão Calcular gravou, com os pesos do Complementar aplicados, como
+  // sempre saíram. Esta aba serve a UMA pergunta e só a ela: "a tabela do
+  // método elimina este método de lavra?".
+  //
+  // POR QUE ELA PRECISA EXISTIR. O `result.breakdown` guarda o score já
+  // multiplicado pelo peso por critério, então o marcador −49/−50 deixava de
+  // bater assim que alguém encostava num slider do Complementar, e o cartão
+  // parava de ser marcado sem nenhum sinal na tela. `buildDecisionMatrix` monta
+  // os mesmos scores com `neutralWeights()` — as duas camadas de ponderação em
+  // 1.00, por contrato declarado no cabeçalho de decisionMatrix.js —, que é
+  // exatamente o dado cru que a comparação precisa. Mesma técnica que
+  // scaleFloorCriteria.js usa na aba multicritério: trocar a FONTE em vez de
+  // tentar desfazer a multiplicação.
+  //
+  // O `{ [sm.key]: true }` força a aba deste método independentemente do que
+  // está marcado em `formData.selectedMethods`: buildDecisionMatrix usa o
+  // objeto que recebe, não o do formulário. É o mesmo padrão de McdmBlock.
+  //
+  // useMemo pelo mesmo motivo do `derived` de McdmBlock: sem ele, cada render
+  // deste bloco — um clique de cartão, um toggle de pill — remontaria a matriz
+  // inteira à toa. `formData` e `sm.key` são as duas únicas entradas.
+  const neutralSheet = useMemo(
+    () => buildDecisionMatrix(formData, { [sm.key]: true }).sheets.find((s) => s.key === sm.key) ?? null,
+    [formData, sm.key],
+  );
 
   const barData   = [...METHODS].map((m) => ({ method: m, score: result.scores[m] })).sort((a, b) => b.score - a.score);
   const normalized = normalizeScores(result.scores);
@@ -142,7 +174,11 @@ function MethodBlock({ sm, result }) {
             // (`sm.key`), não um número global: −49 no Nicholas e no UBC, −50
             // no SH&B. Ver eliminationMarker.js, inclusive por que o −25 do
             // SH&B fica de fora.
-            const eliminatedBy = eliminatingCriteriaFor(result, sm.key, m);
+            //
+            // Lê `neutralSheet`, NÃO `result`: o marcador só sobrevive à
+            // comparação exata num dado sem os pesos do Complementar. Ver o
+            // useMemo no topo deste componente.
+            const eliminatedBy = eliminatingCriteriaFor(neutralSheet, sm.key, m);
             const eliminated   = eliminatedBy.length > 0;
             const selected     = m === selectedMethod;
 
@@ -405,7 +441,17 @@ function Statistics() {
           voltar. Dentro da aba clássica nada mudou. */}
       {safeView === VIEWS.CLASSIC &&
         activeMethods.map((sm) => (
-          <MethodBlock key={sm.key} sm={sm} result={state.results[sm.key]} />
+          // `formData` entra por prop, como `result` já entrava — MethodBlock
+          // continua sendo alimentado de fora em vez de ir buscar o contexto
+          // sozinho. Ele NÃO substitui `result`: serve só à marcação de
+          // eliminação, que precisa dos scores sem os pesos do Complementar
+          // (ver o useMemo lá dentro).
+          <MethodBlock
+            key={sm.key}
+            sm={sm}
+            result={state.results[sm.key]}
+            formData={state.formData}
+          />
         ))}
 
       {safeView === VIEWS.MCDM && (

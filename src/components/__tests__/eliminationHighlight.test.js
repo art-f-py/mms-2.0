@@ -36,7 +36,42 @@ const CARTAO = STATISTICS.slice(
 describe("marca de eliminação no cartão de ranking clássico", () => {
   it("a decisão vem de eliminatingCriteriaFor, não de um número escrito à mão", () => {
     expect(STATISTICS).toMatch(/import \{ eliminatingCriteriaFor \} from "\.\.\/utils\/eliminationMarker"/);
-    expect(CARTAO).toMatch(/eliminatingCriteriaFor\(result, sm\.key, m\)/);
+    expect(CARTAO).toMatch(/eliminatingCriteriaFor\(neutralSheet, sm\.key, m\)/);
+  });
+
+  it("a fonte é a aba SEM PESO, e não o resultado exibido", () => {
+    // O bug que isto barra é o original: ler `result.breakdown`, que traz o
+    // score já multiplicado pelo peso por critério do Complementar. Com um
+    // slider fora de 1.00 o marcador −49/−50 vira outro número e o cartão para
+    // de ficar vermelho, sem nenhum sinal na tela.
+    expect(STATISTICS).toMatch(/import \{ buildDecisionMatrix \} from "\.\.\/algorithms\/decisionMatrix"/);
+    expect(STATISTICS).toMatch(/const neutralSheet = useMemo\(/);
+    expect(STATISTICS).toMatch(/buildDecisionMatrix\(formData, \{ \[sm\.key\]: true \}\)/);
+    // A comparação NÃO volta a passar por `result`.
+    expect(CARTAO).not.toMatch(/eliminatingCriteriaFor\(result\b/);
+  });
+
+  it("a aba sem peso é ADITIVA — o que a tela exibe continua vindo de `result`", () => {
+    // Scores, ranking, barras e os dois radares. Se algum deles passasse a ler
+    // `neutralSheet`, os pesos do Complementar deixariam de ter efeito visível
+    // e os sliders da etapa complementar viravam decoração.
+    expect(STATISTICS).toMatch(/result\.scores\[m\]/);          // barras + cartão
+    expect(STATISTICS).toMatch(/result\.ranking\.map\(/);        // ranking
+    expect(STATISTICS).toMatch(/Object\.entries\(result\.breakdown\)/); // radar de breakdown
+    expect(STATISTICS).toMatch(/normalizeScores\(result\.scores\)/);    // radar normalizado
+
+    // `neutralSheet` aparece em duas linhas DE CÓDIGO: onde é criado e onde
+    // alimenta a marcação. Uma terceira é sinal de que vazou para a exibição.
+    //
+    // As linhas de comentário são descartadas antes da contagem — o próprio
+    // cartão explica em prosa que lê `neutralSheet` e não `result`, e essa
+    // explicação não pode fazer a contagem passar do limite.
+    const linhasDeCodigo = STATISTICS.split("\n").filter((linha) => {
+      const limpa = linha.trim();
+      return !limpa.startsWith("//") && !limpa.startsWith("*") && !limpa.startsWith("/*");
+    });
+    const usos = linhasDeCodigo.filter((linha) => linha.includes("neutralSheet"));
+    expect(usos).toHaveLength(2);
   });
 
   it("o marcador consultado é o do MÉTODO DE SELEÇÃO do bloco", () => {
