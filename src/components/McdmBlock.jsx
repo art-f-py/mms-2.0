@@ -8,6 +8,7 @@ import { MCDM_PENDING_METHODS } from "../algorithms/mcdmPipeline";
 import { deriveMcdmRanking, MCDM_STATUS } from "../utils/mcdmRanking";
 import { buildMatrixColumns, buildOriginSpans } from "../utils/mcdmMatrixLayout";
 import { uiMethodLabel } from "../utils/methodLabel";
+import { floorCriteriaBySheet } from "../utils/scaleFloorCriteria";
 import { parseWeightInput } from "../utils/weightInput";
 import { weightSliderStyle } from "../utils/sliderTrack";
 import InfoTip from "./InfoTip";
@@ -39,6 +40,17 @@ const colors = {
   muted:     "var(--color-muted)",
   bg:        "var(--color-bg)",
   white:     "var(--color-white)",
+  // Vermelho de ERRO/ALERTA. OS MESMOS DOIS TOKENS que a marcação da aba
+  // clássica usa (ver Statistics.jsx) e que o realce de campo obrigatório vazio
+  // já usava antes dela — nenhum vermelho novo entrou no app.
+  //
+  // O SENTIDO AQUI É OUTRO, e a cor é a mesma de propósito: lá o vermelho diz
+  // "a publicação elimina este método", aqui diz "este método pontuou o mínimo
+  // neste critério". Quem decide a distinção é o TEXTO do hover, não o tom —
+  // dois vermelhos diferentes lado a lado pediriam ao usuário que decorasse
+  // qual é qual, e nenhum dos dois tem legenda na tela.
+  danger:    "var(--color-danger)",
+  danger50:  "var(--color-danger-50)",
 };
 
 // Uma cor por grupo de critérios. Os tokens são novos e vivem em index.css
@@ -808,6 +820,19 @@ export default function McdmBlock({ method, available = [], onMethodChange }) {
     />
   );
 
+  // CRITÉRIOS NO PISO DA ESCALA, POR MÉTODO DE LAVRA — a marca informativa dos
+  // cartões logo abaixo. Sai da MESMA aba que o motor leu (`result.sheet`), que
+  // já está no retorno do pipeline: nenhuma chamada nova, nenhum recálculo.
+  //
+  // Sem useMemo, pelo mesmo motivo de buildMatrixColumns lá em cima: `derived`
+  // já é memoizado, então isto só reexecuta quando a aba de fato mudou, e
+  // varrer dez linhas custa menos que a comparação que evitaria a varredura.
+  //
+  // Map vazio quando não há ranking: `ok` falso significa `derived.result`
+  // ausente, e o painel cai no aviso de indisponibilidade sem chegar aos
+  // cartões — mas um Map vazio mantém a leitura abaixo uniforme.
+  const floorByCode = ok ? floorCriteriaBySheet(derived.result.sheet) : new Map();
+
   const rankingPanel = (
     // RANKING — mesmo grid de cartões dos blocos clássicos, com a proximidade
     // em 3 casas: os valores de TOPSIS costumam se separar na terceira, e 1
@@ -831,28 +856,69 @@ export default function McdmBlock({ method, available = [], onMethodChange }) {
               de TOPSIS logo abaixo frequentemente desmente (a terceira casa é
               onde esses valores costumam se separar). */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: "6px" }}>
-            {derived.result.ranking.map((entry) => (
-              <div
-                key={entry.code}
-                style={{
-                  padding:         "8px 6px",
-                  borderRadius:    "4px",
-                  backgroundColor: colors.bg,
-                  color:           colors.text,
-                  border:          `1px solid ${colors.border}`,
-                  textAlign:       "center",
-                  fontSize:        "12px",
-                  minHeight:       "44px",
-                  display:         "flex",
-                  flexDirection:   "column",
-                  justifyContent:  "center",
-                }}
-              >
-                <div style={{ fontWeight: "700" }}>{t("results.rank", { n: entry.rank })}</div>
-                <div style={{ fontWeight: "600" }}>{uiMethodLabel(entry.code)}</div>
-                <div style={{ opacity: 0.8 }}>{entry.closeness.toFixed(3)}</div>
-              </div>
-            ))}
+            {derived.result.ranking.map((entry) => {
+              // O JOIN. `ranking` vem ordenado por colocação e a aba vem na
+              // ordem canônica de METHODS — as duas listas não se alinham por
+              // posição, e casá-las por índice trocaria os critérios de um
+              // método pelos de outro em silêncio. `entry.code` e
+              // `sheet.rows[].code` são o MESMO código de método de lavra, e é
+              // por ele que o Map responde.
+              //
+              // `?? []` cobre o método que não estiver na aba. Não deveria
+              // acontecer — o pipeline ranqueia exatamente as linhas que
+              // converteu —, e se acontecer o cartão sai sem marca em vez de
+              // quebrar o painel inteiro por causa de um `.length` em undefined.
+              const floorCriteria = floorByCode.get(entry.code) ?? [];
+              const atFloor       = floorCriteria.length > 0;
+
+              return (
+                <div
+                  key={entry.code}
+                  // TEXTO PRÓPRIO, DELIBERADAMENTE DIFERENTE DO DA ABA CLÁSSICA.
+                  // Lá o vermelho quer dizer "a publicação elimina este método";
+                  // aqui quer dizer "este método pontuou o mínimo da escala
+                  // neste critério", e o método SEGUE NO RANKING — o 0 é o piso
+                  // da escala convertida, não uma retirada da matriz (ver
+                  // scaleFloorCriteria.js). A frase diz isso por extenso porque
+                  // a cor, sozinha, sugeriria o contrário para quem acabou de
+                  // ver a outra aba.
+                  //
+                  // Os rótulos saem de `results.criteria.<id>` — a MESMA chave
+                  // que o cabeçalho da matriz de decisão usa para as colunas
+                  // clássicas, logo abaixo nesta tela.
+                  title={
+                    atFloor
+                      ? t("results.mcdm.floorScore", {
+                          criteria: floorCriteria
+                            .map((id) => t(`results.criteria.${id}`, id))
+                            .join(", "),
+                        })
+                      : undefined
+                  }
+                  style={{
+                    padding:         "8px 6px",
+                    borderRadius:    "4px",
+                    // A borda já era 1px em todos os cartões: aqui ela só troca
+                    // de cor. Diferente da aba clássica, que precisou criar uma
+                    // borda de 2px onde não havia nenhuma — a geometria do
+                    // cartão não muda, e a fileira não salta.
+                    backgroundColor: atFloor ? colors.danger50 : colors.bg,
+                    color:           atFloor ? colors.danger : colors.text,
+                    border:          `1px solid ${atFloor ? colors.danger : colors.border}`,
+                    textAlign:       "center",
+                    fontSize:        "12px",
+                    minHeight:       "44px",
+                    display:         "flex",
+                    flexDirection:   "column",
+                    justifyContent:  "center",
+                  }}
+                >
+                  <div style={{ fontWeight: "700" }}>{t("results.rank", { n: entry.rank })}</div>
+                  <div style={{ fontWeight: "600" }}>{uiMethodLabel(entry.code)}</div>
+                  <div style={{ opacity: 0.8 }}>{entry.closeness.toFixed(3)}</div>
+                </div>
+              );
+            })}
           </div>
         </>
       ) : (

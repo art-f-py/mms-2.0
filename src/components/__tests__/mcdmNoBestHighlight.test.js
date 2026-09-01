@@ -79,11 +79,32 @@ describe("os dois lugares que tinham realce estão neutros", () => {
     expect(corpo).not.toMatch(/color:\s*\w+\s*\?/);
   });
 
-  it("o cartão de ranking não tem estilo condicional", () => {
+  it("o cartão de ranking não tem estilo condicionado à COLOCAÇÃO", () => {
+    // ESTA ASSERÇÃO FOI ESTREITADA, e vale a pena dizer por quê. Ela proibia
+    // QUALQUER estilo condicional no cartão, o que era a forma mais simples de
+    // travar a ausência do realce de 1º lugar enquanto o cartão não tinha
+    // condicional nenhuma. O cartão passou a ter uma: a marca informativa de
+    // "pontuou o piso da escala neste critério" (ver scaleFloorCriteria.js),
+    // que NÃO é realce de colocação — ela olha a matriz que o motor leu, e o
+    // 1º colocado fica marcado ou não pelo mesmo critério que o 10º.
+    //
+    // O que o teste passou a exigir: as condicionais do cartão são TODAS do
+    // marcador de piso (`atFloor`), e nenhuma olha colocação. Um realce de 1º
+    // lugar que voltasse por aqui teria de introduzir uma condição sobre
+    // rank/posição — e cai nesta asserção, além das três do describe acima,
+    // que continuam intactas.
     const corpo = recorte("derived.result.ranking.map(", "</div>");
-    expect(corpo).not.toMatch(/backgroundColor:\s*\w+\s*\?/);
-    expect(corpo).not.toMatch(/border:\s*`[^`]*\$\{\w+\s*\?/);
-    expect(corpo).not.toMatch(/color:\s*\w+\s*\?/);
+
+    const condicionais = corpo.match(/(?:backgroundColor|color|border|fontWeight):[^,\n]*\?/g) || [];
+    expect(condicionais.length).toBeGreaterThan(0);
+    for (const linha of condicionais) {
+      expect(linha).toMatch(/atFloor\s*\?/);
+    }
+
+    // Nenhuma condicional do cartão fala de colocação, vencedor ou posição.
+    expect(corpo).not.toMatch(/\brank\b\s*[=<>]/);
+    expect(corpo).not.toMatch(/index\s*===\s*0/);
+    expect(corpo).not.toMatch(/best|winner|primeiro/i);
   });
 
   it("a linha da matriz usa o mesmo fundo para todas as linhas", () => {
