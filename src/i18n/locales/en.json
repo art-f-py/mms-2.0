@@ -190,7 +190,7 @@
       "proportionTitle": "Proporção",
       "closenessHint": "Proximidade relativa à solução ideal, de 0 a 1 — quanto maior, melhor.",
       "unavailable": "Ranking multicritério indisponível para os dados atuais.",
-      "floorScore": "Pontuação mínima em: {{criteria}}. O método continua no ranking — no multicritério o piso da escala é o valor mais baixo, não uma eliminação.",
+      "floorScore": "Pontuação mínima em: {{criteria}}.",
       "pendingTitle": "Ainda fora do multicritério",
       "pendingReason": "As tabelas destes métodos contêm valores que a escala de Saaty ainda não cobre. A regra de conversão está pendente de definição.",
       "tabs": {

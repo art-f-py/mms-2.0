@@ -102,18 +102,28 @@ describe("texto do hover", () => {
     expect(CARTAO).toMatch(/\.join\(", "\)/);
   });
 
-  it("a frase diz que o método CONTINUA ranqueado", () => {
-    // A exigência de conteúdo, não de forma: a redação pode mudar, a ideia não.
-    // Sem isso, o vermelho sugere desclassificação — que é o que ele significa
-    // na outra aba, e não aqui.
+  it("a frase interpola a lista de critérios e nomeia o que aconteceu", () => {
+    // A EXPLICAÇÃO SAIU DO TEXTO, por decisão do usuário: a frase carregava um
+    // segundo período dizendo que o método continuava ranqueado e que o piso
+    // não era eliminação, e ficou só o fato. O que esta asserção protege é o
+    // que sobrou de indispensável — o placeholder, sem o qual o hover não diz
+    // QUAIS critérios, e a palavra que nomeia o fato, sem a qual ele não diz
+    // nada.
+    //
+    // A distinção de sentido em relação à aba clássica não sumiu do projeto:
+    // ela continua escrita em scaleFloorCriteria.js e no comentário do cartão,
+    // que é onde quem mexe no código a encontra. O que mudou é que ela deixou
+    // de ser repetida ao usuário a cada hover.
     const frase = ptBR.results.mcdm.floorScore;
     expect(frase).toMatch(/\{\{criteria\}\}/);
-    expect(frase.toLowerCase()).toMatch(/continua/);
-    expect(frase.toLowerCase()).toMatch(/ranking|ranquead/);
+    expect(frase.toLowerCase()).toMatch(/mínima|minima|piso|mínimo/);
   });
 
-  it("a frase nega explicitamente a eliminação", () => {
-    expect(ptBR.results.mcdm.floorScore.toLowerCase()).toMatch(/não .*elimina/);
+  it("a frase NÃO fala em eliminação — o sentido aqui é outro", () => {
+    // O texto encurtou, mas não pode encurtar para o lado errado: chamar isto
+    // de eliminação seria dizer o oposto do que acontece, já que o método segue
+    // ranqueado pelo TOPSIS.
+    expect(ptBR.results.mcdm.floorScore.toLowerCase()).not.toMatch(/elimina/);
   });
 
   it("é um texto diferente do da aba clássica", () => {

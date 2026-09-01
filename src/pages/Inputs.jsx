@@ -10,6 +10,7 @@ import {
   calculateUBC, calculateNicholas, calculateSHB,
   classifyRSS, classifyRSSNicholas,
 } from "../algorithms/algorithms";
+import { buildDecisionMatrix } from "../algorithms/decisionMatrix";
 // Import comentado junto com o botão de exportar matriz (ver o bloco no Step 4,
 // perto do fim deste arquivo). A FUNÇÃO CONTINUA EXISTINDO E TESTADA em
 // utils/downloadDecisionMatrix.js — o que saiu é só o gatilho na tela.
@@ -664,12 +665,47 @@ function Inputs() {
       return;
     }
     const w = fd.criteriaWeights;
-    if (showUBC)  dispatch({ type: "SET_RESULT", method: "ubc",      payload: calculateUBC(fd, w.ubc) });
-    else          dispatch({ type: "SET_RESULT", method: "ubc",      payload: null });
-    if (showNich) dispatch({ type: "SET_RESULT", method: "nicholas", payload: calculateNicholas(fd, w.nicholas) });
-    else          dispatch({ type: "SET_RESULT", method: "nicholas", payload: null });
-    if (showSHB)  dispatch({ type: "SET_RESULT", method: "shb",      payload: calculateSHB(fd, w.shb) });
-    else          dispatch({ type: "SET_RESULT", method: "shb",      payload: null });
+
+    // RETRATO NEUTRO — a matriz sem NENHUM peso do usuário, tirada AGORA.
+    //
+    // Serve a uma coisa só: a marcação de eliminação dos cartões de ranking em
+    // /statistics, que precisa comparar o score contra o marcador da publicação
+    // (−49/−50) e por isso não pode ler o valor já multiplicado pelos pesos da
+    // etapa complementar. `buildDecisionMatrix` monta exatamente isso, com
+    // `neutralWeights()` — ver o contrato no cabeçalho de decisionMatrix.js.
+    //
+    // POR QUE AQUI, E NÃO NA TELA. Ela era derivada em /statistics, ao vivo,
+    // contra o formData do momento — enquanto os scores exibidos vinham
+    // congelados deste clique. Bastava calcular, voltar para o formulário,
+    // editar um campo e voltar pelo botão do navegador para a tela mostrar o
+    // score de um depósito e a borda vermelha de outro. Tirado no mesmo
+    // instante que o resultado, o retrato descreve o MESMO formulário que os
+    // scores ao lado dele, por construção: não há janela entre os dois porque
+    // não há dois momentos.
+    const neutralSheetFor = (method) =>
+      buildDecisionMatrix(fd, { [method]: true }).sheets.find((s) => s.key === method) ?? null;
+
+    // O retrato viaja DENTRO do resultado, e não num bucket irmão, porque tem
+    // exatamente o mesmo ciclo de vida dele: nasce neste clique, para este
+    // método, e morre com ele. É o mesmo critério que pôs `mcdmScenarios` na
+    // raiz do estado — lá o ciclo de vida era PRÓPRIO (uma lista que sobrevive
+    // a cada recálculo), aqui é o mesmo, e o mesmo critério dá a resposta
+    // oposta. De quebra, CLEAR_RESULTS e RESET_ALL já limpam o slot inteiro do
+    // método: não existe resíduo órfão a sincronizar, porque não existe segundo
+    // lugar onde guardar.
+    //
+    // Método desmarcado continua recebendo `null`, como sempre recebeu — e sem
+    // pagar por um retrato que ninguém leria.
+    const publicar = (method, payload) =>
+      dispatch({
+        type: "SET_RESULT",
+        method,
+        payload: payload === null ? null : { ...payload, neutralSheet: neutralSheetFor(method) },
+      });
+
+    publicar("ubc",      showUBC  ? calculateUBC(fd, w.ubc)           : null);
+    publicar("nicholas", showNich ? calculateNicholas(fd, w.nicholas) : null);
+    publicar("shb",      showSHB  ? calculateSHB(fd, w.shb)           : null);
     navigate("/statistics");
   };
 

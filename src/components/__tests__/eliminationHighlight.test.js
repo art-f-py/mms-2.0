@@ -25,6 +25,9 @@ const leia = (rel) => readFileSync(fileURLToPath(new URL(rel, import.meta.url)),
 
 const STATISTICS = leia("../../pages/Statistics.jsx");
 const MCDM_BLOCK = leia("../McdmBlock.jsx");
+// O retrato neutro é tirado no clique em Calcular, então metade da ligação
+// desta marcação mora no formulário, não na tela de resultados.
+const INPUTS     = leia("../../pages/Inputs.jsx");
 
 // O cartão de ranking dos blocos CLÁSSICOS — não o do MCDM, que é outro
 // componente e continua sem realce nenhum (ver mcdmNoBestHighlight.test.js).
@@ -39,19 +42,45 @@ describe("marca de eliminação no cartão de ranking clássico", () => {
     expect(CARTAO).toMatch(/eliminatingCriteriaFor\(neutralSheet, sm\.key, m\)/);
   });
 
-  it("a fonte é a aba SEM PESO, e não o resultado exibido", () => {
+  it("a fonte é o retrato SEM PESO, e não o breakdown do resultado", () => {
     // O bug que isto barra é o original: ler `result.breakdown`, que traz o
     // score já multiplicado pelo peso por critério do Complementar. Com um
     // slider fora de 1.00 o marcador −49/−50 vira outro número e o cartão para
     // de ficar vermelho, sem nenhum sinal na tela.
-    expect(STATISTICS).toMatch(/import \{ buildDecisionMatrix \} from "\.\.\/algorithms\/decisionMatrix"/);
-    expect(STATISTICS).toMatch(/const neutralSheet = useMemo\(/);
-    expect(STATISTICS).toMatch(/buildDecisionMatrix\(formData, \{ \[sm\.key\]: true \}\)/);
-    // A comparação NÃO volta a passar por `result`.
+    expect(STATISTICS).toMatch(/result\?\.neutralSheet/);
+    // A comparação NÃO volta a passar pelo breakdown.
     expect(CARTAO).not.toMatch(/eliminatingCriteriaFor\(result\b/);
   });
 
-  it("a aba sem peso é ADITIVA — o que a tela exibe continua vindo de `result`", () => {
+  it("o retrato vem CONGELADO do estado, e não é derivado nesta tela", () => {
+    // A janela que isto fecha: os scores exibidos vêm congelados do clique em
+    // Calcular, e o retrato era montado aqui contra o formData do MOMENTO. Bastava
+    // calcular, editar o formulário e voltar pelo botão do navegador para o
+    // cartão mostrar o score de um depósito com a borda vermelha de outro.
+    //
+    // Quem monta a matriz agora é handleCalculate (Inputs.jsx), no mesmo
+    // instante em que calcula o resultado. Esta tela só lê.
+    expect(STATISTICS).not.toMatch(/buildDecisionMatrix/);
+    expect(INPUTS).toMatch(/import \{ buildDecisionMatrix \} from "\.\.\/algorithms\/decisionMatrix"/);
+    expect(INPUTS).toMatch(/buildDecisionMatrix\(fd, \{ \[method\]: true \}\)/);
+    expect(INPUTS).toMatch(/neutralSheet: neutralSheetFor\(method\)/);
+  });
+
+  it("MethodBlock não precisa mais do formData", () => {
+    // Consequência do congelamento, e a prova de que ele é real: se a prop
+    // voltasse, seria porque alguém voltou a derivar o retrato ao vivo.
+    expect(STATISTICS).toMatch(/function MethodBlock\(\{ sm, result \}\)/);
+    expect(STATISTICS).not.toMatch(/<MethodBlock[\s\S]{0,160}formData=/);
+  });
+
+  it("retrato ausente avisa no console e não derruba o bloco", () => {
+    // Estado inesperado (resultado gravado por outro caminho) some com a
+    // marcação e mantém o resto do bloco correto — no padrão [MMS] do app.
+    expect(STATISTICS).toMatch(/console\.warn\(/);
+    expect(STATISTICS).toMatch(/\[MMS\] resultado de/);
+  });
+
+  it("o retrato é ADITIVO — o que a tela exibe continua vindo de `result`", () => {
     // Scores, ranking, barras e os dois radares. Se algum deles passasse a ler
     // `neutralSheet`, os pesos do Complementar deixariam de ter efeito visível
     // e os sliders da etapa complementar viravam decoração.
@@ -60,18 +89,28 @@ describe("marca de eliminação no cartão de ranking clássico", () => {
     expect(STATISTICS).toMatch(/Object\.entries\(result\.breakdown\)/); // radar de breakdown
     expect(STATISTICS).toMatch(/normalizeScores\(result\.scores\)/);    // radar normalizado
 
-    // `neutralSheet` aparece em duas linhas DE CÓDIGO: onde é criado e onde
-    // alimenta a marcação. Uma terceira é sinal de que vazou para a exibição.
+    // `neutralSheet` aparece em três linhas DE CÓDIGO nesta tela: a leitura do
+    // campo, o `return` do useMemo e a chamada da marcação. Uma quarta é sinal
+    // de que vazou para a exibição.
     //
     // As linhas de comentário são descartadas antes da contagem — o próprio
-    // cartão explica em prosa que lê `neutralSheet` e não `result`, e essa
-    // explicação não pode fazer a contagem passar do limite.
+    // cartão explica em prosa de onde o retrato vem, e essa explicação não pode
+    // fazer a contagem passar do limite.
     const linhasDeCodigo = STATISTICS.split("\n").filter((linha) => {
       const limpa = linha.trim();
       return !limpa.startsWith("//") && !limpa.startsWith("*") && !limpa.startsWith("/*");
     });
     const usos = linhasDeCodigo.filter((linha) => linha.includes("neutralSheet"));
-    expect(usos).toHaveLength(2);
+    expect(usos).toHaveLength(3);
+  });
+
+  it("handleCalculate mantém os campos que já gravava, e só ACRESCENTA o retrato", () => {
+    // O espalhamento do payload é o que garante que scores/ranking/breakdown
+    // continuam inteiros. Trocar por um objeto montado à mão perderia campos
+    // sem que nada reclamasse.
+    expect(INPUTS).toMatch(/\{ \.\.\.payload, neutralSheet: neutralSheetFor\(method\) \}/);
+    // Método desmarcado continua recebendo null, como sempre recebeu.
+    expect(INPUTS).toMatch(/payload === null \? null :/);
   });
 
   it("o marcador consultado é o do MÉTODO DE SELEÇÃO do bloco", () => {

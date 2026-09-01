@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next";
 import { useMms } from "../context/MmsContext";
 import { METHODS, METHOD_LABELS } from "../algorithms/ubcWeights";
 import { normalizeScores } from "../algorithms/algorithms";
-import { buildDecisionMatrix } from "../algorithms/decisionMatrix";
 import McdmBlock from "../components/McdmBlock";
 import Pill from "../components/Pill";
 import ScenarioComparison from "../components/ScenarioComparison";
@@ -48,40 +47,50 @@ const colors = {
 // ---------------------------------------------------------------------------
 // BLOCO DE RESULTADO (barra + ranking + radar) por método
 // ---------------------------------------------------------------------------
-function MethodBlock({ sm, result, formData }) {
+function MethodBlock({ sm, result }) {
   const { t } = useTranslation();
   const [selectedMethod, setSelectedMethod] = useState(null);
 
-  // ABA SEM PESO — FONTE **EXCLUSIVA** DA MARCAÇÃO DE ELIMINAÇÃO
+  // RETRATO NEUTRO — FONTE **EXCLUSIVA** DA MARCAÇÃO DE ELIMINAÇÃO
   //
-  // ADITIVA, e é importante que fique claro: NADA do que este bloco exibe passa
+  // ADITIVO, e é importante que fique claro: NADA do que este bloco exibe passa
   // por aqui. Os scores, o ranking, o gráfico de barras, o radar normalizado e
-  // o radar de breakdown continuam saindo de `result` — o `state.results` que
-  // o botão Calcular gravou, com os pesos do Complementar aplicados, como
-  // sempre saíram. Esta aba serve a UMA pergunta e só a ela: "a tabela do
-  // método elimina este método de lavra?".
+  // o radar de breakdown continuam saindo dos outros campos de `result`, com os
+  // pesos do Complementar aplicados, como sempre saíram. Este campo serve a UMA
+  // pergunta e só a ela: "a tabela do método elimina este método de lavra?".
   //
-  // POR QUE ELA PRECISA EXISTIR. O `result.breakdown` guarda o score já
+  // POR QUE ELE PRECISA EXISTIR. O `result.breakdown` guarda o score já
   // multiplicado pelo peso por critério, então o marcador −49/−50 deixava de
   // bater assim que alguém encostava num slider do Complementar, e o cartão
-  // parava de ser marcado sem nenhum sinal na tela. `buildDecisionMatrix` monta
-  // os mesmos scores com `neutralWeights()` — as duas camadas de ponderação em
-  // 1.00, por contrato declarado no cabeçalho de decisionMatrix.js —, que é
-  // exatamente o dado cru que a comparação precisa. Mesma técnica que
-  // scaleFloorCriteria.js usa na aba multicritério: trocar a FONTE em vez de
-  // tentar desfazer a multiplicação.
+  // parava de ser marcado sem nenhum sinal na tela. O retrato é a mesma matriz
+  // montada com `neutralWeights()` — ver o contrato no cabeçalho de
+  // decisionMatrix.js.
   //
-  // O `{ [sm.key]: true }` força a aba deste método independentemente do que
-  // está marcado em `formData.selectedMethods`: buildDecisionMatrix usa o
-  // objeto que recebe, não o do formulário. É o mesmo padrão de McdmBlock.
+  // VEM CONGELADO, E NÃO É MAIS DERIVADO AQUI. Este bloco chegou a montá-lo por
+  // useMemo contra o `formData` do momento, e isso abria uma janela: os scores
+  // ao lado vêm congelados do clique em Calcular, então calcular, voltar ao
+  // formulário, editar um campo e voltar pelo botão do navegador mostrava o
+  // score de um depósito com a borda vermelha de outro. Agora o retrato é
+  // tirado no MESMO instante que o resultado (ver handleCalculate em
+  // Inputs.jsx) e viaja dentro dele — os dois descrevem o mesmo formulário por
+  // construção, e não por coincidência de momento.
   //
-  // useMemo pelo mesmo motivo do `derived` de McdmBlock: sem ele, cada render
-  // deste bloco — um clique de cartão, um toggle de pill — remontaria a matriz
-  // inteira à toa. `formData` e `sm.key` são as duas únicas entradas.
-  const neutralSheet = useMemo(
-    () => buildDecisionMatrix(formData, { [sm.key]: true }).sheets.find((s) => s.key === sm.key) ?? null,
-    [formData, sm.key],
-  );
+  // AUSENTE NÃO DERRUBA A TELA. Um `result` sem o campo não deveria existir —
+  // quem grava resultado é handleCalculate, e ele sempre anexa o retrato —, mas
+  // se aparecer, a marcação some e o resto do bloco continua correto. Avisa no
+  // console com o prefixo [MMS] do resto do app, para não virar um mistério
+  // silencioso. Dentro do useMemo para avisar uma vez por resultado, e não a
+  // cada clique de cartão.
+  const neutralSheet = useMemo(() => {
+    const retrato = result?.neutralSheet ?? null;
+    if (!retrato) {
+      console.warn(
+        `[MMS] resultado de "${sm.key}" sem retrato neutro — a marcação de eliminação ` +
+        `não será exibida neste bloco. Recalcule para gravá-lo.`,
+      );
+    }
+    return retrato;
+  }, [result, sm.key]);
 
   const barData   = [...METHODS].map((m) => ({ method: m, score: result.scores[m] })).sort((a, b) => b.score - a.score);
   const normalized = normalizeScores(result.scores);
@@ -441,17 +450,11 @@ function Statistics() {
           voltar. Dentro da aba clássica nada mudou. */}
       {safeView === VIEWS.CLASSIC &&
         activeMethods.map((sm) => (
-          // `formData` entra por prop, como `result` já entrava — MethodBlock
-          // continua sendo alimentado de fora em vez de ir buscar o contexto
-          // sozinho. Ele NÃO substitui `result`: serve só à marcação de
-          // eliminação, que precisa dos scores sem os pesos do Complementar
-          // (ver o useMemo lá dentro).
-          <MethodBlock
-            key={sm.key}
-            sm={sm}
-            result={state.results[sm.key]}
-            formData={state.formData}
-          />
+          // Sem `formData`: o retrato neutro que a marcação de eliminação usa
+          // viaja DENTRO de `result`, congelado no clique em Calcular (ver
+          // handleCalculate em Inputs.jsx). MethodBlock voltou a depender de uma
+          // entrada só.
+          <MethodBlock key={sm.key} sm={sm} result={state.results[sm.key]} />
         ))}
 
       {safeView === VIEWS.MCDM && (
