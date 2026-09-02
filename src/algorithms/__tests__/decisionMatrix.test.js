@@ -4,10 +4,14 @@ import {
   applyExportOffset,
   sheetToAoa,
   neutralWeights,
+  extendSheetWithFixedCriteria,
+  extendMatrixWithFixedCriteria,
+  sheetCriteriaDirections,
   EXPORT_CRITERION_LABELS,
   EXPORT_ROW_HEADER,
   PRO_DM_SCORE_OFFSET,
 } from "../decisionMatrix";
+import { DIRECTION, FIXED_CRITERIA, fixedScore } from "../mcdmCriteria";
 import { calculateUBC, calculateNicholas } from "../algorithms";
 import { METHODS } from "../ubcWeights";
 
@@ -373,5 +377,111 @@ describe("sheetToAoa", () => {
     expect(aoa[10][0]).toBe("Square Set Stoping");
     // Toda linha tem a mesma largura do cabecalho.
     aoa.forEach((row) => expect(row).toHaveLength(sheet.columns.length + 1));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// EXTENSAO MCDM — CRITERIOS FIXOS COMO COLUNAS ADICIONAIS
+// ---------------------------------------------------------------------------
+// A decisao de arquitetura e acrescentar colunas as matrizes que os tres
+// metodos classicos ja geram, em vez de manter uma matriz MCDM em paralelo.
+// Os testes abaixo fixam que a extensao e ADITIVA: nada do que ja existia muda.
+
+describe("extendSheetWithFixedCriteria", () => {
+  const matrizBase = () => buildDecisionMatrix(FULL_SCENARIO, { ubc: true });
+
+  it("acrescenta as seis colunas fixas no fim, sem mexer nas existentes", () => {
+    const base      = sheetByKey(matrizBase(), "ubc");
+    const estendida = extendSheetWithFixedCriteria(base);
+
+    expect(estendida.columns).toHaveLength(base.columns.length + FIXED_CRITERIA.length);
+    expect(estendida.columns.slice(0, base.columns.length)).toEqual(base.columns);
+    expect(estendida.columns.slice(base.columns.length))
+      .toEqual(FIXED_CRITERIA.map((c) => c.label));
+    expect(estendida.criterionKeys.slice(base.criterionKeys.length))
+      .toEqual(FIXED_CRITERIA.map((c) => c.id));
+  });
+
+  it("preserva os scores classicos de cada linha intactos", () => {
+    const base      = sheetByKey(matrizBase(), "ubc");
+    const estendida = extendSheetWithFixedCriteria(base);
+
+    estendida.rows.forEach((row, r) => {
+      expect(row.values.slice(0, base.columns.length)).toEqual(base.rows[r].values);
+      expect(row.method).toBe(base.rows[r].method);
+      expect(row.code).toBe(base.rows[r].code);
+    });
+  });
+
+  it("casa cada metodo com a propria linha da tabela fixa", () => {
+    const estendida = extendSheetWithFixedCriteria(sheetByKey(matrizBase(), "ubc"));
+    const base      = sheetByKey(matrizBase(), "ubc");
+
+    estendida.rows.forEach((row) => {
+      FIXED_CRITERIA.forEach((criterion, j) => {
+        expect(row.values[base.columns.length + j]).toBe(fixedScore(criterion.id, row.code));
+      });
+    });
+  });
+
+  it("os valores fixos sao os mesmos em todas as abas — nao dependem do metodo de selecao", () => {
+    // Sao propriedades do metodo de LAVRA, nao do metodo de SELECAO.
+    const todas = extendMatrixWithFixedCriteria(buildDecisionMatrix(FULL_SCENARIO, ALL_METHODS));
+    const caudas = todas.sheets.map((sheet) =>
+      sheet.rows.map((row) => row.values.slice(-FIXED_CRITERIA.length)),
+    );
+    caudas.forEach((cauda) => expect(cauda).toEqual(caudas[0]));
+  });
+
+  it("e pura — a aba original nao muda", () => {
+    const base  = sheetByKey(matrizBase(), "ubc");
+    const copia = JSON.parse(JSON.stringify(base));
+    extendSheetWithFixedCriteria(base);
+    expect(base).toEqual(copia);
+  });
+
+  it("nao altera o caminho de exportacao existente", () => {
+    // buildDecisionMatrix continua devolvendo exatamente as colunas de antes;
+    // a extensao e um passo separado que ninguem no app chama ainda.
+    const semExtensao = buildDecisionMatrix(FULL_SCENARIO, ALL_METHODS);
+    semExtensao.sheets.forEach((sheet) => {
+      sheet.criterionKeys.forEach((key) => {
+        expect(FIXED_CRITERIA.map((c) => c.id)).not.toContain(key);
+      });
+    });
+  });
+});
+
+describe("sheetCriteriaDirections", () => {
+  it("marca todo criterio classico como de maximizar", () => {
+    const base = sheetByKey(buildDecisionMatrix(FULL_SCENARIO, { ubc: true }), "ubc");
+    sheetCriteriaDirections(base).forEach((c) => {
+      expect(c.direction).toBe(DIRECTION.MAX);
+    });
+  });
+
+  it("traz a direcao declarada de cada criterio fixo", () => {
+    const estendida = extendSheetWithFixedCriteria(
+      sheetByKey(buildDecisionMatrix(FULL_SCENARIO, { ubc: true }), "ubc"),
+    );
+    const porId = Object.fromEntries(
+      sheetCriteriaDirections(estendida).map((c) => [c.id, c.direction]),
+    );
+
+    expect(porId.capitalInvestment).toBe(DIRECTION.MIN);
+    expect(porId.comparativeCosts).toBe(DIRECTION.MIN);
+    expect(porId.dilution).toBe(DIRECTION.MIN);
+    expect(porId.performance).toBe(DIRECTION.MAX);
+    expect(porId.productivity).toBe(DIRECTION.MAX);
+    expect(porId.recovery).toBe(DIRECTION.MAX);
+  });
+
+  it("devolve uma direcao por coluna, na ordem das colunas", () => {
+    const estendida = extendSheetWithFixedCriteria(
+      sheetByKey(buildDecisionMatrix(FULL_SCENARIO, { ubc: true }), "ubc"),
+    );
+    const direcoes = sheetCriteriaDirections(estendida);
+    expect(direcoes).toHaveLength(estendida.columns.length);
+    expect(direcoes.map((d) => d.id)).toEqual(estendida.criterionKeys);
   });
 });

@@ -104,3 +104,55 @@ describe("paridade entre os arquivos de locale", () => {
     expect(broken).toEqual([]);
   });
 });
+
+// ---------------------------------------------------------------------------
+// OS SEIS CRITÉRIOS DO FRANCISCO — ESTRUTURA PRONTA, TEXTO PENDENTE
+// ---------------------------------------------------------------------------
+// O ⓘ de cada um dos seis critérios fixos no cabeçalho da matriz já está na
+// tela; o texto conceitual ainda não foi escrito. Estes testes guardam as duas
+// pontas: que a estrutura existe nos quatro idiomas (para o texto real ser só
+// uma edição de string, sem tocar em código) e que o que está lá HOJE é
+// visivelmente um placeholder — para ninguém confundir com conteúdo revisado.
+
+const IDS_FIXOS = [
+  "performance", "productivity", "recovery", "dilution",
+  "capitalInvestment", "comparativeCosts",
+];
+
+describe("hints dos critérios fixos", () => {
+  it.each(ALL)("%s tem um hint para cada um dos seis critérios", (code) => {
+    const hints = LOCALES[code].results.mcdm.fixedCriteriaHints;
+    expect(Object.keys(hints).sort()).toEqual([...IDS_FIXOS].sort());
+  });
+
+  it.each(ALL)("%s tem um rótulo para cada hint — os dois conjuntos batem", (code) => {
+    // O ⓘ só faz sentido ao lado de um rótulo. Um hint órfão (ou um rótulo sem
+    // hint) seria uma coluna explicada pela metade.
+    const mcdm = LOCALES[code].results.mcdm;
+    expect(Object.keys(mcdm.fixedCriteriaHints).sort())
+      .toEqual(Object.keys(mcdm.fixedCriteria).sort());
+  });
+
+  it.each(ALL)("%s ainda traz o placeholder, e não texto conceitual inventado", (code) => {
+    // ESTE TESTE DEVE FALHAR quando o texto real chegar — é o lembrete de que a
+    // troca é intencional. Quem escrever a descrição de verdade apaga este caso
+    // (ou o inverte), e isso é a confirmação de que passou por aqui de propósito.
+    const hints = LOCALES[code].results.mcdm.fixedCriteriaHints;
+    for (const id of IDS_FIXOS) {
+      expect(hints[id]).toMatch(/pendente/i);
+    }
+  });
+
+  it.each(ALL)("%s identifica a origem dos seis no cabeçalho da matriz", (code) => {
+    const origem = LOCALES[code].results.mcdm.matrixOrigin;
+    expect(Object.keys(origem).sort()).toEqual(["classic", "classicHint", "fixed", "fixedHint"]);
+    for (const v of Object.values(origem)) expect(v.trim().length).toBeGreaterThan(0);
+  });
+
+  it.each(ALL)("%s tem o rótulo da sub-aba de pesos", (code) => {
+    // A sub-navegação da aba multicritério: cenários já existia, pesos entrou.
+    const tabs = LOCALES[code].results.mcdm.tabs;
+    expect(tabs.weights.trim().length).toBeGreaterThan(0);
+    expect(tabs.scenarios.trim().length).toBeGreaterThan(0);
+  });
+});

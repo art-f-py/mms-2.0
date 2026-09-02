@@ -20,6 +20,25 @@
   --color-danger:     #b91c1c;
   --color-danger-50:  #fef2f2;
 
+  /* Cores dos quatro grupos de critérios do Enfoque (MCDM).
+
+     Tokens PRÓPRIOS, e não variações da primária. A primeira versão do bloco
+     MCDM usava --color-primary em quatro opacidades, para não introduzir
+     paleta nova; na prática os quatro grupos precisam ser distinguíveis à
+     primeira vista em três lugares ao mesmo tempo (segmento da barra de
+     proporção, quadradinho do slider e borda da linha na matriz de decisão), e
+     quatro intensidades do mesmo azul não sustentam essa leitura — sobretudo
+     quando um peso cai perto de zero e o segmento fica fino. Decisão explícita
+     do usuário: matizes distintos.
+
+     São quatro MATIZES diferentes, não quatro passos de uma escala: os grupos
+     são categorias sem ordem entre si, e uma escala sequencial sugeriria uma
+     hierarquia que não existe. */
+  --color-mcdm-geometry:     #3B7A9E;
+  --color-mcdm-geomechanics: #7A5C99;
+  --color-mcdm-technical:    #C98A3B;
+  --color-mcdm-economic:     #B25353;
+
   /* Aliases legados usados por modais e ações flutuantes.
      Nota: --bg era #ffffff (fundo de input) e --bg-card era #f8fafc (cartão),
      portanto mapeiam de forma cruzada para preservar a aparência original. */
@@ -62,6 +81,85 @@ input[type="range"] {
 }
 
 /* -------------------------------------------------------------------------
+   SLIDER DE PESO DO ENFOQUE — TRILHO PRÓPRIO, SEM accent-color
+
+   Existe porque `accent-color` não colore só o preenchimento: o Chromium
+   DERIVA dela a cor do trecho não preenchido, e acima de ~0.25 de luminância
+   escurece esse trecho para quase preto. Dos quatro tokens de grupo, só
+   --color-mcdm-technical (#C98A3B, luminância 0.309) cruza esse limiar — daí
+   um slider preto entre quatro corretos, com o quadradinho de cor ao lado
+   certo, já que ele nunca dependeu da heurística. O raciocínio completo, e por
+   que não escurecemos o token, está em src/utils/sliderTrack.js.
+
+   As duas variáveis vêm de lá, por estilo inline no elemento:
+     --mms-slider-fill  cor do grupo
+     --mms-slider-pct   até onde vai o preenchimento
+
+   Pseudo-elemento não é alcançável por estilo inline, por isso a cor viaja em
+   custom property em vez de ir direto no background.
+
+   `appearance: none` desliga o desenho nativo — e com ele o foco visível, que
+   volta explicitamente mais abaixo. A altura de toque de 44px continua vindo da
+   regra acima; o trilho fino é o pseudo-elemento, não o elemento.
+   ------------------------------------------------------------------------- */
+.mms-weight-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+}
+
+/* O gradiente de duas paradas é o preenchimento: cor do grupo até --mms-slider-pct,
+   cinza de trilho daí em diante. Sem transição entre as duas — é uma fronteira,
+   não um degradê. */
+.mms-weight-slider::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(
+    to right,
+    var(--mms-slider-fill) 0 var(--mms-slider-pct),
+    var(--color-border) var(--mms-slider-pct) 100%
+  );
+}
+
+.mms-weight-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--mms-slider-fill);
+  /* Centra a bolinha de 14px sobre o trilho de 4px: (14 - 4) / 2. */
+  margin-top: -5px;
+}
+
+/* O Firefox preenche sozinho com ::-moz-range-progress, então lá o gradiente
+   não é necessário — e nem funcionaria, porque o track dele é só o fundo. */
+.mms-weight-slider::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--color-border);
+}
+.mms-weight-slider::-moz-range-progress {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--mms-slider-fill);
+}
+.mms-weight-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: none;
+  border-radius: 50%;
+  background: var(--mms-slider-fill);
+}
+
+/* Reposto à mão: `appearance: none` levou junto o anel de foco nativo, e sem
+   ele o slider fica inalcançável por teclado na prática. */
+.mms-weight-slider:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* -------------------------------------------------------------------------
    RESPONSIVIDADE — regras que dependem de mudança estrutural de layout
    (grid de N colunas -> 1 coluna, ocultar rótulos). Ajustes puramente de
    tamanho (fontes, imagens, paddings) ficam em clamp() inline nos componentes.
@@ -76,6 +174,26 @@ input[type="range"] {
   .mms-grid2 {
     grid-template-columns: 1fr;
     gap: 16px;
+  }
+}
+
+/* Bloco MCDM com a matriz de decisão aberta: painel de pesos vira uma coluna
+   estreita à esquerda e a matriz ocupa o resto. É o MESMO painel de pesos do
+   estado fechado, só reposicionado — não há um segundo conjunto de sliders.
+
+   O minmax(0, 1fr) da coluna da direita não é decorativo: sem ele a coluna
+   assume min-width auto (a largura do conteúdo), a tabela de 19 colunas empurra
+   o grid inteiro e o overflow-x do contêiner da tabela nunca chega a agir — a
+   rolagem horizontal vaza para a página. */
+.mms-mcdm-split {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+@media (max-width: 640px) {
+  .mms-mcdm-split {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -94,4 +212,28 @@ input[type="range"] {
     color: var(--color-primary);
     text-align: center;
   }
+}
+
+/* ---------------------------------------------------------------------------
+   RÓTULO SÓ PARA LEITOR DE TELA
+   ---------------------------------------------------------------------------
+   Tira o elemento da tela SEM tirá-lo da árvore de acessibilidade. É a
+   diferença para `display:none` e `visibility:hidden`, que o removem dos dois
+   — e o ponto aqui é justamente o contrário: o <legend> do seletor de método
+   precisa existir para quem navega por leitor de tela e não precisa aparecer,
+   porque o título do bloco logo acima já diz a mesma coisa visualmente.
+
+   O clip de 1px é a receita conhecida (a mesma do .sr-only do Bootstrap): não
+   usa `text-indent` negativo, que quebra em RTL, nem posiciona fora da tela com
+   `left:-9999px`, que alguns navegadores incluem no cálculo de rolagem. */
+.mms-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }

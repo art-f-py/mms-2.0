@@ -10,7 +10,11 @@ import {
   calculateUBC, calculateNicholas, calculateSHB,
   classifyRSS, classifyRSSNicholas,
 } from "../algorithms/algorithms";
-import { downloadDecisionMatrix } from "../utils/downloadDecisionMatrix";
+import { buildDecisionMatrix } from "../algorithms/decisionMatrix";
+// Import comentado junto com o botão de exportar matriz (ver o bloco no Step 4,
+// perto do fim deste arquivo). A FUNÇÃO CONTINUA EXISTINDO E TESTADA em
+// utils/downloadDecisionMatrix.js — o que saiu é só o gatilho na tela.
+// import { downloadDecisionMatrix } from "../utils/downloadDecisionMatrix";
 import DepositSketch from "./DepositSketch";
 import RockTooltip  from "../components/RockTooltip";
 import { rmrToClass, gsiToRmr, qToRmr } from "../data/rmrData";
@@ -570,14 +574,19 @@ function Inputs() {
   // -------------------------------------------------------------------------
   // VALIDAÇÃO POR ETAPA
   // -------------------------------------------------------------------------
-  // Etapas visíveis, na ordem: EESG só existe com SH&B, complementar só com
-  // algum método marcado. O conteúdo de cada uma é ligado pela chave mais
-  // abaixo (os blocos precisam de `invalid`, que depende deste plano).
+  // Etapas visíveis, na ordem: a complementar só existe com algum método
+  // marcado. O conteúdo de cada uma é ligado pela chave mais abaixo (os blocos
+  // precisam de `invalid`, que depende deste plano).
+  //
+  // A ETAPA EESG SAIU DAQUI. Ela existia com `show: showSHB` e tinha um campo
+  // só, o valor do minério, que agora abre a etapa complementar. Sem ele a
+  // etapa não teria conteúdo nenhum — um passo do stepper que só pede um
+  // "Avançar" —, então o mecanismo do `show` não bastava: o que sai não é a
+  // condição, é a etapa. Ver STEPS em data/formRules.js.
   const stepPlan = [
     { key: STEPS.METHODS,       label: t("stepper.methods"),       show: true },
     { key: STEPS.GEOMETRY,      label: t("stepper.geometry"),      show: true },
     { key: STEPS.GEOTECHNICAL,  label: t("stepper.geotechnical"),  show: true },
-    { key: STEPS.EESG,          label: t("stepper.eesg"),          show: showSHB },
     { key: STEPS.COMPLEMENTARY, label: t("stepper.complementary"), show: anyMethod },
     { key: STEPS.REVIEW,        label: t("stepper.review"),        show: true },
   ].filter((s) => s.show).map((s, i) => ({ ...s, id: i + 1 }));
@@ -656,12 +665,47 @@ function Inputs() {
       return;
     }
     const w = fd.criteriaWeights;
-    if (showUBC)  dispatch({ type: "SET_RESULT", method: "ubc",      payload: calculateUBC(fd, w.ubc) });
-    else          dispatch({ type: "SET_RESULT", method: "ubc",      payload: null });
-    if (showNich) dispatch({ type: "SET_RESULT", method: "nicholas", payload: calculateNicholas(fd, w.nicholas) });
-    else          dispatch({ type: "SET_RESULT", method: "nicholas", payload: null });
-    if (showSHB)  dispatch({ type: "SET_RESULT", method: "shb",      payload: calculateSHB(fd, w.shb) });
-    else          dispatch({ type: "SET_RESULT", method: "shb",      payload: null });
+
+    // RETRATO NEUTRO — a matriz sem NENHUM peso do usuário, tirada AGORA.
+    //
+    // Serve a uma coisa só: a marcação de eliminação dos cartões de ranking em
+    // /statistics, que precisa comparar o score contra o marcador da publicação
+    // (−49/−50) e por isso não pode ler o valor já multiplicado pelos pesos da
+    // etapa complementar. `buildDecisionMatrix` monta exatamente isso, com
+    // `neutralWeights()` — ver o contrato no cabeçalho de decisionMatrix.js.
+    //
+    // POR QUE AQUI, E NÃO NA TELA. Ela era derivada em /statistics, ao vivo,
+    // contra o formData do momento — enquanto os scores exibidos vinham
+    // congelados deste clique. Bastava calcular, voltar para o formulário,
+    // editar um campo e voltar pelo botão do navegador para a tela mostrar o
+    // score de um depósito e a borda vermelha de outro. Tirado no mesmo
+    // instante que o resultado, o retrato descreve o MESMO formulário que os
+    // scores ao lado dele, por construção: não há janela entre os dois porque
+    // não há dois momentos.
+    const neutralSheetFor = (method) =>
+      buildDecisionMatrix(fd, { [method]: true }).sheets.find((s) => s.key === method) ?? null;
+
+    // O retrato viaja DENTRO do resultado, e não num bucket irmão, porque tem
+    // exatamente o mesmo ciclo de vida dele: nasce neste clique, para este
+    // método, e morre com ele. É o mesmo critério que pôs `mcdmScenarios` na
+    // raiz do estado — lá o ciclo de vida era PRÓPRIO (uma lista que sobrevive
+    // a cada recálculo), aqui é o mesmo, e o mesmo critério dá a resposta
+    // oposta. De quebra, CLEAR_RESULTS e RESET_ALL já limpam o slot inteiro do
+    // método: não existe resíduo órfão a sincronizar, porque não existe segundo
+    // lugar onde guardar.
+    //
+    // Método desmarcado continua recebendo `null`, como sempre recebeu — e sem
+    // pagar por um retrato que ninguém leria.
+    const publicar = (method, payload) =>
+      dispatch({
+        type: "SET_RESULT",
+        method,
+        payload: payload === null ? null : { ...payload, neutralSheet: neutralSheetFor(method) },
+      });
+
+    publicar("ubc",      showUBC  ? calculateUBC(fd, w.ubc)           : null);
+    publicar("nicholas", showNich ? calculateNicholas(fd, w.nicholas) : null);
+    publicar("shb",      showSHB  ? calculateSHB(fd, w.shb)           : null);
     navigate("/statistics");
   };
 
@@ -933,25 +977,6 @@ function Inputs() {
   );
 
   // ---------------------------------------------------------------------------
-  // ETAPA — EESG (Economic Environmental Social Governance)
-  // ---------------------------------------------------------------------------
-  const StepEESG = showSHB ? (
-    <div style={S.card}>
-      <SecTitle>{t("inputs.eesg.title")}</SecTitle>
-      <p style={{ ...S.hint, marginBottom: "20px" }}>
-        {t("inputs.eesg.subtitle")}
-      </p>
-      <Field label={t("inputs.eesg.oreValue")} tip={<Tip id="oreValue" />} invalid={invalid("oreValue")}>
-        <div style={{ maxWidth: "280px" }}>
-          <Sel value={fd.oreValue} onChange={(v) => set("oreValue", null, v)}
-            options={["Baixo", "Médio", "Alto"]} labels={oreValueLabels}
-            invalid={invalid("oreValue")} />
-        </div>
-      </Field>
-    </div>
-  ) : null;
-
-  // ---------------------------------------------------------------------------
   // ETAPA — COMPLEMENTAR
   // ---------------------------------------------------------------------------
   const cw = fd.criteriaWeights;
@@ -970,6 +995,39 @@ function Inputs() {
         {t("inputs.complementary.subtitle")}
         <Tip id="weights" />
       </p>
+
+      {/* VALOR DO MINÉRIO — o único CAMPO DE DADO desta etapa, e por isso ele
+          vem ANTES dos blocos de peso. Era a etapa EESG inteira (ver o stepPlan
+          acima); a etapa saiu, o campo veio para cá.
+
+          A ORDEM NÃO É ARBITRÁRIA: tudo o que vem abaixo são multiplicadores
+          com valor padrão, que a pessoa pode simplesmente não tocar. Este é
+          um dado do depósito, obrigatório com o SH&B marcado, e é o único
+          controle desta etapa que trava o avanço — enterrá-lo depois de três
+          acordeões de slider faria o botão bloquear por um campo fora da vista.
+
+          Os textos são os MESMOS de antes (inputs.eesg.*): o campo continua
+          sendo o critério EESG do SH&B, e renomeá-lo ao mudar de etapa só
+          confundiria quem já conhece a tela. O agrupamento de Enfoque dele
+          (Economia) não foi tocado — ver classicCriteria.js. */}
+      {showSHB && (
+        <div style={{ marginBottom: "22px" }}>
+          <p style={{ fontSize: "15px", fontWeight: "700", color: C.text, margin: "0 0 6px" }}>
+            {t("inputs.eesg.title")}
+          </p>
+          <p style={{ ...S.hint, marginTop: 0, marginBottom: "14px" }}>
+            {t("inputs.eesg.subtitle")}
+          </p>
+          <Field label={t("inputs.eesg.oreValue")} tip={<Tip id="oreValue" />} invalid={invalid("oreValue")}>
+            <div style={{ maxWidth: "280px" }}>
+              <Sel value={fd.oreValue} onChange={(v) => set("oreValue", null, v)}
+                options={["Baixo", "Médio", "Alto"]} labels={oreValueLabels}
+                invalid={invalid("oreValue")} />
+            </div>
+          </Field>
+          <div style={S.div} />
+        </div>
+      )}
 
       {showUBC && (
         <Collapsible title="UBC 1995" open={openBlocks.ubc} onToggle={() => toggleBlock("ubc")}>
@@ -1108,21 +1166,35 @@ function Inputs() {
         </Collapsible>
       )}
 
-      {/* Exportação da matriz de decisão BRUTA para MCDM externo (Pro D.M.).
-          Cálculo paralelo com pesos neutros: ignora tanto os sliders acima
-          quanto os multiplicadores de domínio do Nicholas, e não mexe no
-          estado — ver algorithms/decisionMatrix.js. */}
-      <div style={{ marginTop: "24px", paddingTop: "20px", borderTop: `1px solid ${C.border}` }}>
-        <button
-          style={{ ...S.btnGhost, opacity: anyMethod ? 1 : 0.5, cursor: anyMethod ? "pointer" : "not-allowed" }}
-          disabled={!anyMethod}
-          onClick={() => { downloadDecisionMatrix(fd, sm).catch((err) => console.error("[MMS] falha ao exportar a matriz de decisão:", err)); }}>
-          {t("inputs.complementary.exportMatrix")}
-        </button>
-        <p style={{ ...S.hint, marginTop: "10px", marginBottom: 0 }}>
-          {t("inputs.complementary.exportMatrixHint")}
-        </p>
-      </div>
+      {/* !!! EXPORTAÇÃO DA MATRIZ — BOTÃO OCULTO NESTA FASE, TAREFA FUTURA !!!
+          ---------------------------------------------------------------------
+          O botão que chamava downloadDecisionMatrix saiu da tela. NADA MAIS SAIU:
+          `downloadDecisionMatrix` (utils/downloadDecisionMatrix.js) continua
+          exportada e testada, e `buildDecisionMatrix` (algorithms/decisionMatrix.js)
+          NÃO foi tocada — ela é carga viva do MCDM, e não só deste botão: o
+          pipeline a chama a cada render da aba multicritério, via mcdmRanking.js.
+          Apagar qualquer uma das duas derrubaria o ranking da tela de resultados.
+
+          PARA REATIVAR: descomente o bloco abaixo E o import de
+          `downloadDecisionMatrix` no topo deste arquivo (o lint recusa import
+          sem uso, então os dois têm de andar juntos). Nada mais: `anyMethod`,
+          que a condição de habilitação usa, segue vivo por causa do stepper. As
+          duas chaves de i18n
+          (inputs.complementary.exportMatrix / exportMatrixHint) também ficaram
+          nos quatro idiomas, intactas.
+
+          <div style={{ marginTop: "24px", paddingTop: "20px", borderTop: `1px solid ${C.border}` }}>
+            <button
+              style={{ ...S.btnGhost, opacity: anyMethod ? 1 : 0.5, cursor: anyMethod ? "pointer" : "not-allowed" }}
+              disabled={!anyMethod}
+              onClick={() => { downloadDecisionMatrix(fd, sm).catch((err) => console.error("[MMS] falha ao exportar a matriz de decisão:", err)); }}>
+              {t("inputs.complementary.exportMatrix")}
+            </button>
+            <p style={{ ...S.hint, marginTop: "10px", marginBottom: 0 }}>
+              {t("inputs.complementary.exportMatrixHint")}
+            </p>
+          </div>
+      */}
     </div>
   ) : null;
 
@@ -1195,7 +1267,6 @@ function Inputs() {
     [STEPS.METHODS]:       Step1,
     [STEPS.GEOMETRY]:      Step2,
     [STEPS.GEOTECHNICAL]:  Step3,
-    [STEPS.EESG]:          StepEESG,
     [STEPS.COMPLEMENTARY]: Step4,
     [STEPS.REVIEW]:        StepReview,
   };

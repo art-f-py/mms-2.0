@@ -1,4 +1,5 @@
 import { METHODS } from "./ubcWeights";
+import { DIRECTION, FIXED_CRITERIA, fixedScore } from "./mcdmCriteria";
 import { calculateUBC, calculateNicholas, calculateSHB } from "./algorithms";
 
 // ---------------------------------------------------------------------------
@@ -195,4 +196,63 @@ export function sheetToAoa(sheet) {
     [EXPORT_ROW_HEADER, ...sheet.columns],
     ...sheet.rows.map((row) => [row.method, ...row.values]),
   ];
+}
+
+// ---------------------------------------------------------------------------
+// EXTENSÃO MCDM — CRITÉRIOS FIXOS COMO COLUNAS ADICIONAIS
+// ---------------------------------------------------------------------------
+// Os critérios fixos do Francisco entram como COLUNAS a mais nas matrizes que
+// os três métodos clássicos já produzem — não como uma matriz MCDM separada.
+// Uma alternativa (método de lavra) descrita numa única linha é o que permite
+// ao TOPSIS comparar critérios de depósito e critérios de método na mesma
+// conta; duas matrizes paralelas exigiriam recombiná-las depois, e a
+// recombinação é onde a ordem das linhas costuma se perder.
+//
+// Passo separado e aditivo, na mesma linha de applyExportOffset: quem chama
+// buildDecisionMatrix continua recebendo exatamente as colunas de antes. Nada
+// no app chama isto ainda — a ligação com a exportação .xlsx e com a UI é a
+// próxima tarefa.
+
+/**
+ * Acrescenta as colunas dos critérios fixos a uma aba.
+ *
+ * Puro: devolve uma aba nova, não mexe na recebida. As colunas entram no fim,
+ * depois dos critérios do método clássico, na ordem de FIXED_CRITERIA.
+ */
+export function extendSheetWithFixedCriteria(sheet) {
+  return {
+    ...sheet,
+    columns:       [...sheet.columns,       ...FIXED_CRITERIA.map((c) => c.label)],
+    criterionKeys: [...sheet.criterionKeys, ...FIXED_CRITERIA.map((c) => c.id)],
+    rows: sheet.rows.map((row) => ({
+      ...row,
+      values: [...row.values, ...FIXED_CRITERIA.map((c) => fixedScore(c.id, row.code))],
+    })),
+  };
+}
+
+/**
+ * Mesma extensão, aplicada a todas as abas da matriz.
+ *
+ * @param {{sheets: Array, unmappedKeys: string[]}} matrix saída de buildDecisionMatrix
+ */
+export function extendMatrixWithFixedCriteria(matrix) {
+  return { ...matrix, sheets: matrix.sheets.map(extendSheetWithFixedCriteria) };
+}
+
+/**
+ * Direção de otimização de cada coluna de uma aba estendida.
+ *
+ * Os critérios clássicos são todos de maximizar — o score das tabelas já é
+ * "quão adequado é este método", então maior é sempre melhor. Os fixos trazem a
+ * própria direção, e três deles são de minimizar.
+ *
+ * É este array que o TOPSIS consome; sem ele o motor não tem como saber que
+ * custo alto é ruim e recuperação alta é boa.
+ */
+export function sheetCriteriaDirections(sheet) {
+  return sheet.criterionKeys.map((key) => {
+    const fixed = FIXED_CRITERIA.find((c) => c.id === key);
+    return { id: key, direction: fixed ? fixed.direction : DIRECTION.MAX };
+  });
 }

@@ -27,7 +27,6 @@
     "methods": "Métodos",
     "geometry": "Geometria",
     "geotechnical": "Geotécnica",
-    "eesg": "EESG",
     "complementary": "Complementar",
     "review": "Revisar"
   },
@@ -39,7 +38,7 @@
   },
   "inputs": {
     "pageTitle": "Parâmetros do Depósito",
-    "pageSubtitle": "MMS 2.0 — Mining Method Selection",
+    "pageSubtitle": "MMS 2.0 — Mining Method Selection Tool",
     "methods": {
       "title": "Selecione os métodos de seleção",
       "subtitle": "O formulário se ajustará automaticamente aos campos necessários.",
@@ -150,7 +149,7 @@
   },
   "results": {
     "title": "Resultados",
-    "subtitle": "MMS 2.0 — Mining Method Selection",
+    "subtitle": "MMS 2.0 — Mining Method Selection Tool",
     "noResult": "Nenhum resultado calculado ainda.",
     "goToInputs": "Ir para Inputs",
     "activateOne": "Ative pelo menos um método para visualizar os resultados.",
@@ -158,6 +157,7 @@
     "radarNormalized": "Radar (normalizado)",
     "breakdown": "Breakdown — {{method}}",
     "ranking": "Ranking",
+    "eliminatedBy": "Eliminado por: {{criteria}}",
     "rank": "{{n}}º",
     "backToInputs": "← Voltar para Inputs",
     "criteria": {
@@ -179,6 +179,85 @@
       "jointCondition_ob": "Cond. Interfraturas — Ore",
       "jointCondition_hw": "Cond. Interfraturas — HW",
       "jointCondition_fw": "Cond. Interfraturas — FW"
+    },
+    "mcdm": {
+      "_comment": "Bloco de origem dos textos do MCDM. Os mesmos textos estao em en/es/fr AINDA EM PORTUGUES, como placeholder consciente desta fase — nao e traducao esquecida. Quando a traducao real chegar, e daqui que ela parte. Chaves iniciadas por '_' sao metadados e ficam fora da checagem de paridade (ver i18n/__tests__/locales.test.js).",
+      "title": "Enfoque + TOPSIS",
+      "subtitle": "Ranking multicritério sobre a matriz de decisão do método de seleção em foco: os critérios clássicos dele + 6 critérios fixos, ponderados por grupo.",
+      "methodSelector": "Método de seleção usado no multicritério",
+      "weightsTitle": "Pesos por grupo",
+      "weightsHint": "Os quatro pesos somam 1. Ajustar um redistribui os outros três conforme o modo de redistribuição escolhido.",
+      "proportionTitle": "Proporção",
+      "closenessHint": "Proximidade relativa à solução ideal, de 0 a 1 — quanto maior, melhor.",
+      "unavailable": "Ranking multicritério indisponível para os dados atuais.",
+      "floorScore": "Pontuação mínima em: {{criteria}}.",
+      "pendingTitle": "Ainda fora do multicritério",
+      "pendingReason": "As tabelas destes métodos contêm valores que a escala de Saaty ainda não cobre. A regra de conversão está pendente de definição.",
+      "tabs": {
+        "classic": "Resultados clássicos",
+        "mcdm": "Decisão multicritério",
+        "scenarios": "Comparar cenários",
+        "weights": "Pesos e ranking"
+      },
+      "modes": {
+        "enfoque": "Enfoque",
+        "entropy": "Entropy",
+        "entropyState": "Em Entropy os pesos não são ajustáveis.",
+        "entropyHint": "Em Entropy os pesos não são ajustáveis: cada critério recebe um peso calculado a partir da dispersão dos próprios dados — critério em que os dez métodos pontuam quase igual pesa menos, critério que os separa pesa mais. Os valores resultantes aparecem na linha de peso do cabeçalho de cada coluna da matriz de decisão."
+      },
+      "rebalance": {
+        "legend": "Como os outros pesos são redistribuídos",
+        "proportional": "Proporcional",
+        "equalize": "Igualar",
+        "proportionalHint": "Ao mudar um peso, os outros três mantêm a proporção que tinham entre si e absorvem a diferença na medida de cada um.",
+        "equalizeHint": "Ao mudar um peso, os outros três ficam iguais entre si, dividindo o que sobra em partes idênticas — a repartição anterior entre eles é descartada."
+      },
+      "info": "Detalhes",
+      "scenarios": {
+        "title": "Comparar cenários",
+        "subtitle": "Cada cenário guarda uma repartição de pesos com nome. O ranking de cada um é recalculado com os dados atuais do formulário.",
+        "save": "Salvar cenário atual",
+        "namePlaceholder": "Nome do cenário",
+        "emptyTitle": "Nenhum cenário salvo",
+        "empty": "Ajuste os pesos por grupo na aba de decisão multicritério e use \"Salvar cenário atual\" para guardar aquela repartição com um nome. Cada cenário salvo vira uma coluna aqui.",
+        "hint": "A cor vai do verde (melhor colocação) ao vermelho (pior). As linhas seguem a ordem canônica dos métodos, e não a colocação: assim uma linha não muda de lugar quando você salva ou remove um cenário.",
+        "remove": "Remover o cenário {{name}}"
+      },
+      "matrix": {
+        "title": "Ver matriz de decisão",
+        "method": "Método",
+        "weight": "Peso",
+        "hint": "O peso muda ao vivo conforme os sliders. Os valores das células não — eles vêm das tabelas do método de seleção em foco e dos critérios fixos, e só mudam se o formulário mudar."
+      },
+      "fixedCriteria": {
+        "performance": "Desempenho",
+        "productivity": "Produtividade",
+        "recovery": "Recuperação",
+        "dilution": "Diluição",
+        "capitalInvestment": "Investimento de capital",
+        "comparativeCosts": "Custos comparativos"
+      },
+      "_commentFixedCriteriaHints": "PLACEHOLDER CONSCIENTE: a descricao conceitual de cada um dos seis criterios do Francisco ainda nao foi escrita. Cada chave abaixo e um ponto de edicao de STRING — a estrutura (o InfoTip por criterio no cabecalho da matriz) ja esta pronta e nao muda quando o texto real chegar.",
+      "fixedCriteriaHints": {
+        "performance": "[Descrição conceitual pendente — a confirmar]",
+        "productivity": "[Descrição conceitual pendente — a confirmar]",
+        "recovery": "[Descrição conceitual pendente — a confirmar]",
+        "dilution": "[Descrição conceitual pendente — a confirmar]",
+        "capitalInvestment": "[Descrição conceitual pendente — a confirmar]",
+        "comparativeCosts": "[Descrição conceitual pendente — a confirmar]"
+      },
+      "matrixOrigin": {
+        "classic": "Critérios do método",
+        "classicHint": "As colunas que o próprio método de seleção pontua, a partir do que foi preenchido no formulário. Mudam de um método para o outro.",
+        "fixed": "Critérios adicionais",
+        "fixedHint": "Seis critérios que descrevem o método de lavra em si — não o depósito — e por isso valem igual em qualquer método de seleção. Vêm da metodologia do Francisco (Pro D.M.) e entram na matriz depois das colunas clássicas."
+      },
+      "groups": {
+        "geometry": "Geometria",
+        "geomechanics": "Geomecânica",
+        "technical": "Técnico-Operacional",
+        "economic": "Economia"
+      }
     }
   },
   "deposit": {
