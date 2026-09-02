@@ -236,3 +236,28 @@ describe("direção não entra no cálculo", () => {
     expect(comDirecao).toEqual(sem);
   });
 });
+
+// ---------------------------------------------------------------------------
+// PARIDADE COM O MOTOR DE REFERENCIA DO FRANCISCO
+// ---------------------------------------------------------------------------
+// Mesma matriz do caso de referencia do TOPSIS, portada do R original. Os pesos
+// esperados sao o resultado do outro motor, transcrito — nao recalculados aqui.
+const REFERENCIA_FRANCISCO = aba(
+  [250, 16, 12],
+  [200, 16,  8],
+  [300, 32, 16],
+  [275, 32,  8],
+);
+const REFERENCIA_IDS = ["c1", "c2", "c3"];
+const PESOS_ESPERADOS = [0.0959568799438, 0.5078519485792, 0.3961911714770];
+
+describe("paridade com o motor de referência (R portado)", () => {
+  it("reproduz os três pesos dentro de 1e-6", () => {
+    const w = calculateEntropyWeights(REFERENCIA_FRANCISCO, REFERENCIA_IDS);
+
+    expect(w).toHaveLength(PESOS_ESPERADOS.length);
+    PESOS_ESPERADOS.forEach((esperado, j) => {
+      expect(Math.abs(w[j] - esperado)).toBeLessThan(1e-6);
+    });
+  });
+});

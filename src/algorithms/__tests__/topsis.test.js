@@ -300,3 +300,64 @@ describe("topsis — pureza", () => {
     expect(r.ranking).toHaveLength(2);
   });
 });
+
+// ---------------------------------------------------------------------------
+// PARIDADE COM O MOTOR DE REFERENCIA DO FRANCISCO
+// ---------------------------------------------------------------------------
+// Caso de referencia portado do R original, validado 38/38 contra o R real com
+// tolerancia 1e-6. Os numeros esperados NAO sao recalculados aqui: sao o
+// resultado do outro motor, transcrito. Se este teste cair, um dos dois motores
+// mudou de formula — nao se ajusta o numero, investiga-se a divergencia.
+//
+// A matriz entra exatamente como esta na referencia, sem readaptacao: so o
+// invólucro da chamada ({alternatives, criteria, matrix, weights}) foi montado
+// em volta dela.
+const REFERENCIA_FRANCISCO = {
+  alternatives: ["L1", "L2", "L3", "L4"],
+  criteria: [
+    { id: "c1", direction: MAX },
+    { id: "c2", direction: MAX },
+    { id: "c3", direction: MIN },
+  ],
+  matrix: [
+    [250, 16, 12],
+    [200, 16,  8],
+    [300, 32, 16],
+    [275, 32,  8],
+  ],
+  weights: [0.35, 0.40, 0.25],
+};
+
+const PROXIMIDADE_ESPERADA = [
+  0.2853905732,
+  0.3776792974,
+  0.6223207026,
+  0.9053825018,
+];
+
+describe("topsis — paridade com o motor de referencia (R portado)", () => {
+  it("reproduz a proximidade de cada alternativa dentro de 1e-6", () => {
+    const { closeness } = topsis(REFERENCIA_FRANCISCO);
+
+    expect(closeness).toHaveLength(PROXIMIDADE_ESPERADA.length);
+    PROXIMIDADE_ESPERADA.forEach((esperado, i) => {
+      expect(Math.abs(closeness[i] - esperado)).toBeLessThan(1e-6);
+    });
+  });
+
+  it("nenhuma alternativa cai no caso degenerado", () => {
+    // A divergencia conhecida entre os dois motores esta so no 0/0 (referencia:
+    // 0 fixo; aqui: DEGENERATE_CLOSENESS). Esta matriz nao empata alternativas,
+    // entao a paridade acima e sobre a formula, nao sobre a convencao.
+    const { distanceToIdeal, distanceToAntiIdeal } = topsis(REFERENCIA_FRANCISCO).ranking
+      .reduce((acc, e) => {
+        acc.distanceToIdeal.push(e.distanceToIdeal);
+        acc.distanceToAntiIdeal.push(e.distanceToAntiIdeal);
+        return acc;
+      }, { distanceToIdeal: [], distanceToAntiIdeal: [] });
+
+    distanceToIdeal.forEach((dp, i) => {
+      expect(dp + distanceToAntiIdeal[i]).toBeGreaterThan(0);
+    });
+  });
+});
