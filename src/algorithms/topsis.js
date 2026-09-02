@@ -32,32 +32,38 @@ import { DIRECTION } from "./mcdmCriteria";
  *
  * Não é o caminho de célula vazia nem o de direção ausente: os dois são
  * recusados por validate() com RangeError, antes de qualquer conta. Célula
- * vazia virando 0.5 seria justamente o silêncio que aquela validação existe
- * para impedir. Vale registrar porque a confusão é fácil de fazer.
+ * vazia virando esta constante seria justamente o silêncio que aquela validação
+ * existe para impedir. Vale registrar porque a confusão é fácil de fazer.
  *
- * POR QUE 0.5. O valor não é uma escolha de calibragem — é o único ponto que a
- * própria definição de C_i admite aqui. C_i vive em [0, 1] por construção: 0 é
- * "coincide com a anti-ideal", 1 é "coincide com a ideal". No empate total cada
- * alternativa está exatamente à mesma distância das duas (zero de ambas), e o
- * ponto médio é a única leitura que não inventa preferência por nenhum extremo.
- * 0 diria que todas são péssimas, 1 que todas são ótimas — as duas afirmações
- * seriam sobre os dados, e os dados não dizem nada além de "todas iguais".
+ * POR QUE 0. Não porque seja matematicamente mais correto que 0.5 — não é. O
+ * empate total é uma indeterminação, e mais de uma convenção é defensável: 0.5,
+ * que esta constante já usou, tem a leitura razoável de "à mesma distância dos
+ * dois extremos, logo o ponto médio". O motivo é outro, e é de fidelidade: 0 é
+ * o valor do motor de referência do Francisco (portado de funciones_mcdm.R e
+ * validado contra o R real), e a decisão do projeto é seguir a convenção do
+ * motor original sempre que não houver motivo técnico para divergir. Aqui não
+ * há: o caso é ranking-inerte (ver abaixo), então alinhar não custa nada em
+ * comportamento e evita que os dois motores respondam diferente ao mesmo dado.
  *
  * NÃO PRECISA DE CONFIRMAÇÃO EXTERNA — e é por isso que não entra em
  * PENDING_CONFIRMATION junto do TS_PERFORMANCE_ESTIMATED. Os dois casos são de
  * naturezas diferentes: o do Top Slicing é um dado que existe no mundo e falta
- * na planilha, então só o Francisco pode fechar. Este é uma convenção interna
- * sobre uma indeterminação matemática, e é inerte quanto a ranking: com todas
- * as alternativas empatadas, QUALQUER constante produz exatamente a mesma
- * ordenação. Trocar 0.5 por outro número não mudaria nenhuma decisão do app —
- * mudaria só o número exibido num cenário em que ele não distingue ninguém.
+ * na planilha, então só o Francisco pode fechar. Este é uma convenção sobre uma
+ * indeterminação matemática, e é inerte quanto a ranking: com todas as
+ * alternativas empatadas, QUALQUER constante produz exatamente a mesma
+ * ordenação — está fixado em teste. Trocar este número não muda nenhuma decisão
+ * do app; muda só o valor exibido num cenário em que ele não distingue ninguém.
+ * Foi justamente essa inércia que permitiu adotar a convenção da referência sem
+ * precisar de validação de domínio.
  *
  * (Este comentário já apontou o DEFAULT_BOOST do Enfoque como a constante que
- * de fato merecia validação externa. Ela deixou de existir: o Enfoque trocou o
- * boost multiplicativo por peso de grupo declarado pelo usuário, então não há
- * mais fator arbitrário embutido naquele módulo.)
+ * de fato merecia validação externa, por contraste com esta. O contraste morreu
+ * dos dois lados: o DEFAULT_BOOST deixou de existir — o Enfoque trocou o boost
+ * multiplicativo por peso de grupo declarado pelo usuário — e esta constante
+ * não se sustenta mais como "valor forçado pela definição", e sim como escolha
+ * entre convenções, resolvida por fidelidade ao motor original.)
  */
-export const DEGENERATE_CLOSENESS = 0.5;
+export const DEGENERATE_CLOSENESS = 0;
 
 /**
  * Pesos iguais somando 1, um por critério.

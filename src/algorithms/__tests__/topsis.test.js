@@ -203,6 +203,13 @@ describe("topsis — pesos", () => {
 });
 
 describe("topsis — casos degenerados", () => {
+  it("a constante vale 0 — a convencao do motor de referencia", () => {
+    // Fixa o VALOR, nao so o simbolo. As assercoes abaixo passam contra a
+    // constante qualquer que seja ela; esta e a unica linha que trava a
+    // convencao adotada (funciones_mcdm.R) contra uma troca silenciosa.
+    expect(DEGENERATE_CLOSENESS).toBe(0);
+  });
+
   it("alternativas identicas empatam em DEGENERATE_CLOSENESS", () => {
     const r = topsis({
       alternatives: ["A", "B", "C"],
