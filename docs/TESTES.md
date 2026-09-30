@@ -16,8 +16,8 @@ npm run build        # vite build → dist/
 
 Para rodar um arquivo ou uma pasta: `npx vitest run src/algorithms/__tests__/topsis.test.js`.
 
-Nenhum desses comandos roda sozinho: não há hook de pre-commit nem CI de testes (ver
-[Automação](#automação)). Rodar os três antes de propor uma alteração é responsabilidade de
+Lint e testes rodam automaticamente só no deploy de `main` (ver [Automação](#automação)).
+Em qualquer outra branch, rodar os três antes de propor uma alteração é responsabilidade de
 quem altera.
 
 ## A suíte (Vitest)
@@ -170,12 +170,16 @@ compila e que os imports se resolvem; não executa testes.
 ## Automação
 
 O único workflow do repositório é `.github/workflows/deploy-mafmine.yaml`. Ele roda a cada push
-em `main` (ou manualmente) e faz: `npm install` → `npm run build` → copia `dist/` para o
-repositório do Mafmine no GitLab → commit e push lá.
+em `main` (ou manualmente) e faz: `npm install` → `npm run lint` → `npm test` →
+`npm run build` → copia `dist/` para o repositório do Mafmine no GitLab → commit e push lá.
 
-**Não há CI de testes.** O deploy não roda `npm test` nem `npm run lint`: um push em `main`
-publica o build mesmo com a suíte falhando, desde que compile. Também não há hook de
-pre-commit. Hoje a suíte e o lint só rodam quando alguém os roda à mão.
+**O deploy para se lint ou testes falharem.** Se qualquer um dos dois falhar, o job é
+interrompido antes do build, e nada é publicado no Mafmine.
+
+**Fora do deploy não há verificação automática.** Push em outras branches e pull requests não
+disparam nenhum workflow, e não há hook de pre-commit. Uma branch com a suíte quebrada só é
+detectada depois de entrar em `main`, quando o deploy falha: `main` fica com o defeito, mas o
+Mafmine continua com a última versão publicada.
 
 ## Lacunas conhecidas
 
@@ -196,5 +200,6 @@ pre-commit. Hoje a suíte e o lint só rodam quando alguém os roda à mão.
 - **Dado pendente de confirmação.** Um valor dos critérios fixos (desempenho do Top Slicing)
   é estimado, não confirmado. Está registrado em `PENDING_CONFIRMATION`
   (`src/algorithms/mcdmCriteria.js`), e há um teste que trava essa lista.
-- **Sem CI de testes** (ver [Automação](#automação)).
+- **Sem verificação automática fora do deploy.** Push em outras branches e pull requests não
+  rodam lint nem testes; a trava só existe no deploy de `main` (ver [Automação](#automação)).
 - **Sem medição de cobertura.** Nenhum relatório de cobertura está configurado.

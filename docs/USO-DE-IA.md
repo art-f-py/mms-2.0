@@ -1,16 +1,24 @@
 # Uso de IA no desenvolvimento
 
-O MMS 2.0 foi desenvolvido com auxílio de IA generativa, principalmente o **Claude Code**
-(Anthropic), um assistente de programação que lê o repositório, executa comandos e propõe
-ou aplica alterações. Este documento descreve como esse auxílio foi usado, o que ele
+O MMS 2.0 foi desenvolvido com auxílio de IA generativa, em dois papéis distintos:
+
+- o **Claude Code** (Anthropic), um assistente de programação que lê o repositório, executa
+  comandos e propõe ou aplica alterações. É o papel principal;
+- o **Claude**, no claude.ai (Anthropic), usado para refinar prompts e fazer pesquisas
+  pontuais.
+
+Este documento descreve como esse auxílio foi usado, o que ele
 produziu, o que ficou fora do seu alcance, e o que dele não pode ser verificado a partir do
 repositório.
 
 ## Como o trabalho foi conduzido
 
-1. **Decisão antes da execução.** Arquitetura, escopo e prioridades de cada etapa foram
-   discutidos pelo autor numa conversa separada. Dali saía um prompt de execução com escopo
-   fechado: o que fazer, o que não tocar, e as travas da seção seguinte.
+1. **Decisão antes da execução.** Arquitetura, escopo e prioridades de cada etapa são
+   decisões do autor. Dali saía um prompt de execução com escopo fechado: o que fazer, o que
+   não tocar, e as travas da seção seguinte. Os prompts são do autor. Numa conversa separada
+   com o Claude, no claude.ai, o assistente ajudou a refiná-los e fez pesquisas pontuais,
+   como localizar o capítulo original de Nicholas (1981) usado nas tabelas de espaçamento e
+   condição de fraturas.
 2. **Execução via Claude Code.** O assistente executava o prompt no repositório: lia o
    código, implementava, rodava testes, lint e build, e fazia o commit na branch indicada.
 3. **Relatório e revisão.** Cada execução terminava num relatório do que foi feito, do que
@@ -63,6 +71,9 @@ Sempre sob revisão e aprovação do autor antes de entrar no repositório:
   verdadeira antes de agir sobre ela, e reportar quando não era.
 - **Documentação**: rascunho de documentos como este, `docs/TESTES.md` e comentários de
   código.
+- **Refinamento de prompts e pesquisas pontuais** (Claude, no claude.ai): ajuda a refinar os
+  prompts escritos pelo autor, e localização de fontes, como o capítulo original de
+  Nicholas (1981).
 
 ## Onde a IA não decidiu
 
@@ -90,6 +101,6 @@ As decisões metodológicas vieram de pessoas e de fontes identificadas:
   atribuição automática do Claude Code, então nenhum commit indica se foi escrito com
   auxílio de IA. Não é possível separar, commit a commit, o que foi escrito pelo autor e o
   que foi escrito pelo assistente.
-- **As conversas não estão arquivadas no repositório.** Nem a conversa de planejamento nem
-  as sessões do Claude Code. O que fica verificável é o resultado: o código, os testes e as
+- **As conversas não estão arquivadas no repositório.** Nem as conversas no claude.ai
+  nem as sessões do Claude Code. O que fica verificável é o resultado: o código, os testes e as
   mensagens de commit.

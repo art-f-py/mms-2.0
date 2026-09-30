@@ -42,7 +42,7 @@ O **MMS 2.0** e uma aplicacao web para selecao de metodos de lavra subterranea, 
 
 O projeto e desenvolvido no **LAPROM (Laboratorio de Processamento Mineral)**, na Universidade Federal do Rio Grande do Sul, como parte de um projeto de iniciacao cientifica.
 
-**Aplicacao publicada:** https://art-f-py.github.io/mms-2.0/
+**Aplicacao publicada:** https://mafmine.k8s.inf.ufrgs.br/v3.1/tools/mms_2.0/
 
 ## Principais recursos
 
@@ -141,12 +141,6 @@ npm run build
 
 O build e gerado em `dist/`.
 
-### Publicar no GitHub Pages
-
-```bash
-npm run deploy
-```
-
 ## Como usar
 
 1. Acesse a tela inicial e clique em **Iniciar**.
@@ -200,7 +194,6 @@ A logica de calculo esta isolada em `src/algorithms/`, separada das tabelas de p
 | `npm run lint` | Executa o ESLint no projeto. |
 | `npm test` | Roda a suite de testes (Vitest) uma vez. |
 | `npm run test:watch` | Roda a suite em modo observacao. |
-| `npm run deploy` | Gera o build e publica no GitHub Pages. |
 
 ### Qualidade de codigo
 
@@ -229,7 +222,7 @@ Comparacoes manuais anteriores com o MMS 1.0 nao estao registradas no repositori
 
 ## Uso de IA
 
-O desenvolvimento contou com auxilio de IA generativa (Claude Code), sempre com revisao e aprovacao do autor. Como foi usada, onde contribuiu e quais decisoes vieram de pessoas e fontes identificadas: [`docs/USO-DE-IA.md`](docs/USO-DE-IA.md).
+O desenvolvimento contou com auxilio de IA generativa (Claude Code e, para refinamento de prompts e pesquisas pontuais, Claude no claude.ai), sempre com revisao e aprovacao do autor. Como foi usada, onde contribuiu e quais decisoes vieram de pessoas e fontes identificadas: [`docs/USO-DE-IA.md`](docs/USO-DE-IA.md).
 
 ## Limitacoes conhecidas
 
