@@ -28,6 +28,7 @@
 - [Arquitetura do projeto](#arquitetura-do-projeto)
 - [Desenvolvimento](#desenvolvimento)
 - [Validacao](#validacao)
+- [Uso de IA](#uso-de-ia)
 - [Limitacoes conhecidas](#limitacoes-conhecidas)
 - [Roadmap tecnico](#roadmap-tecnico)
 - [Citacao](#citacao)
@@ -53,7 +54,9 @@ O projeto e desenvolvido no **LAPROM (Laboratorio de Processamento Mineral)**, n
 - Presets de multiplicadores de dominio conforme a publicacao original do Nicholas (1992).
 - Resultados com ranking, grafico de barras e radar de contribuicao por criterio (breakdown) para cada metodo de lavra.
 - Persistencia local dos parametros preenchidos (localStorage).
-- Validacao cruzada contra o MMS 1.0 para multiplos cenarios de deposito.
+- Decisao multicriterio (TOPSIS), com ponderacao manual por grupo de criterios (Enfoque) ou automatica por entropia (Entropy).
+- Interface em quatro idiomas: portugues, ingles, espanhol e frances.
+- Cenario de regressao do SH&B fixado em teste automatizado contra o MMS 1.0.
 
 ## Metodologia
 
@@ -177,7 +180,9 @@ src/
 ├── components/       # Componentes reutilizaveis de interface
 ├── context/          # Estado global da aplicacao (MmsContext)
 ├── data/             # Dados de referencia (UCS e densidade por rocha)
+├── i18n/             # Traducao: configuracao e arquivos dos 4 idiomas
 ├── pages/            # Home, Inputs, Statistics, DepositSketch
+├── utils/            # Logica pura extraida da interface (ranking MCDM, marcadores, comparacao de cenarios)
 └── assets/           # Imagens e recursos estaticos
 ```
 
@@ -193,6 +198,8 @@ A logica de calculo esta isolada em `src/algorithms/`, separada das tabelas de p
 | `npm run build` | Gera o build de producao em `dist/`. |
 | `npm run preview` | Serve o build gerado para inspecao local. |
 | `npm run lint` | Executa o ESLint no projeto. |
+| `npm test` | Roda a suite de testes (Vitest) uma vez. |
+| `npm run test:watch` | Roda a suite em modo observacao. |
 | `npm run deploy` | Gera o build e publica no GitHub Pages. |
 
 ### Qualidade de codigo
@@ -212,21 +219,28 @@ O mapa completo da estrutura de pastas e arquivos e gerado automaticamente por `
 
 ## Validacao
 
-Os resultados do MMS 2.0 foram validados por comparacao direta contra o MMS 1.0, utilizando multiplos cenarios de deposito (deposito tabular inclinado, deposito massivo raso e deposito tabular plano profundo), cobrindo os tres metodos de selecao. As tabelas de pesos foram conferidas linha a linha contra as tabelas originais do MMS 1.0.
+O que esta fixado em teste automatizado:
+
+- **Regressao contra o MMS 1.0**: um cenario de deposito (camada de carvao tabular, plana e profunda), apenas para o **SH&B**. Os scores dos dez metodos de lavra e o ranking sao os que o MMS 1.0 produzia para o mesmo cenario. Nao ha cenario equivalente automatizado para o UBC nem para o Nicholas.
+- **Tabelas de pesos**: integridade estrutural e alinhamento entre as classes calculadas, as opcoes do formulario e as chaves das tabelas, nos tres metodos.
+- **Decisao multicriterio**: paridade do TOPSIS e da ponderacao por entropia com o motor de referencia em R.
+
+Comparacoes manuais anteriores com o MMS 1.0 nao estao registradas no repositorio. O detalhamento da suite e das lacunas conhecidas esta em [`docs/TESTES.md`](docs/TESTES.md).
+
+## Uso de IA
+
+O desenvolvimento contou com auxilio de IA generativa (Claude Code), sempre com revisao e aprovacao do autor. Como foi usada, onde contribuiu e quais decisoes vieram de pessoas e fontes identificadas: [`docs/USO-DE-IA.md`](docs/USO-DE-IA.md).
 
 ## Limitacoes conhecidas
 
 - A ferramenta ainda nao possui segmentacao de deposito por profundidade (avaliacao por trechos).
 - A responsividade para telas moveis esta em desenvolvimento.
-- Nao ha sistema de traducao (i18n) implementado; a interface esta disponivel apenas em portugues.
 - Nao ha exportacao de resultados em formato de relatorio.
 
 ## Roadmap tecnico
 
-- Ponderacao automatica por Entropy Weighting, como alternativa a ponderacao manual.
 - Segmentacao do deposito por profundidade.
 - Responsividade completa para dispositivos moveis.
-- Sistema de traducao (portugues, ingles, espanhol).
 - Exportacao de resultados.
 
 ## Citacao
