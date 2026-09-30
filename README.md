@@ -204,6 +204,8 @@ npm run lint
 npm run build
 ```
 
+A suíte de testes, o lint, o build e as lacunas conhecidas estão descritos em [`docs/TESTES.md`](docs/TESTES.md).
+
 ### Estrutura do repositorio
 
 O mapa completo da estrutura de pastas e arquivos e gerado automaticamente por `scripts/repo_map_gen.py` e mantido em `repo_map.txt`.
