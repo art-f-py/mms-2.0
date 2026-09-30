@@ -1,0 +1,97 @@
+{
+  "case_id": "belgravia_ochoa",
+  "status": "parcial — ver gaps",
+  "source": {
+    "report_title": "NI 43-101 Technical Report — Ochoa Project Feasibility Study, Lea County, New Mexico",
+    "company": "IC Potash Corp / Intercontinental Potash Corp",
+    "drive_file": "01_F_Belgravia_UG_2.pdf",
+    "report_date": "2014-03-07",
+    "drive_file_id": null
+  },
+  "real_method": {
+    "code": "RP",
+    "confidence": "alta — confirmado em texto explícito",
+    "quote": "Room-and-pillar mining methods are typical of the mining methods practiced in the nearby Carlsbad potash mines... this method is similar to the methods commonly used in potash, coal, and trona underground mines.",
+    "location": "Item 1.8.1 (Conclusions — Mineralization and Mining) e Item 1.7.1"
+  },
+  "geometry": {
+    "thickness_m": 1.55,
+    "thickness_source_value": "5.1 ft (Tabela 1-1, média Medido+Indicado)",
+    "thickness_provenance": "Item 1.7.1 / Tabela 1-1: 'Average Equivalent Thickness' — Medido=5.2ft, Indicado=5.0ft, Total M&I=5.1ft. Usei a média de recurso (M&I), NÃO a espessura minerada de reserva (5.9ft, Tabela 1-2), porque essa última já inclui a altura mínima de lavra imposta pelo plano de mina — é resultado de engenharia, não característica geológica pura.",
+    "thickness_confidence": "alta — número único e explícito na fonte, sem escolha conservadora necessária",
+    "dip_deg": 2,
+    "dip_source_value": "faixa 0.5° a 2°",
+    "dip_provenance": "Item 1.7.1: 'The bed dips gently to the southeast within the boundaries of the Property, flattening from a dip of up to 2° in the north to less than 0.5° in the south.' ESCOLHA CONSERVADORA: usei o limite superior (2°), por instrução do usuário de preferir o valor menos favorável dentro da faixa.",
+    "dip_confidence": "média — é escolha dentro de uma faixa real, não um valor único reportado",
+    "grade_pct_polyhalite": 83.9,
+    "grade_provenance": "Tabela 1-1, Total M&I, coluna 'Polyhalite (wt%)'",
+    "grade_confidence": "alta — número único e explícito",
+    "depth_m": 396,
+    "depth_status": "RESOLVIDO (leitura de imagem, confiança média)",
+    "shape": "Tabular",
+    "shape_provenance": "Depósito bedded, flat-lying (Item 1.5/1.7) — corresponde à categoria Tabular do vocabulário confirmado (Nicholas Table 1: platey-tabular, duas dimensões muitas vezes maiores que a espessura).",
+    "depth_source_value": "~1,300 ft (leitura de contorno, Figura 16-5)",
+    "depth_provenance": "Figura 16-5 (50-Year Mine Projections, Depth of Cover), página 119 — mapa de contorno, intervalo 100 ft. A área do plano de lavra (50-Year Mine Plan Boundary) cruza contornos de aprox. 1.000 a pouco mais de 1.300 ft, mais raso a sudoeste, mais profundo a nordeste. ESCOLHA CONSERVADORA: usei o extremo mais profundo (1.300 ft) da faixa observada. Leitura de imagem, não 100% certa — vale conferir contra o PDF original antes de tratar como definitivo.",
+    "thickness_confirmation": "Figura 16-6 (Mined Thickness Contours) mostra 62\"/65\"/72\" = 1.57m/1.65m/1.83m — confirma independentemente o valor de 1.55m já usado (Tabela 1-1).",
+    "grade_distribution": "Uniforme",
+    "grade_distribution_status": "INFERÊNCIA POR TIPO DE DEPÓSITO, NÃO DADO EXTRAÍDO. Depósito evaporítico bedded/flat-lying (sedimentar, em camada) — geologicamente mais consistente que veio. Relatório não descreve distribuição de teor em vocabulário direto (zero ocorrência de uniform/erratic/consistent/homogeneous no texto extraído). Aceito pelo usuário como inferência razoável, explicitamente marcada como tal."
+  },
+  "geomechanical": {
+    "ore": {
+      "ucs_mpa": 66.4,
+      "ucs_source_value": "9,630 psi (Polyhalite (ore))",
+      "ucs_mpa_provenance": "Table 16-13 (ICP Mechanical Properties—Summary of Laboratory Test Results), p. 129 do relatório / p. 143 do PDF — lida em imagem renderizada, legível sem ambiguidade. Valor de LABORATÓRIO (média), não de maciço.",
+      "density_kg_m3": 2691.0,
+      "density_source_value": "168 pcf (specific weight)",
+      "density_kg_m3_provenance": "Table 16-13 (ICP Mechanical Properties—Summary of Laboratory Test Results), p. 129 do relatório / p. 143 do PDF — lida em imagem renderizada, legível sem ambiguidade",
+      "gsi": 85,
+      "gsi_provenance": "Table 16-15 (Hoek-Brown Parameters), p. 135 do relatório / p. 149 do PDF — lida em imagem. GSI selecionado pelo autor 'based on previous experience… and engineering judgment' (p. 134), não medido.",
+      "rqd_pct": 100,
+      "rqd_pct_provenance": "Texto p. 129 (PDF 143): 'The ore zone and surrounding strata are competent and intact, with RQD values consistently near 100%.' Gravado 100; qualquer valor >70 dá a mesma classe ('Muito Longe', Nicholas Table 2), então o arredondamento não altera nada.",
+      "joint_condition": null,
+      "joint_condition_status": "NÃO EXTRAÍDO. O relatório não descreve juntas no minério; diz só 'competent and intact' e fala em fratura conchoidal da polialita (propriedade do material intacto, não de descontinuidade). Sem juntas descritas, não existe base textual para Fraca/Média/Forte."
+    },
+    "hangingWall": {
+      "stratum": "Anhydrite (roof) — capa imediata, ~1.5 ft de espessura média",
+      "stratum_choice": "DECISÃO A REVISAR. A capa tem duas camadas: anidrita imediata (~0.46 m, contato direto com o minério, provavelmente removida/atirantada na lavra) e, acima de uma junta com argila, halita da capa principal (12–43 m). Gravei a ANIDRITA por ser o contato direto e o estrato que o próprio relatório chama de 'immediate roof'. Alternativa (halita): UCS 3,970 psi = 27.4 MPa, 133 pcf = 2131 kg/m³, GSI 95 — a classe de RMR sai igual ('Muito boa'); só o RSS muda.",
+      "ucs_mpa": 60.9,
+      "ucs_source_value": "8,830 psi (Anhydrite (roof))",
+      "ucs_mpa_provenance": "Table 16-13 (ICP Mechanical Properties—Summary of Laboratory Test Results), p. 129 do relatório / p. 143 do PDF — lida em imagem renderizada, legível sem ambiguidade",
+      "density_kg_m3": 2755.0,
+      "density_source_value": "172 pcf",
+      "density_kg_m3_provenance": "Table 16-13 (ICP Mechanical Properties—Summary of Laboratory Test Results), p. 129 do relatório / p. 143 do PDF — lida em imagem renderizada, legível sem ambiguidade",
+      "depth_m": 396,
+      "depth_m_provenance": "Mesma profundidade do corpo (geometry.depth_m = 396, Figura 16-5). INFERÊNCIA: camada contígua ao minério, diferença de cota de poucos metros, desprezível para o RSS.",
+      "gsi": 85,
+      "gsi_provenance": "Table 16-15 (Hoek-Brown Parameters), p. 135 do relatório / p. 149 do PDF — lida em imagem",
+      "rqd_pct": 100,
+      "rqd_pct_provenance": "Texto p. 129 (PDF 143): 'The ore zone and surrounding strata are competent and intact, with RQD values consistently near 100%.' Gravado 100; qualquer valor >70 dá a mesma classe ('Muito Longe', Nicholas Table 2), então o arredondamento não altera nada.",
+      "joint_condition": "Fraca",
+      "joint_condition_provenance": "Texto p. 129 (PDF 143): 'a clay-filled joint usually is present near the top of the anhydrite layer… In recovered core, this joint is usually open'; p. 113 (PDF 127): 'thin mudstone parting that exhibits little to no adhesion'. Corresponde literalmente à definição de 'Fraca' do app (juntas abertas, preenchidas por material de baixa resistência)."
+    },
+    "footwall": {
+      "stratum": "Halite/anhydrite (floor)",
+      "ucs_mpa": 20.9,
+      "ucs_source_value": "3,030 psi (Halite/anhydrite (floor))",
+      "ucs_mpa_provenance": "Table 16-13 (ICP Mechanical Properties—Summary of Laboratory Test Results), p. 129 do relatório / p. 143 do PDF — lida em imagem renderizada, legível sem ambiguidade",
+      "density_kg_m3": 2323.0,
+      "density_source_value": "145 pcf",
+      "density_kg_m3_provenance": "Table 16-13 (ICP Mechanical Properties—Summary of Laboratory Test Results), p. 129 do relatório / p. 143 do PDF — lida em imagem renderizada, legível sem ambiguidade",
+      "depth_m": 396,
+      "depth_m_provenance": "Mesma profundidade do corpo (geometry.depth_m = 396, Figura 16-5). INFERÊNCIA: camada contígua ao minério, diferença de cota de poucos metros, desprezível para o RSS.",
+      "gsi": 55,
+      "gsi_provenance": "Table 16-15 (Hoek-Brown Parameters), p. 135 do relatório / p. 149 do PDF — lida em imagem",
+      "rqd_pct": 100,
+      "rqd_pct_provenance": "Texto p. 129 (PDF 143): 'The ore zone and surrounding strata are competent and intact, with RQD values consistently near 100%.' Gravado 100; qualquer valor >70 dá a mesma classe ('Muito Longe', Nicholas Table 2), então o arredondamento não altera nada.",
+      "joint_condition": null,
+      "joint_condition_status": "NÃO EXTRAÍDO. O relatório só diz que o piso é 'weaker than the polyhalite' (p. 113) — é resistência de rocha, não condição de junta."
+    }
+  },
+  "gaps": [
+    "geomechanical.ore.joint_condition e geomechanical.footwall.joint_condition — sem descrição de juntas no relatório (bloqueia Nicholas)",
+    "geometry.thickness_category — 1.55 m < 10 m: 'Estreito' vs 'Muito estreito' é decisão humana (bloqueia UBC/SH&B)",
+    "economic.ore_value_class — sem fonte (bloqueia SH&B)"
+  ],
+  "usable_now": false,
+  "usable_now_reason": "Geomecânica extraída em imagem (Tables 16-13 e 16-15): UCS, densidade, GSI e RQD nos três domínios, e condição de junta na capa. Faltam a condição de junta no minério e no piso (Nicholas), a faixa de espessura (UBC) e a classe econômica (SH&B)."
+}

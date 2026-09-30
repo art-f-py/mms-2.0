@@ -1,0 +1,68 @@
+{
+  "case_id": "sintetico_completo",
+  "schema_version": 1,
+  "status": "FIXTURE SINTÉTICA — NÃO É UM CASO REAL",
+  "fixture_notice": "Todos os números deste arquivo são INVENTADOS. Ele existe para exercitar o mapeador e o harness de comparação enquanto nenhum caso real está completo, e NÃO deve ser citado como resultado de validação empírica nem misturado aos casos de docs/validacao-mcdm/casos/. Os valores foram escolhidos para serem internamente coerentes (depósito tabular sub-horizontal, raso, maciço de qualidade média) e para evitar de propósito a faixa ambígua de espessura abaixo de 10 m.",
+  "source": {
+    "report_title": "FIXTURE SINTÉTICA — nenhum relatório real",
+    "company": "—",
+    "drive_file": "(nenhum)",
+    "report_date": "—",
+    "drive_file_id": null
+  },
+  "real_method": {
+    "code": "R&P",
+    "confidence": "n/a — fixture",
+    "quote": "Valor arbitrado para a fixture, sem fonte.",
+    "location": "n/a"
+  },
+  "geometry": {
+    "shape": "Tabular",
+    "shape_provenance": "fixture — valor arbitrado",
+    "thickness_m": 18,
+    "thickness_provenance": "fixture — arbitrado na faixa 10–30 m para cair em \"Intermediário\" sem tocar a ambiguidade do \"Muito estreito\"",
+    "dip_deg": 6,
+    "dip_provenance": "fixture — arbitrado",
+    "grade_distribution": "Uniforme",
+    "grade_distribution_provenance": "fixture — arbitrado",
+    "grade_pct": 2.4,
+    "grade_pct_provenance": "fixture — informativo, não alimenta nenhum critério",
+    "depth_m": 250,
+    "depth_provenance": "fixture — arbitrado"
+  },
+  "geomechanical": {
+    "ore": {
+      "ucs_mpa": 95,
+      "density_kg_m3": 2700,
+      "depth_m": 250,
+      "rmr": 62,
+      "fractures_per_m": 6,
+      "joint_condition": "Média",
+      "provenance": "fixture — todos os valores arbitrados"
+    },
+    "hangingWall": {
+      "ucs_mpa": 70,
+      "density_kg_m3": 2600,
+      "depth_m": 240,
+      "rmr": 48,
+      "fractures_per_m": 12,
+      "joint_condition": "Fraca",
+      "provenance": "fixture — todos os valores arbitrados"
+    },
+    "footwall": {
+      "ucs_mpa": 110,
+      "density_kg_m3": 2700,
+      "depth_m": 260,
+      "rmr": 71,
+      "fractures_per_m": 2,
+      "joint_condition": "Forte",
+      "provenance": "fixture — todos os valores arbitrados"
+    }
+  },
+  "economic": {
+    "ore_value_class": "Médio",
+    "ore_value_class_provenance": "fixture — arbitrado; num caso real este campo exige a classificação do Francisco, que não tem fonte pública"
+  },
+  "gaps": [],
+  "usable_now": true
+}

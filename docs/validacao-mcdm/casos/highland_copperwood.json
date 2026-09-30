@@ -1,0 +1,42 @@
+{
+  "case_id": "highland_copperwood",
+  "status": "parcial — ver gaps",
+  "source": {
+    "report_title": "Feasibility Study — Copperwood Project, Michigan, USA",
+    "company": "Highland Copper Company Inc.",
+    "drive_file": "17_F_Highland_UG_2.pdf",
+    "report_date": "2018-06-14",
+    "drive_file_id": null
+  },
+  "real_method": {
+    "code": "RP",
+    "confidence": "alta — confirmado em texto explícito, inclusive na conclusão",
+    "quote": "It is proposed to mine the deposit with a conventional drill and blast room-and-pillar mining method that is highly mechanized... The room-and-pillar mining method is well suited for the deposit geometry.",
+    "location": "Item 1.15.1 (Mining Method) e Item 1.24.1 (Conclusions)"
+  },
+  "deposit_type_note": "Relatório classifica explicitamente como 'sediment-hosted stratiform copper deposit' (Item 1.8) — mesma família de depósitos tabulares clássicos (Kupferschiefer, Central African Copperbelt, White Pine). Bom sinal de confiabilidade da geometria reportada.",
+  "geometry": {
+    "thickness_m": 1.6,
+    "thickness_source_value": "faixa 1.6m a 3.7m (coluna mineralizada completa); unidade principal (Domino) = 1.6m",
+    "thickness_provenance": "Item 1.15.1: 'The deposit is relatively sub-horizontal with a thickness that varies from 1.6 m to 3.7 m.' ESCOLHA CONSERVADORA E MAIS PROVÁVEL: usei 1.6m — não é só o limite inferior da faixa, é também a espessura média da unidade Domino, descrita no Item 1.7 como 'the principal copper host at Copperwood' (a unidade de minério principal, mean thickness 1.6m). As outras duas unidades (Red Massive 0.3m, Gray Laminated 1.0m) têm teor mais baixo e uma delas é tratada como diluição interna, não minério principal.",
+    "thickness_confidence": "média-alta — a escolha tem justificativa textual dupla (conservadora E é a unidade principal), não é arbitrária",
+    "dip_deg": null,
+    "dip_status": "NÃO EXTRAÍDO — o texto descreve qualitativamente ('sub-horizontal', 'dips gently', com trechos dizendo que em algumas áreas 'the dip is too steep to follow' a direção padrão de lavra), mas não encontrei um valor numérico único de mergulho no que já li. Precisa busca dirigida na seção de Geological Setting (Item 7) ou nas figuras de corte estrutural.",
+    "grade_pct_cu": 1.43,
+    "grade_source_value": "Tabela 1.4, Reserva Provada+Provável",
+    "grade_provenance": "Tabela 1.4 (Mineral Reserves Estimate): Proven+Probable = 1.43% Cu. ESCOLHA: usei o teor de RESERVA (já líquido de diluição), não o teor de RECURSO M&I (1.60% Cu, Tabela 1.3), que é a figura mais otimista, pré-diluição. Reserva é a escolha mais conservadora e a mais próxima do que de fato seria lavrado.",
+    "grade_confidence": "alta",
+    "depth_m": null,
+    "depth_status": "CONFIRMADO COMO NÃO-ÚNICO — não é lacuna de busca, é propriedade real do dado. Tabela 1.5 mostra profundidade por painel de lavra (91m, 122m, 183m, 274m), não um valor único do depósito. Tentar reduzir a um número seria o mesmo erro que já evitamos na espessura do Almaden — melhor tratar como critério que este relatório não fornece nesse formato, e seguir para outro caso se profundidade única for obrigatória."
+  },
+  "geomechanical": {
+    "status": "NÃO EXTRAÍDO VIA BUSCA DE TEXTO — Tabela 16.2 (Rock Mass Strength Parameters) existe no relatório (confirmado no sumário, página 16-10), mas o conteúdo numérico da tabela não aparece de forma legível na extração de texto corrido (tabelas em PDF frequentemente embaralham na extração linear). Precisaria inspeção visual da página (renderizar como imagem) para confirmar valores — não tentado nesta rodada."
+  },
+  "gaps": [
+    "mergulho (valor numérico)",
+    "profundidade representativa (não por painel)",
+    "confirmar se Table 16.2 já traz RMR pronto"
+  ],
+  "usable_now": false,
+  "usable_now_reason": "Espessura e teor resolvidos com justificativa dupla. Mergulho não é um valor único explícito no texto. Profundidade é estruturalmente não-única (por painel). Geomecânica não confirmada. Caso mantido como referência de metodologia (busca + decisões conservadoras), não como teste pronto para rodar."
+}
