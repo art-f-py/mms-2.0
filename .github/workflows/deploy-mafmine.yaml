@@ -49,6 +49,14 @@ jobs:
       - name: Instalar dependências
         run: npm install
 
+      # Travas de qualidade: se lint ou testes falharem, o job para aqui e
+      # nada é copiado para o Mafmine.
+      - name: Lint
+        run: npm run lint
+
+      - name: Testes
+        run: npm test
+
       - name: Gerar build
         run: npm run build
 
