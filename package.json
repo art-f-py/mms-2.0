@@ -1,7 +1,7 @@
 {
   "name": "mms-2.0",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Web-based decision-support tool for underground mining method selection, implementing the UBC (1995), Nicholas (1981/1992) and SH&B (2007) selection algorithms simultaneously.",
   "author": "Artur Feijó",
   "license": "MIT",

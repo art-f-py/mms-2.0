@@ -1,11 +1,11 @@
 cff-version: 1.2.0
 message: "Se utilizar este software, por favor cite-o conforme os metadados abaixo."
 title: "MMS 2.0 - Mining Method Selection Tool"
-version: 1.0.0
-date-released: 2026-07-09
+version: 1.1.0
+date-released: 2026-10-02
 license: MIT
 repository-code: "https://github.com/art-f-py/mms-2.0"
-url: "https://art-f-py.github.io/mms-2.0/"
+url: "https://mafmine.k8s.inf.ufrgs.br/v3.1/tools/mms_2.0/"
 abstract: >-
   Ferramenta web de suporte a decisao para selecao de metodos de lavra
   subterranea, implementando simultaneamente os algoritmos de selecao
