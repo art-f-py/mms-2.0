@@ -57,6 +57,7 @@ O projeto e desenvolvido no **LAPROM (Laboratorio de Processamento Mineral)**, n
 - Persistencia local dos parametros preenchidos, dos pesos do MCDM e dos cenarios salvos (localStorage).
 - Decisao multicriterio (TOPSIS) para os tres metodos de selecao, com ponderacao manual por grupo de criterios (Enfoque) ou automatica por entropia de Shannon (Entropy), matriz de decisao exibida ao vivo e comparacao de cenarios salvos.
 - Interface em quatro idiomas: portugues, ingles, espanhol e frances.
+- Formulario para reportar problemas. Os dados preenchidos (nome, e-mail e mensagem) sao enviados ao servico externo formcarry.com.
 - Cenario de regressao do SH&B fixado em teste automatizado contra o MMS 1.0.
 
 ## Metodologia
@@ -163,7 +164,7 @@ O valor de **desempenho do Top Slicing** e uma estimativa ainda nao confirmada: 
 
 ### Requisitos
 
-- Node.js e npm.
+- Node.js (o CI usa a versao 22) e npm.
 - Git.
 
 ### Preparar o projeto
@@ -315,7 +316,7 @@ Contribuicoes sao bem-vindas. Para manter o projeto organizado:
 
 1. Crie uma branch para a alteracao.
 2. Mantenha a mudanca focada em um problema ou recurso.
-3. Nao altere as tabelas de pesos sem validacao cruzada contra o MMS 1.0.
+3. Nao altere as tabelas de pesos dos metodos classicos sem validacao cruzada contra o MMS 1.0. As escalas de conversao para 1-9 e os criterios fixos do MCDM dependem de confirmacao de Francisco Vargas.
 4. Rode `npm test`, `npm run lint` e `npm run build` antes de propor a alteracao.
 5. Atualize este README e `CITATION.cff` quando a mudanca afetar instalacao, uso, autoria, citacao ou metodologia.
 
@@ -327,4 +328,4 @@ Este projeto e distribuido sob a licenca MIT. Consulte [`LICENSE`](LICENSE) para
 
 ## Agradecimentos
 
-Ao **LAPROM** e ao corpo docente da Universidade Federal do Rio Grande do Sul pela orientacao e infraestrutura. Aos autores das publicacoes originais de UBC (1995), Nicholas (1981, 1992) e SH&B (2007), cujas tabelas de classificacao fundamentam os algoritmos deste projeto.
+Ao **LAPROM** e ao corpo docente da Universidade Federal do Rio Grande do Sul pela orientacao e infraestrutura. Aos autores das publicacoes originais de UBC (1995), Nicholas (1981, 1992) e SH&B (2007), cujas tabelas de classificacao fundamentam os algoritmos deste projeto. A **Francisco Vargas** (Universidad de Concepcion), pela metodologia multicriterio adaptada do Pro D.M. e pela revisao da terminologia em espanhol.

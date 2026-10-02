@@ -11,6 +11,9 @@ abstract: >-
   subterranea, implementando simultaneamente os algoritmos de selecao
   UBC (1995), Nicholas (1981/1992) e SH&B (2007), com sistema de
   ponderacao por criterio e visualizacao interativa de resultados.
+  Inclui uma camada de decisao multicriterio (TOPSIS) sobre as matrizes
+  dos tres metodos, estendidas com seis criterios tecnico-economicos,
+  com ponderacao por Enfoque ou por entropia de Shannon.
 authors:
   - given-names: "Artur"
     family-names: "Feijó"
