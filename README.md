@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-green"></a>
-  <img alt="Version" src="https://img.shields.io/badge/version-1.0.0-blue">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.1.0-blue">
   <img alt="Stack" src="https://img.shields.io/badge/stack-React%20%2B%20Vite-555">
   <img alt="Domain" src="https://img.shields.io/badge/domain-mining%20engineering%20%7C%20decision%20support-orange">
 </p>
@@ -22,6 +22,7 @@
 - [Metodologia](#metodologia)
 - [Metodos de selecao implementados](#metodos-de-selecao-implementados)
 - [Sistema de ponderacao](#sistema-de-ponderacao)
+- [Decisao multicriterio (MCDM)](#decisao-multicriterio-mcdm)
 - [Instalacao e execucao](#instalacao-e-execucao)
 - [Como usar](#como-usar)
 - [Parametros principais](#parametros-principais)
@@ -38,7 +39,7 @@
 
 ## Visao geral
 
-O **MMS 2.0** e uma aplicacao web para selecao de metodos de lavra subterranea, reconstruida do zero a partir do MMS 1.0 (mafmine.com.br) com arquitetura modular em React. A ferramenta implementa tres metodos classicos de selecao numerica publicados na literatura de engenharia de minas — **UBC (1995)**, **Nicholas (1981/1992)** e **SH&B (2007)** — permitindo que os tres sejam executados simultaneamente a partir de um unico conjunto de parametros do deposito.
+O **MMS 2.0** e uma aplicacao web para selecao de metodos de lavra subterranea, reconstruida do zero a partir do MMS 1.0 (mafmine.com.br) com arquitetura modular em React. A ferramenta implementa tres metodos classicos de selecao numerica publicados na literatura de engenharia de minas — **UBC (1995)**, **Nicholas (1981/1992)** e **SH&B (2007)** — permitindo que os tres sejam executados simultaneamente a partir de um unico conjunto de parametros do deposito. Sobre os resultados classicos, uma camada de decisao multicriterio (TOPSIS) produz um segundo ranking, que combina os criterios de cada metodo com seis criterios fixos de desempenho tecnico e economico dos metodos de lavra.
 
 O projeto e desenvolvido no **LAPROM (Laboratorio de Processamento Mineral)**, na Universidade Federal do Rio Grande do Sul, como parte de um projeto de iniciacao cientifica.
 
@@ -53,8 +54,8 @@ O projeto e desenvolvido no **LAPROM (Laboratorio de Processamento Mineral)**, n
 - Sistema de ponderacao por criterio, com granularidade por dominio geologico (corpo de minerio, hanging wall, footwall).
 - Presets de multiplicadores de dominio conforme a publicacao original do Nicholas (1992).
 - Resultados com ranking, grafico de barras e radar de contribuicao por criterio (breakdown) para cada metodo de lavra.
-- Persistencia local dos parametros preenchidos (localStorage).
-- Decisao multicriterio (TOPSIS), com ponderacao manual por grupo de criterios (Enfoque) ou automatica por entropia (Entropy).
+- Persistencia local dos parametros preenchidos, dos pesos do MCDM e dos cenarios salvos (localStorage).
+- Decisao multicriterio (TOPSIS) para os tres metodos de selecao, com ponderacao manual por grupo de criterios (Enfoque) ou automatica por entropia de Shannon (Entropy), matriz de decisao exibida ao vivo e comparacao de cenarios salvos.
 - Interface em quatro idiomas: portugues, ingles, espanhol e frances.
 - Cenario de regressao do SH&B fixado em teste automatizado contra o MMS 1.0.
 
@@ -110,6 +111,54 @@ Alem dos pesos padrao (neutros) de cada metodo, a ferramenta permite:
 
 Os dois modos do Nicholas nunca coexistem: ativar um reinicia o outro para o valor neutro, evitando combinacoes de ponderacao sem respaldo tecnico.
 
+## Decisao multicriterio (MCDM)
+
+Alem do ranking classico, a pagina de resultados oferece um ranking multicriterio, calculado pelo metodo **TOPSIS** (Hwang & Yoon, 1981) sobre a matriz de decisao do metodo de selecao em foco (UBC, Nicholas ou SH&B). A metodologia foi adaptada do **Pro D.M.**, de **Francisco Vargas** (Universidad de Concepcion).
+
+### Matriz de decisao estendida
+
+As linhas sao os dez metodos de lavra candidatos. As colunas sao os criterios classicos do metodo de selecao, pontuados a partir do formulario, seguidos de seis criterios fixos que descrevem o metodo de lavra em si, e nao o deposito. Por isso os seis valem igual em qualquer metodo de selecao:
+
+| Criterio fixo | Grupo | Direcao |
+| --- | --- | --- |
+| Desempenho | Tecnico-Operacional | Maximizar |
+| Produtividade | Tecnico-Operacional | Maximizar |
+| Recuperacao | Tecnico-Operacional | Maximizar |
+| Diluicao | Tecnico-Operacional | Minimizar |
+| Investimento de capital | Economia | Minimizar |
+| Custos comparativos | Economia | Minimizar |
+
+Os criterios classicos sao todos maximizados. A normalizacao vetorial do TOPSIS trata cada coluna de forma independente, de modo que escalas nativas diferentes (1 a 5 nos criterios fixos, indice de 10 a 100 nos custos comparativos) entram na conta sem reescala manual.
+
+### Conversao de escala
+
+Antes do TOPSIS, os scores classicos sao convertidos para a escala de 1 a 9, com uma regra propria por metodo de selecao:
+
+- **Nicholas**: conversao linear dos scores de 0 a 4 (`2 x score + 1`).
+- **UBC**: tabela categorica de correspondencia, que cobre todo o dominio de scores das tabelas do metodo.
+- **SH&B**: as tabelas publicadas ja trazem o fator de importancia do criterio embutido no score; a conversao desfaz esse fator e aplica a mesma tabela de correspondencia do UBC, com duas excecoes pontuais confirmadas.
+
+Nos tres metodos, os scores de eliminacao (-49 ou -50) sao convertidos para 0, abaixo do 1 atribuido ao pior score comum.
+
+### Ponderacao
+
+Dois modos, mutuamente exclusivos:
+
+- **Enfoque** (manual): o usuario distribui o peso entre quatro grupos de criterios — Geometria, Geomecanica, Tecnico-Operacional e Economia —, com os quatro pesos somando 1. O peso de cada grupo se divide igualmente entre os criterios do grupo presentes na matriz. Ao ajustar um grupo, os outros tres sao rebalanceados de forma proporcional (mantem a proporcao entre si) ou igualitaria (dividem o restante em partes iguais), conforme a opcao escolhida.
+- **Entropy** (automatico): os pesos sao calculados pela entropia de Shannon a partir da dispersao de cada coluna da matriz ja convertida. Criterios que pouco diferenciam os metodos de lavra recebem peso menor.
+
+### Recursos da tela
+
+- Matriz de decisao exibida ao vivo, com o peso de cada coluna atualizado conforme a ponderacao.
+- Comparacao de cenarios salvos: cada cenario guarda metodo de selecao, modo (Enfoque ou Entropy) e pesos, e e recalculado com os dados atuais do formulario, lado a lado com os demais.
+- Sinalizacao dos criterios em que um metodo de lavra recebeu a pontuacao minima da escala (scores de eliminacao). No MCDM a sinalizacao e informativa: o metodo continua no ranking.
+
+### Verificacao e pendencias
+
+A implementacao do TOPSIS e da ponderacao por entropia tem paridade numerica com o motor de referencia do Pro D.M., fixada em teste automatizado.
+
+O valor de **desempenho do Top Slicing** e uma estimativa ainda nao confirmada: a celula correspondente esta vazia na tabela de origem. O valor esta isolado e declarado como pendente no codigo (`PENDING_CONFIRMATION`, em `src/algorithms/mcdmCriteria.js`).
+
 ## Instalacao e execucao
 
 ### Requisitos
@@ -151,6 +200,7 @@ O build e gerado em `dist/`.
 6. Ajuste os pesos por criterio, se desejar, na etapa complementar.
 7. Revise os parametros preenchidos e clique em **Calcular**.
 8. Na pagina de resultados, inspecione o ranking, o grafico de barras e o radar normalizado de cada metodo de selecao. Clique em qualquer metodo de lavra para visualizar o breakdown de contribuicao por criterio.
+9. Na aba **Decisao multicriterio**, escolha o metodo de selecao, o modo de ponderacao (Enfoque ou Entropy) e, no Enfoque, os pesos por grupo. Salve cenarios para compara-los na aba **Comparar cenarios**.
 
 ## Parametros principais
 
@@ -229,6 +279,9 @@ O desenvolvimento contou com auxilio de IA generativa (Claude Code e, para refin
 - A ferramenta ainda nao possui segmentacao de deposito por profundidade (avaliacao por trechos).
 - A responsividade para telas moveis esta em desenvolvimento.
 - Nao ha exportacao de resultados em formato de relatorio.
+- Os textos da decisao multicriterio ainda estao em portugues nas interfaces em ingles, espanhol e frances.
+- As descricoes conceituais dos seis criterios fixos do MCDM ainda nao foram escritas (a interface exibe um texto provisorio).
+- O valor de desempenho do Top Slicing no MCDM e estimado e aguarda confirmacao.
 
 ## Roadmap tecnico
 
@@ -245,13 +298,13 @@ Referencia curta:
 ```text
 Feijó, Artur; Campos, Higor José Silva; Cardozo, Fernando Alves Cantini;
 Petter, Carlos Otávio; Petter, Renato Aurélio.
-MMS 2.0 - Mining Method Selection Tool. Version 1.0.0. 2026. MIT License.
+MMS 2.0 - Mining Method Selection Tool. Version 1.1.0. 2026. MIT License.
 ```
 
 Resumo do CFF:
 
 - Titulo: `MMS 2.0 - Mining Method Selection Tool`
-- Versao: `1.0.0`
+- Versao: `1.1.0`
 - Ano: `2026`
 - Licenca: `MIT`
 - Instituicao: Universidade Federal do Rio Grande do Sul — LAPROM
@@ -263,7 +316,7 @@ Contribuicoes sao bem-vindas. Para manter o projeto organizado:
 1. Crie uma branch para a alteracao.
 2. Mantenha a mudanca focada em um problema ou recurso.
 3. Nao altere as tabelas de pesos sem validacao cruzada contra o MMS 1.0.
-4. Rode `npm run lint` e `npm run build` antes de propor a alteracao.
+4. Rode `npm test`, `npm run lint` e `npm run build` antes de propor a alteracao.
 5. Atualize este README e `CITATION.cff` quando a mudanca afetar instalacao, uso, autoria, citacao ou metodologia.
 
 Evite versionar artefatos gerados como `node_modules/` e `dist/`.
