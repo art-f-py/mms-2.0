@@ -34,7 +34,7 @@ export default function CreditsModal({ onClose }) {
 
       <Group title={t("modals.credits.development")} people={["Artur Feijó"]} />
       <Group title={t("modals.credits.advising")} people={["Higor Campos"]} />
-      <Group title={t("modals.credits.collaborators")} people={["Fernando Cardozo", "Carlos Petter", "Renato Petter"]} />
+      <Group title={t("modals.credits.collaborators")} people={["Fernando Cardozo", "Carlos Petter", "Renato Petter", "Francisco Vargas"]} />
 
       <div style={{
         borderTop: "1px solid var(--border)", paddingTop: "16px", marginTop: "4px",
