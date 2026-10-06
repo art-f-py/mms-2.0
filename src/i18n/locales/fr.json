@@ -95,7 +95,7 @@
       "domainLayerTitle": "Multiplicateurs de domaine (Nicholas 92)",
       "domainLayerHint": "Pondèrent chaque domaine géotechnique. Appliquez un préréglage ou ajustez manuellement.",
       "exportMatrix": "Exporter la matrice de décision (.xlsx)",
-      "exportMatrixHint": "Les valeurs exportées ajoutent 50 à chaque score, pour la compatibilité avec Pro D.M. À l'écran, les scores restent sans ce décalage.",
+      "exportMatrixHint": "Les valeurs exportées ajoutent 50 à chaque score. À l'écran, les scores restent sans ce décalage.",
       "groups": {
         "geo": "Géométrie",
         "econ": "Économique",
@@ -251,7 +251,7 @@
         "classic": "Critérios do método",
         "classicHint": "As colunas que o próprio método de seleção pontua, a partir do que foi preenchido no formulário. Mudam de um método para o outro.",
         "fixed": "Critérios adicionais",
-        "fixedHint": "Seis critérios que descrevem o método de lavra em si — não o depósito — e por isso valem igual em qualquer método de seleção. Vêm da metodologia do Francisco (Pro D.M.) e entram na matriz depois das colunas clássicas."
+        "fixedHint": "Seis critérios que descrevem o método de lavra em si — não o depósito — e por isso valem igual em qualquer método de seleção. Vêm da metodologia do Francisco Vargas e entram na matriz depois das colunas clássicas."
       },
       "groups": {
         "geometry": "Geometria",

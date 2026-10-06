@@ -6,7 +6,7 @@ import { calculateUBC, calculateNicholas, calculateSHB } from "./algorithms";
 // MATRIZ DE DECISÃO — EXPORTAÇÃO PARA MCDM EXTERNO
 // ---------------------------------------------------------------------------
 // Monta a matriz de decisão BRUTA (alternativas × critérios) para consumo por
-// software MCDM externo (Pro D.M.), enquanto não existe integração direta.
+// software MCDM externo, enquanto não existe integração direta.
 //
 // "Bruta" significa sem NENHUMA das duas camadas de ponderação do usuário:
 //   1. pesos por critério (sliders de cada método de seleção);
@@ -153,10 +153,10 @@ export function buildDecisionMatrix(formData, selectedMethods = {}) {
   return { sheets, unmappedKeys: [...unmapped] };
 }
 
-// Deslocamento aplicado aos scores na exportação, por exigência do Pro D.M.
+// Deslocamento aplicado aos scores, exigido pelo formato de destino da exportação.
 // O menor valor das tabelas é exatamente -50 (penalidades do SH&B), então +50
 // leva o intervalo para começar em zero: -50 → 0, -49 → 1, 4 → 54.
-export const PRO_DM_SCORE_OFFSET = 50;
+export const EXPORT_SCORE_OFFSET = 50;
 
 /**
  * Soma um deslocamento constante a TODA célula numérica da matriz.
@@ -172,7 +172,7 @@ export const PRO_DM_SCORE_OFFSET = 50;
  * @param {{sheets: Array, unmappedKeys: string[]}} matrix saída de buildDecisionMatrix
  * @param {number} offset  constante somada a cada score
  */
-export function applyExportOffset(matrix, offset = PRO_DM_SCORE_OFFSET) {
+export function applyExportOffset(matrix, offset = EXPORT_SCORE_OFFSET) {
   return {
     ...matrix,
     sheets: matrix.sheets.map((sheet) => ({
