@@ -20,7 +20,7 @@ Como o projeto usa IA: `docs/USO-DE-IA.md`. Testes, lint, build e lacunas: `docs
   conta própria.
 - Valor ainda não confirmado vai para `PENDING_CONFIRMATION`
   (`src/algorithms/mcdmCriteria.js`), nunca entra em silêncio.
-- Tabelas de conversão, critérios fixos e exceções do SH&B são do Francisco Vargas (Pro D.M.).
+- Tabelas de conversão, critérios fixos e exceções do SH&B são do Francisco Vargas.
   Mudança nelas é decisão dele.
 
 ## Validação experimental

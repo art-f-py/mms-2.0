@@ -9,7 +9,7 @@ import {
   sheetCriteriaDirections,
   EXPORT_CRITERION_LABELS,
   EXPORT_ROW_HEADER,
-  PRO_DM_SCORE_OFFSET,
+  EXPORT_SCORE_OFFSET,
 } from "../decisionMatrix";
 import { DIRECTION, FIXED_CRITERIA, fixedScore } from "../mcdmCriteria";
 import { calculateUBC, calculateNicholas } from "../algorithms";
@@ -214,20 +214,20 @@ describe("buildDecisionMatrix — linhas", () => {
 });
 
 // ---------------------------------------------------------------------------
-// OFFSET DE EXPORTACAO (+50) — compatibilidade com o Pro D.M.
+// OFFSET DE EXPORTACAO (+50)
 // ---------------------------------------------------------------------------
 describe("applyExportOffset", () => {
   const primeiraColuna = (matrix, key, code) =>
     sheetByKey(matrix, key).rows.find((r) => r.code === code).values[0];
 
   it("a constante e 50", () => {
-    expect(PRO_DM_SCORE_OFFSET).toBe(50);
+    expect(EXPORT_SCORE_OFFSET).toBe(50);
   });
 
   it("penalidade -49 do UBC exporta como 1", () => {
     // Espessura "Muito estreito": BC e SLC valem -49 na tabela do UBC.
     const bruta = buildDecisionMatrix({ geometry: { thickness: "Muito estreito" } }, { ubc: true });
-    const comOffset = applyExportOffset(bruta, PRO_DM_SCORE_OFFSET);
+    const comOffset = applyExportOffset(bruta, EXPORT_SCORE_OFFSET);
 
     expect(primeiraColuna(bruta, "ubc", "BC")).toBe(-49);
     expect(primeiraColuna(comOffset, "ubc", "BC")).toBe(1);
@@ -237,7 +237,7 @@ describe("applyExportOffset", () => {
   it("penalidade -49 do Nicholas exporta como 1", () => {
     // Forma "Massivo": LW vale -49 na tabela de geometria do Nicholas.
     const bruta = buildDecisionMatrix({ geometry: { shape: "Massivo" } }, { nicholas: true });
-    const comOffset = applyExportOffset(bruta, PRO_DM_SCORE_OFFSET);
+    const comOffset = applyExportOffset(bruta, EXPORT_SCORE_OFFSET);
 
     expect(primeiraColuna(bruta, "nicholas", "LW")).toBe(-49);
     expect(primeiraColuna(comOffset, "nicholas", "LW")).toBe(1);
@@ -246,7 +246,7 @@ describe("applyExportOffset", () => {
   it("penalidade -50 do SH&B exporta como 0", () => {
     // Mergulho 70 -> "Inclinado": LW e R&P valem -50 na tabela do SH&B.
     const bruta = buildDecisionMatrix({ dip: "70" }, { shb: true });
-    const comOffset = applyExportOffset(bruta, PRO_DM_SCORE_OFFSET);
+    const comOffset = applyExportOffset(bruta, EXPORT_SCORE_OFFSET);
 
     expect(primeiraColuna(bruta, "shb", "LW")).toBe(-50);
     expect(primeiraColuna(comOffset, "shb", "LW")).toBe(0);
@@ -255,7 +255,7 @@ describe("applyExportOffset", () => {
 
   it("valor comum 4 exporta como 54", () => {
     const bruta = buildDecisionMatrix({ geometry: { thickness: "Muito estreito" } }, { ubc: true });
-    const comOffset = applyExportOffset(bruta, PRO_DM_SCORE_OFFSET);
+    const comOffset = applyExportOffset(bruta, EXPORT_SCORE_OFFSET);
 
     expect(primeiraColuna(bruta, "ubc", "LW")).toBe(4);
     expect(primeiraColuna(comOffset, "ubc", "LW")).toBe(54);
@@ -263,7 +263,7 @@ describe("applyExportOffset", () => {
 
   it("aplica o offset uniformemente nas tres abas, em toda celula", () => {
     const bruta = buildDecisionMatrix(FULL_SCENARIO, ALL_METHODS);
-    const comOffset = applyExportOffset(bruta, PRO_DM_SCORE_OFFSET);
+    const comOffset = applyExportOffset(bruta, EXPORT_SCORE_OFFSET);
 
     expect(comOffset.sheets).toHaveLength(3);
     comOffset.sheets.forEach((sheet, s) => {
@@ -271,7 +271,7 @@ describe("applyExportOffset", () => {
       expect(sheet.key).toBe(original.key);
       sheet.rows.forEach((row, r) => {
         row.values.forEach((valor, c) => {
-          expect(valor).toBe(original.rows[r].values[c] + PRO_DM_SCORE_OFFSET);
+          expect(valor).toBe(original.rows[r].values[c] + EXPORT_SCORE_OFFSET);
         });
       });
     });
@@ -279,7 +279,7 @@ describe("applyExportOffset", () => {
 
   it("nao mexe em rotulos de linha nem em cabecalhos de coluna", () => {
     const bruta = buildDecisionMatrix(FULL_SCENARIO, ALL_METHODS);
-    const comOffset = applyExportOffset(bruta, PRO_DM_SCORE_OFFSET);
+    const comOffset = applyExportOffset(bruta, EXPORT_SCORE_OFFSET);
 
     comOffset.sheets.forEach((sheet, s) => {
       expect(sheet.name).toBe(bruta.sheets[s].name);
@@ -293,7 +293,7 @@ describe("applyExportOffset", () => {
   it("e puro — nao altera a matriz recebida", () => {
     const bruta = buildDecisionMatrix(FULL_SCENARIO, ALL_METHODS);
     const antes = JSON.parse(JSON.stringify(bruta));
-    applyExportOffset(bruta, PRO_DM_SCORE_OFFSET);
+    applyExportOffset(bruta, EXPORT_SCORE_OFFSET);
     expect(bruta).toEqual(antes);
   });
 
@@ -324,7 +324,7 @@ describe("matriz exportada — pipeline completo", () => {
     // Mesma composicao de downloadDecisionMatrix: montar -> offset -> AOA.
     const matrix = applyExportOffset(
       buildDecisionMatrix({ geometry: { thickness: "Muito estreito" } }, { ubc: true }),
-      PRO_DM_SCORE_OFFSET,
+      EXPORT_SCORE_OFFSET,
     );
     const aoa = sheetToAoa(matrix.sheets[0]);
 

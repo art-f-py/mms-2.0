@@ -114,7 +114,7 @@ Os dois modos do Nicholas nunca coexistem: ativar um reinicia o outro para o val
 
 ## Decisao multicriterio (MCDM)
 
-Alem do ranking classico, a pagina de resultados oferece um ranking multicriterio, calculado pelo metodo **TOPSIS** (Hwang & Yoon, 1981) sobre a matriz de decisao do metodo de selecao em foco (UBC, Nicholas ou SH&B). A metodologia foi adaptada do **Pro D.M.**, de **Francisco Vargas** (Universidad de Concepcion).
+Alem do ranking classico, a pagina de resultados oferece um ranking multicriterio, calculado pelo metodo **TOPSIS** (Hwang & Yoon, 1981) sobre a matriz de decisao do metodo de selecao em foco (UBC, Nicholas ou SH&B). A metodologia foi desenvolvida em colaboracao com **Francisco Vargas** (Universidad de Concepcion).
 
 ### Matriz de decisao estendida
 
@@ -156,7 +156,7 @@ Dois modos, mutuamente exclusivos:
 
 ### Verificacao e pendencias
 
-A implementacao do TOPSIS e da ponderacao por entropia tem paridade numerica com o motor de referencia do Pro D.M., fixada em teste automatizado.
+A implementacao do TOPSIS e da ponderacao por entropia tem paridade numerica com o motor de referencia fornecido por Francisco Vargas, fixada em teste automatizado.
 
 O valor de **desempenho do Top Slicing** e uma estimativa ainda nao confirmada: a celula correspondente esta vazia na tabela de origem. O valor esta isolado e declarado como pendente no codigo (`PENDING_CONFIRMATION`, em `src/algorithms/mcdmCriteria.js`).
 
@@ -328,4 +328,4 @@ Este projeto e distribuido sob a licenca MIT. Consulte [`LICENSE`](LICENSE) para
 
 ## Agradecimentos
 
-Ao **LAPROM** e ao corpo docente da Universidade Federal do Rio Grande do Sul pela orientacao e infraestrutura. Aos autores das publicacoes originais de UBC (1995), Nicholas (1981, 1992) e SH&B (2007), cujas tabelas de classificacao fundamentam os algoritmos deste projeto. A **Francisco Vargas** (Universidad de Concepcion), pela metodologia multicriterio adaptada do Pro D.M. e pela revisao da terminologia em espanhol.
+Ao **LAPROM** e ao corpo docente da Universidade Federal do Rio Grande do Sul pela orientacao e infraestrutura. Aos autores das publicacoes originais de UBC (1995), Nicholas (1981, 1992) e SH&B (2007), cujas tabelas de classificacao fundamentam os algoritmos deste projeto. A **Francisco Vargas** (Universidad de Concepcion), pela metodologia multicriterio desenvolvida em colaboracao com o projeto e pela revisao da terminologia em espanhol.

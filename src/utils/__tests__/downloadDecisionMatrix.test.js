@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { downloadDecisionMatrix, DECISION_MATRIX_FILENAME } from "../downloadDecisionMatrix";
-import { PRO_DM_SCORE_OFFSET } from "../../algorithms/decisionMatrix";
+import { EXPORT_SCORE_OFFSET } from "../../algorithms/decisionMatrix";
 
 // ---------------------------------------------------------------------------
 // EXPORTAÇÃO DA MATRIZ — A FUNÇÃO CONTINUA VIVA SEM BOTÃO NA TELA
@@ -10,8 +10,8 @@ import { PRO_DM_SCORE_OFFSET } from "../../algorithms/decisionMatrix";
 // gatilho na UI, uma quebra aqui não apareceria em lugar nenhum até o dia em
 // que alguém repusesse o botão — e aí pareceria culpa da reativação.
 //
-// O que se cobre é o que a camada faz de fato: montar → aplicar o offset do
-// Pro D.M. → escrever o arquivo. O SheetJS é dublê; gravar .xlsx de verdade não
+// O que se cobre é o que a camada faz de fato: montar → aplicar o offset de
+// exportação → escrever o arquivo. O SheetJS é dublê; gravar .xlsx de verdade não
 // é assunto deste teste (nem roda em `environment: 'node'`).
 
 const FULL_SCENARIO = {
@@ -66,7 +66,7 @@ describe("downloadDecisionMatrix chamada diretamente", () => {
     expect(escritas[0].wb.abas).toHaveLength(2);
   });
 
-  it("aplica o offset do Pro D.M. — o caminho de exportação, e não o do app", async () => {
+  it("aplica o offset de exportação — o caminho de exportação, e não o do app", async () => {
     // A razão de o offset viver só aqui: o ranking da tela usa os scores
     // originais. Se o offset vazasse para buildDecisionMatrix, o MCDM inteiro
     // mudaria junto. Confere que a saída exportada está deslocada.
@@ -75,7 +75,7 @@ describe("downloadDecisionMatrix chamada diretamente", () => {
 
     expect(valores.length).toBeGreaterThan(0);
     // Com offset, nenhum score fica abaixo do piso deslocado.
-    for (const v of valores) expect(v).toBeGreaterThanOrEqual(PRO_DM_SCORE_OFFSET - 49);
+    for (const v of valores) expect(v).toBeGreaterThanOrEqual(EXPORT_SCORE_OFFSET - 49);
   });
 
   it("sem método selecionado não escreve arquivo nenhum, e não lança", async () => {

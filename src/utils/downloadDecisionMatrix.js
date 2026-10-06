@@ -2,7 +2,7 @@ import {
   buildDecisionMatrix,
   applyExportOffset,
   sheetToAoa,
-  PRO_DM_SCORE_OFFSET,
+  EXPORT_SCORE_OFFSET,
 } from "../algorithms/decisionMatrix";
 
 export const DECISION_MATRIX_FILENAME = "mms2-decision-matrix.xlsx";
@@ -19,13 +19,13 @@ export const DECISION_MATRIX_FILENAME = "mms2-decision-matrix.xlsx";
  * principal e pesavam no carregamento de todo mundo.
  *
  * Pipeline: montar matriz (bruta) → aplicar offset → gerar arquivo. O offset
- * do Pro D.M. vive só neste caminho; o app continua com os scores originais.
+ * de exportação vive só neste caminho; o app continua com os scores originais.
  *
  * @returns {Promise<{ sheets: Array, unmappedKeys: string[], written: boolean }>}
  */
 export async function downloadDecisionMatrix(formData, selectedMethods, filename = DECISION_MATRIX_FILENAME) {
   const bruta = buildDecisionMatrix(formData, selectedMethods);
-  const { sheets, unmappedKeys } = applyExportOffset(bruta, PRO_DM_SCORE_OFFSET);
+  const { sheets, unmappedKeys } = applyExportOffset(bruta, EXPORT_SCORE_OFFSET);
 
   // Sem método selecionado não há aba — e um workbook vazio faz o SheetJS
   // lançar. O botão já fica desabilitado nesse caso; isto é a rede de baixo.

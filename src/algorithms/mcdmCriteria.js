@@ -1,5 +1,5 @@
 // MCDM — CRITÉRIOS FIXOS POR MÉTODO DE LAVRA
-// Fonte: tabela_pesos_francisco.xlsx, aba "Hoja1" (Francisco / Pro D.M.).
+// Fonte: tabela_pesos_francisco.xlsx, aba "Hoja1" (Francisco Vargas).
 //
 // Ordem dos métodos (índice fixo):
 // 0:OP  1:BC  2:SLS  3:SLC  4:LW  5:R&P  6:SKS  7:C&F  8:TS  9:SQS

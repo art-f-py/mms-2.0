@@ -80,7 +80,7 @@ Totais: **43 arquivos, 1122 testes**, todos passando.
   exceções documentadas do SH&B.
 - `mcdmCriteria.test.js` — os seis critérios fixos (direção, transcrição dos valores, e a
   pendência registrada em `PENDING_CONFIRMATION`).
-- `decisionMatrix.test.js` — montagem da matriz de decisão e exportação (offset do Pro D.M.).
+- `decisionMatrix.test.js` — montagem da matriz de decisão e exportação (offset de exportação).
 - `mcdmPipeline.test.js`, `mcdmPipelineUbc.test.js`, `mcdmPipelineShb.test.js` — o pipeline
   completo por método de seleção, da matriz de decisão ao ranking TOPSIS, com regressão
   cruzada (a liberação do UBC e do SH&B não alterou o resultado dos métodos anteriores).

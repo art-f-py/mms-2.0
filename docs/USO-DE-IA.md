@@ -81,7 +81,7 @@ As decisões metodológicas vieram de pessoas e de fontes identificadas:
 
 - **Métodos clássicos e tabelas de peso** (UBC 1995, Nicholas 1981/1992, SH&B 2007): da
   literatura publicada e do MMS 1.0.
-- **Metodologia de decisão multicritério** (Pro D.M.): **Francisco Vargas**. São dele:
+- **Metodologia de decisão multicritério**: **Francisco Vargas**. São dele:
   - as tabelas de conversão dos scores clássicos para a escala de Saaty (UBC e SH&B), além
     da conversão linear usada no Nicholas, que ele confirmou;
   - os seis critérios fixos e seus valores;

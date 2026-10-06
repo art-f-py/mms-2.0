@@ -16,7 +16,7 @@
 // Por que não o offset +50 que a exportação usa: ele preserva a distância
 // enorme entre −49 e 0, e isso concentrava mais de 50% do peso calculado por
 // Entropy num único critério. A escala de Saaty comprime essa distância.
-// Ver PRO_DM_SCORE_OFFSET em decisionMatrix.js — os dois caminhos coexistem e
+// Ver EXPORT_SCORE_OFFSET em decisionMatrix.js — os dois caminhos coexistem e
 // servem a consumidores diferentes.
 
 /** Extremos do domínio de entrada coberto pela fórmula linear. */
