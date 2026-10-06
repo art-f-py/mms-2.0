@@ -298,7 +298,7 @@ Referencia curta:
 
 ```text
 Feijó, Artur; Campos, Higor José Silva; Cardozo, Fernando Alves Cantini;
-Petter, Carlos Otávio; Petter, Renato Aurélio.
+Petter, Carlos Otávio; Petter, Renato Aurélio; Vargas Soto, Francisco Ignacio.
 MMS 2.0 - Mining Method Selection Tool. Version 1.1.0. 2026. MIT License.
 ```
 

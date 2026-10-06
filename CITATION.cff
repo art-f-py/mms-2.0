@@ -2,7 +2,7 @@ cff-version: 1.2.0
 message: "Se utilizar este software, por favor cite-o conforme os metadados abaixo."
 title: "MMS 2.0 - Mining Method Selection Tool"
 version: 1.1.0
-date-released: 2026-10-02
+date-released: 2026-10-06
 license: MIT
 repository-code: "https://github.com/art-f-py/mms-2.0"
 url: "https://mafmine.k8s.inf.ufrgs.br/v3.1/tools/mms_2.0/"
@@ -40,6 +40,9 @@ authors:
     email: "rapetter@gmail.com"
     orcid: "https://orcid.org/0000-0003-2479-2527"
     affiliation: "Departamento de Engenharia de Minas, Universidade Federal do Rio Grande do Sul (UFRGS)"
+  - given-names: "Francisco Ignacio"
+    family-names: "Vargas Soto"
+    affiliation: "Departamento de Ingeniería Metalúrgica, Universidad de Concepción"
 keywords:
   - mining engineering
   - mining method selection
